@@ -1,0 +1,388 @@
+{
+  "name": "Workflow 1 – Product & Sales Data Ingestion",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "product-sales-ingest",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -992,
+        -128
+      ],
+      "id": "ddb1648f-6111-4460-ad78-02accdbe64f0",
+      "name": "Webhook",
+      "webhookId": "4b44ae26-5679-4c84-b94d-2810b106b6d4",
+      "notesInFlow": true,
+      "notes": "This webhook acts as the entry point of the system.\nIt receives product and sales data submitted by the store owner from the frontend.\nThe node triggers the workflow whenever new inventory data is provided.\n"
+    },
+    {
+      "parameters": {
+        "content": "Receives product & sales data\nfrom frontend (POST request)\n",
+        "height": 96,
+        "width": 150,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1024,
+        -240
+      ],
+      "typeVersion": 1,
+      "id": "235b2f74-d59a-4b03-8719-0b25f19b2733",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "Cleans webhook input\nKeeps only required fields\n",
+        "height": 96,
+        "width": 160,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -816,
+        32
+      ],
+      "typeVersion": 1,
+      "id": "edd4a97f-3b01-4305-99a2-80c262ec0dc7",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "efb8bb1d-33df-4fc7-8135-e479a067aa45",
+              "name": "product_name",
+              "value": "={{$json.body.product_name.replace(/\\n/g, \"\").trim()}}\n",
+              "type": "string"
+            },
+            {
+              "id": "1f8c5554-253d-4b07-a4b9-b6fefda92d92",
+              "name": "category",
+              "value": "={{$json.body.category}}",
+              "type": "string"
+            },
+            {
+              "id": "70e4f2d2-93ca-4504-ad4b-a8386d70a92b",
+              "name": "current_stock",
+              "value": "={{$json.body.current_stock}}\n",
+              "type": "number"
+            },
+            {
+              "id": "02893f7d-c8f2-45a9-8b93-5df05b1bdaa8",
+              "name": "avg_daily_sales",
+              "value": "={{$json.body.avg_daily_sales}}\n",
+              "type": "number"
+            },
+            {
+              "id": "97edf452-34eb-48ea-9e4a-eb8b6243259a",
+              "name": "=reorder_threshold",
+              "value": "={{$json.body.reorder_threshold}}",
+              "type": "number"
+            },
+            {
+              "id": "f13d94a1-7575-4328-96ef-3799589730a3",
+              "name": "unit_price",
+              "value": "={{$json.body.unit_price}}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -784,
+        -128
+      ],
+      "id": "e7d16b33-18bb-4afb-8d55-ccdec24aae09",
+      "name": "Edit Fields (Cleaning)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a02cde0e-943f-43d5-b1c7-7dd61bd37387",
+              "name": "product_id",
+              "value": "={{\"PROD-\" + Date.now()}}\n",
+              "type": "string"
+            },
+            {
+              "id": "0721a4d6-1560-4c1b-a19e-b1df99986feb",
+              "name": "created_at",
+              "value": "={{new Date().toISOString()}}\n",
+              "type": "string"
+            },
+            {
+              "id": "9278e17c-2703-462c-a26a-1e19b4e56e79",
+              "name": "last_restock_date",
+              "value": "={{$now.toISODate()}}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -576,
+        -128
+      ],
+      "id": "9ff591c0-af51-4c96-9ed1-fcc4b1a77a79",
+      "name": "Edit Fields(ID & Time)"
+    },
+    {
+      "parameters": {
+        "content": "Generates product ID\nAdds creation timestamp\n",
+        "height": 96,
+        "width": 150,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -608,
+        -240
+      ],
+      "typeVersion": 1,
+      "id": "81f1d463-6d28-44ad-9d09-1dd11ec80f3e",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appb2z9TDMbZhvKNd",
+          "mode": "list",
+          "cachedResultName": "Supermarket Inventory & Supplier Management",
+          "cachedResultUrl": "https://airtable.com/appb2z9TDMbZhvKNd"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl7TVoXR0BrgVwdr",
+          "mode": "list",
+          "cachedResultName": "Products",
+          "cachedResultUrl": "https://airtable.com/appb2z9TDMbZhvKNd/tbl7TVoXR0BrgVwdr"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Product Name": "={{$json.product_name}}",
+            "category": "={{$json.category}}",
+            "Current Stock": "={{$json.current_stock}}",
+            "Avg Daily Sales": "={{$json.avg_daily_sales}}",
+            "Reorder Threshold": "={{$json.reorder_threshold}}",
+            "Unit Price": "={{$json.unit_price}}",
+            "Last Restock Date": "={{$json.last_restock_date}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Product Name",
+              "displayName": "Product Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Current Stock",
+              "displayName": "Current Stock",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Avg Daily Sales",
+              "displayName": "Avg Daily Sales",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Reorder Threshold",
+              "displayName": "Reorder Threshold",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Unit Price",
+              "displayName": "Unit Price",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Supplier",
+              "displayName": "Supplier",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Last Restock Date",
+              "displayName": "Last Restock Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Days Since Last Restock",
+              "displayName": "Days Since Last Restock",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Stock Alerts",
+              "displayName": "Stock Alerts",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Reorder Suggestions",
+              "displayName": "Reorder Suggestions",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": "={{ true }}"
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -352,
+        -128
+      ],
+      "id": "87c162d5-0e21-4c74-aaaf-583ef16fd080",
+      "name": "Create a record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "MrpydGvwDcfdaR6R",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields (Cleaning)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields (Cleaning)": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields(ID & Time)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields(ID & Time)": {
+      "main": [
+        [
+          {
+            "node": "Create a record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a record": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "04f24ad0-6afc-4870-8531-89139f8e009f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6dafb56b49224da5a8945c43a336394bc50f359daec44c0ec6d5a46f874593e2"
+  },
+  "id": "bMJ_c4ogbOgNfObNKpbuE",
+  "tags": []
+}
