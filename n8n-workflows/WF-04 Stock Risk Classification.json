@@ -1,0 +1,135 @@
+{
+  "name": "WF-04 Stock Risk Classification",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        -32
+      ],
+      "id": "21c0dbef-378b-4f37-9f0e-28a9a34b7e77",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "Products",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        -32
+      ],
+      "id": "693b175e-469c-4725-b9cc-97d4583dcc27",
+      "name": "Fetch All Products",
+      "credentials": {
+        "supabaseApi": {
+          "id": "cTHIcrIVh1Uh0w7G",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all items from Fetch Products\nconst items = $input.all();\n\n// Process each item and classify risk\nconst classifiedItems = items.map(item => {\n  const product = item.json;\n  const days = product.days_to_stockout;\n  \n  // Determine risk level\n  let riskLevel = \"UNKNOWN\";\n  \n  if (days === null || days === undefined || days === \"\") {\n    riskLevel = \"UNKNOWN\";\n  } else if (days <= 3) {\n    riskLevel = \"HIGH\";\n  } else if (days <= 7) {\n    riskLevel = \"MEDIUM\";\n  } else {\n    riskLevel = \"LOW\";\n  }\n  \n  // Return object for Supabase update\n  return {\n    json: {\n      product_id: product.product_id,\n      risk_level: riskLevel\n    }\n  };\n});\n\nreturn classifiedItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        -32
+      ],
+      "id": "bbfca0e5-57a3-471b-923f-dd1de9aa850c",
+      "name": "Process All Items"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "Products",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "product_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.product_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "risk_level",
+              "fieldValue": "={{ $json.risk_level }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        -32
+      ],
+      "id": "bc7c05f7-2dc2-4a84-a701-4beb16d72ecf",
+      "name": "Update a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "cTHIcrIVh1Uh0w7G",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Fetch All Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch All Products": {
+      "main": [
+        [
+          {
+            "node": "Process All Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process All Items": {
+      "main": [
+        [
+          {
+            "node": "Update a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "d565f646-ee41-48ea-b611-3d923b56cbb4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6dafb56b49224da5a8945c43a336394bc50f359daec44c0ec6d5a46f874593e2"
+  },
+  "id": "VkFbE0ZONeTximBLOw5Wx",
+  "tags": []
+}
