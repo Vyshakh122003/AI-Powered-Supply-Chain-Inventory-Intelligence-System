@@ -173,6 +173,8 @@ export default function Suppliers() {
                   <th className="text-left px-4 py-3 font-medium text-muted">Supplier</th>
                   <th className="text-center px-4 py-3 font-medium text-muted">Grade</th>
                   <th className="text-right px-4 py-3 font-medium text-muted">Score</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted">Reliability</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted">Price</th>
                   <th className="text-right px-4 py-3 font-medium text-muted">Delivery (days)</th>
                   <th className="text-left px-4 py-3 font-medium text-muted">Categories</th>
                   <th className="text-center px-4 py-3 font-medium text-muted">Actions</th>
@@ -195,6 +197,12 @@ export default function Suppliers() {
                         </td>
                         <td className="text-right px-4 py-3 font-mono">
                           {supplier.composite_score ?? '—'}
+                        </td>
+                        <td className="text-right px-4 py-3 font-mono text-muted">
+                          {supplier.reliability_score != null ? (supplier.reliability_score * 10).toFixed(1) : '—'}/10
+                        </td>
+                        <td className="text-right px-4 py-3 font-mono text-muted">
+                          {supplier.price_score != null ? (supplier.price_score * 10).toFixed(1) : '—'}/10
                         </td>
                         <td className="px-4 py-3 text-right">
                           <input
@@ -244,6 +252,12 @@ export default function Suppliers() {
                         </td>
                         <td className="text-right px-4 py-3 font-mono font-medium">
                           {supplier.composite_score ?? '—'}
+                        </td>
+                        <td className="text-right px-4 py-3 font-mono">
+                          {supplier.reliability_score != null ? (supplier.reliability_score * 10).toFixed(1) : '—'}<span className="text-muted">/10</span>
+                        </td>
+                        <td className="text-right px-4 py-3 font-mono">
+                          {supplier.price_score != null ? (supplier.price_score * 10).toFixed(1) : '—'}<span className="text-muted">/10</span>
                         </td>
                         <td className="text-right px-4 py-3 font-mono">
                           {supplier.delivery_time_days ?? '—'}
