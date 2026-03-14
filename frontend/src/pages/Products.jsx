@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
+import { WEBHOOKS, postWebhook } from '../lib/config'
 import { formatCurrency } from '../lib/helpers'
 import RiskBadge from '../components/RiskBadge'
 import EmptyState from '../components/EmptyState'
@@ -105,18 +106,16 @@ export default function Products() {
 
   const handleSaveEdit = async (productId) => {
     try {
-      const { error } = await supabase
-        .from('Products')
-        .update({
-          product_name: editData.product_name,
-          category: editData.category,
-          current_stock: Number(editData.current_stock),
-          reorder_threshold: Number(editData.reorder_threshold),
-          unit_price: Number(editData.unit_price),
-          avg_daily_sales: Number(editData.avg_daily_sales),
-        })
-        .eq('product_id', productId)
-      if (error) throw error
+      const body = {
+        product_id: productId,
+        product_name: editData.product_name,
+        category: editData.category,
+        current_stock: Number(editData.current_stock),
+        reorder_threshold: Number(editData.reorder_threshold),
+        unit_price: Number(editData.unit_price),
+        avg_daily_sales: Number(editData.avg_daily_sales),
+      }
+      await postWebhook(WEBHOOKS.productIngest, body)
       toast.success('Product updated')
       setEditingId(null)
       fetchProducts()
