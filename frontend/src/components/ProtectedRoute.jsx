@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { Loader2 } from 'lucide-react'
 
 export default function ProtectedRoute({ children }) {
-  const { session, loading } = useAuth()
+  const { session, loading, storeProfile } = useAuth()
 
   if (loading) {
     return (
@@ -18,6 +18,11 @@ export default function ProtectedRoute({ children }) {
 
   if (!session) {
     return <Navigate to="/login" replace />
+  }
+
+  // If store profile exists but onboarding not completed, redirect to onboarding
+  if (storeProfile && !storeProfile.onboarding_completed) {
+    return <Navigate to="/onboarding" replace />
   }
 
   return children

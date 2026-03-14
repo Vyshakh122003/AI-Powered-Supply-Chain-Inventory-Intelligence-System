@@ -16,6 +16,7 @@ import {
   WifiOff,
   Zap,
   ClipboardList,
+  FileText,
 } from 'lucide-react'
 
 const navItems = [
@@ -27,6 +28,7 @@ const navItems = [
   { to: '/reorder', label: 'Reorder', icon: RotateCcw },
   { to: '/suppliers', label: 'Suppliers', icon: Truck },
   { to: '/reports', label: 'Reports', icon: BarChart3 },
+  { to: '/logs', label: 'System Logs', icon: FileText },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]
 

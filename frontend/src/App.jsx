@@ -17,6 +17,7 @@ import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 import QuickUpdate from './pages/QuickUpdate'
 import Deliveries from './pages/Deliveries'
+import Logs from './pages/Logs'
 
 function App() {
   return (
@@ -63,6 +64,7 @@ function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/quick-update" element={<QuickUpdate />} />
             <Route path="/deliveries" element={<Deliveries />} />
+            <Route path="/logs" element={<Logs />} />
           </Route>
 
           {/* Default: unauthenticated → landing, authenticated → dashboard */}

@@ -5,10 +5,11 @@ import { formatCurrency } from '../lib/helpers'
 import RiskBadge from '../components/RiskBadge'
 import EmptyState from '../components/EmptyState'
 import AddProductModal from '../components/AddProductModal'
+import CsvImportModal from '../components/CsvImportModal'
 import toast from 'react-hot-toast'
 import {
   Package, Search, Plus, ChevronLeft, ChevronRight,
-  Loader2, Pencil, X, Check, Filter,
+  Loader2, Pencil, X, Check, Filter, Upload,
 } from 'lucide-react'
 
 const PAGE_SIZE = 20
@@ -22,6 +23,7 @@ export default function Products() {
   const [page, setPage] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showCsvModal, setShowCsvModal] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState({})
 
@@ -137,13 +139,22 @@ export default function Products() {
           <h1 className="text-2xl font-bold text-text">Products</h1>
           <p className="text-sm text-muted">{totalCount} products total</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          Add Product
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowCsvModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-text text-sm font-medium rounded-lg border border-border hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            <Upload className="w-4 h-4" />
+            Import CSV
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            Add Product
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -338,6 +349,13 @@ export default function Products() {
       <AddProductModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
+        onSuccess={fetchProducts}
+      />
+
+      {/* CSV Import Modal */}
+      <CsvImportModal
+        isOpen={showCsvModal}
+        onClose={() => setShowCsvModal(false)}
         onSuccess={fetchProducts}
       />
     </div>

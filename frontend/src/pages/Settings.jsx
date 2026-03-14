@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 import {
   Settings as SettingsIcon, Save, Loader2, Play,
   Calculator, AlertTriangle, ShieldCheck, Brain,
-  Star, MessageCircle, Zap,
+  Star, MessageCircle, Zap, MapPin, Clock, Store,
 } from 'lucide-react'
 
 const workflowButtons = [
@@ -28,6 +28,12 @@ export default function Settings() {
     owner_name: '',
     phone: '',
     whatsapp_numbers: '',
+    city: '',
+    store_type: '',
+    safety_factor: '1.5',
+    default_lead_days: '3',
+    alert_time: '08:00',
+    timezone: 'Asia/Kolkata',
   })
 
   // Workflow button states
@@ -44,6 +50,12 @@ export default function Settings() {
         whatsapp_numbers: Array.isArray(storeProfile.whatsapp_numbers)
           ? storeProfile.whatsapp_numbers.join(', ')
           : storeProfile.whatsapp_numbers || '',
+        city: storeProfile.city || '',
+        store_type: storeProfile.store_type || '',
+        safety_factor: String(storeProfile.safety_factor ?? '1.5'),
+        default_lead_days: String(storeProfile.default_lead_days ?? '3'),
+        alert_time: storeProfile.alert_time || '08:00',
+        timezone: storeProfile.timezone || 'Asia/Kolkata',
       })
     }
   }, [storeProfile])
@@ -75,6 +87,12 @@ export default function Settings() {
           owner_name: form.owner_name,
           phone: form.phone,
           whatsapp_numbers: whatsappArr,
+          city: form.city || null,
+          store_type: form.store_type || null,
+          safety_factor: parseFloat(form.safety_factor) || 1.5,
+          default_lead_days: parseInt(form.default_lead_days, 10) || 3,
+          alert_time: form.alert_time || '08:00',
+          timezone: form.timezone || 'Asia/Kolkata',
         })
         .eq('id', user.id)
 
@@ -136,7 +154,8 @@ export default function Settings() {
           <SettingsIcon className="w-5 h-5 text-accent" />
           Store Profile
         </h2>
-        <form onSubmit={handleSaveProfile} className="space-y-4">
+        <form onSubmit={handleSaveProfile} className="space-y-5">
+          {/* ── Basic Info ─────────────────────────── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-text mb-1.5">Store Name</label>
@@ -160,6 +179,45 @@ export default function Settings() {
             </div>
           </div>
 
+          {/* ── Location & Type ────────────────────── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-text mb-1.5 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-muted" />
+                City
+              </label>
+              <input
+                name="city"
+                value={form.city}
+                onChange={handleChange}
+                placeholder="e.g. Vijayawada"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text mb-1.5 flex items-center gap-1.5">
+                <Store className="w-3.5 h-3.5 text-muted" />
+                Store Type
+              </label>
+              <select
+                name="store_type"
+                value={form.store_type}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-accent"
+              >
+                <option value="">Select type...</option>
+                <option value="Kirana / General Store">Kirana / General Store</option>
+                <option value="Grocery Store">Grocery Store</option>
+                <option value="Supermarket">Supermarket</option>
+                <option value="Pharmacy">Pharmacy</option>
+                <option value="Bakery">Bakery</option>
+                <option value="Dairy Shop">Dairy Shop</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          {/* ── Contact ────────────────────────────── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-text mb-1.5">Phone</label>
@@ -181,6 +239,71 @@ export default function Settings() {
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
               />
               <p className="text-xs text-muted mt-1">Comma-separated phone numbers</p>
+            </div>
+          </div>
+
+          {/* ── Pipeline Preferences ───────────────── */}
+          <div className="pt-2 border-t border-border">
+            <h3 className="text-sm font-semibold text-text mb-3 flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-accent" />
+              Pipeline Preferences
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-text mb-1.5">Safety Factor</label>
+                <input
+                  name="safety_factor"
+                  type="number"
+                  step="0.1"
+                  min="1"
+                  max="3"
+                  value={form.safety_factor}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+                <p className="text-xs text-muted mt-1">Reorder buffer multiplier (1.0 - 3.0)</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text mb-1.5">Default Lead Days</label>
+                <input
+                  name="default_lead_days"
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={form.default_lead_days}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+                <p className="text-xs text-muted mt-1">Avg supplier delivery time in days</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="block text-sm font-medium text-text mb-1.5">Daily Alert Time</label>
+                <input
+                  name="alert_time"
+                  type="time"
+                  value={form.alert_time}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                />
+                <p className="text-xs text-muted mt-1">When the daily pipeline runs</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text mb-1.5">Timezone</label>
+                <select
+                  name="timezone"
+                  value={form.timezone}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-accent"
+                >
+                  <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                  <option value="Asia/Colombo">Asia/Colombo (SLT)</option>
+                  <option value="Asia/Dhaka">Asia/Dhaka (BST)</option>
+                  <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+                  <option value="UTC">UTC</option>
+                </select>
+              </div>
             </div>
           </div>
 
