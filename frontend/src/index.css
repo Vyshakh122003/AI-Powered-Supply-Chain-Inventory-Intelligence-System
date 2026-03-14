@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@source "../node_modules/@tremor/react/dist/**/*.js";
+
 @theme {
   --color-primary: #1E3A5F;
   --color-accent: #2563EB;
