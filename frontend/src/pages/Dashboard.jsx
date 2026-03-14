@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { apiTriggerWorkflow, WORKFLOW_IDS, triggerWebhook, WEBHOOKS } from '../lib/config'
+import { triggerWebhook, WEBHOOKS } from '../lib/config'
 import { formatDate, getHealthColor, getHealthBg, calculateHealthScore } from '../lib/helpers'
 import KPICard from '../components/KPICard'
-import RiskBadge from '../components/RiskBadge'
 import EmptyState from '../components/EmptyState'
 import toast from 'react-hot-toast'
 import {
@@ -19,7 +18,6 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState([])
   const [suggestions, setSuggestions] = useState([])
   const [snapshots, setSnapshots] = useState([])
-  const [latestSnapshot, setLatestSnapshot] = useState(null)
   const [loading, setLoading] = useState(true)
   const [runningPipeline, setRunningPipeline] = useState(false)
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false)
@@ -39,9 +37,6 @@ export default function Dashboard() {
 
       const snapshotData = (snapshotsRes.data || []).reverse()
       setSnapshots(snapshotData)
-      if (snapshotsRes.data && snapshotsRes.data.length > 0) {
-        setLatestSnapshot(snapshotsRes.data[0])
-      }
     } catch {
       toast.error('Failed to load dashboard data')
     } finally {
@@ -78,15 +73,13 @@ export default function Dashboard() {
   const mediumRisk = products.filter(p => p.risk_level === 'MEDIUM').length
   const lowRisk = products.filter(p => p.risk_level === 'LOW').length
 
-  // Calculate health score from live product data, fallback to latest snapshot
-  const healthScore = latestSnapshot
-    ? latestSnapshot.health_score
-    : calculateHealthScore(lowRisk, mediumRisk, totalProducts)
+  // Calculate health score from live product data (real-time)
+  const healthScore = calculateHealthScore(lowRisk, mediumRisk, totalProducts)
 
   const handleRunPipeline = async () => {
     setRunningPipeline(true)
     try {
-      await apiTriggerWorkflow(WORKFLOW_IDS.WF08)
+      await triggerWebhook(WEBHOOKS.runPipeline)
       toast.success('Pipeline started — results update automatically in ~60 seconds')
     } catch (err) {
       console.error('Pipeline error:', err)
@@ -158,6 +151,7 @@ export default function Dashboard() {
           value={alerts.length}
           icon={Activity}
           color="text-warning"
+          subtitle={alerts.length === 0 && highRisk > 0 ? 'Run pipeline to refresh' : undefined}
         />
         <KPICard
           title="Pending Reorders"
@@ -233,7 +227,11 @@ export default function Dashboard() {
             <EmptyState
               icon={AlertTriangle}
               title="No active alerts"
-              description="All products are well-stocked"
+              description={
+                highRisk > 0
+                  ? `${highRisk} high-risk product${highRisk > 1 ? 's' : ''} detected — run the pipeline to generate fresh alerts`
+                  : 'All products are well-stocked'
+              }
             />
           )}
         </div>

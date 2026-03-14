@@ -3,10 +3,11 @@
 // Use empty base so requests stay same-origin → no CORS issues.
 const N8N_BASE = import.meta.env.DEV ? '' : import.meta.env.VITE_N8N_BASE_URL
 
-// Only WF-01 and WF-07 have real webhook endpoints in n8n
+// Webhook endpoints for workflows that have webhook triggers
 export const WEBHOOKS = {
   productIngest: `${N8N_BASE}/webhook/product-sales-ingest`,
   sendWhatsApp:  `${N8N_BASE}/webhook/send-whatsapp`,
+  runPipeline:   `${N8N_BASE}/webhook/run-pipeline`,
 }
 
 // All other workflows are triggered via the n8n public API
