@@ -13,6 +13,8 @@ export default function AddSupplierModal({ isOpen, onClose, onSuccess }) {
     email: '',
     delivery_time_days: '',
     supplies_categories: '',
+    reliability_score: 5,
+    price_score: 5,
   })
 
   if (!isOpen) return null
@@ -29,6 +31,11 @@ export default function AddSupplierModal({ isOpen, onClose, onSuccess }) {
     }
     setLoading(true)
     try {
+      const reliabilityNorm = formData.reliability_score / 10
+      const priceNorm = formData.price_score / 10
+      const composite = Math.round((reliabilityNorm * 0.6 + priceNorm * 0.4) * 100)
+      const grade = composite >= 80 ? 'A' : composite >= 60 ? 'B' : composite >= 40 ? 'C' : 'D'
+
       const { error } = await supabase.from('Suppliers').insert({
         supplier_id: formData.supplier_id,
         supplier_name: formData.supplier_name,
@@ -39,16 +46,17 @@ export default function AddSupplierModal({ isOpen, onClose, onSuccess }) {
         supplies_categories: formData.supplies_categories
           ? formData.supplies_categories.split(',').map(c => c.trim()).filter(Boolean)
           : [],
-        reliability_score: 0.5,
-        price_score: 0.5,
-        composite_score: 50,
-        supplier_grade: 'C',
+        reliability_score: reliabilityNorm,
+        price_score: priceNorm,
+        composite_score: composite,
+        supplier_grade: grade,
       })
       if (error) throw error
       toast.success('Supplier added successfully!')
       setFormData({
         supplier_id: '', supplier_name: '', contact_person: '',
         phone_number: '', email: '', delivery_time_days: '', supplies_categories: '',
+        reliability_score: 5, price_score: 5,
       })
       onSuccess?.()
       onClose()
@@ -151,6 +159,45 @@ export default function AddSupplierModal({ isOpen, onClose, onSuccess }) {
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
               />
               <p className="text-xs text-muted mt-1">Comma-separated</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-text mb-1.5">
+                Reliability Score: <span className="text-accent font-semibold">{formData.reliability_score}/10</span>
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="10"
+                step="1"
+                value={formData.reliability_score}
+                onChange={(e) => setFormData(prev => ({ ...prev, reliability_score: Number(e.target.value) }))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-accent"
+              />
+              <div className="flex justify-between text-xs text-muted mt-1">
+                <span>Poor</span>
+                <span>Excellent</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text mb-1.5">
+                Price Score: <span className="text-accent font-semibold">{formData.price_score}/10</span>
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="10"
+                step="1"
+                value={formData.price_score}
+                onChange={(e) => setFormData(prev => ({ ...prev, price_score: Number(e.target.value) }))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-accent"
+              />
+              <div className="flex justify-between text-xs text-muted mt-1">
+                <span>Expensive</span>
+                <span>Best Value</span>
+              </div>
             </div>
           </div>
 
