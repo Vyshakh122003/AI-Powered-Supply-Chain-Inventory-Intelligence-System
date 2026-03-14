@@ -97,12 +97,19 @@ export default function Login() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
 
-          <p className="text-center text-sm text-muted">
-            Don&apos;t have an account?{' '}
-            <Link to="/signup" className="text-accent font-medium hover:underline">
-              Sign Up
-            </Link>
-          </p>
+          <div className="text-center space-y-2">
+            <p className="text-sm text-muted">
+              <Link to="/reset-password" className="text-accent font-medium hover:underline">
+                Forgot password?
+              </Link>
+            </p>
+            <p className="text-sm text-muted">
+              Don&apos;t have an account?{' '}
+              <Link to="/signup" className="text-accent font-medium hover:underline">
+                Sign Up
+              </Link>
+            </p>
+          </div>
         </form>
       </div>
     </div>

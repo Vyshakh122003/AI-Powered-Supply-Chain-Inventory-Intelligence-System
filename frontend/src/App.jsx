@@ -3,8 +3,11 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
+import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import ResetPassword from './pages/ResetPassword'
+import Onboarding from './pages/Onboarding'
 import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
 import Alerts from './pages/Alerts'
@@ -12,6 +15,8 @@ import Reorder from './pages/Reorder'
 import Suppliers from './pages/Suppliers'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
+import QuickUpdate from './pages/QuickUpdate'
+import Deliveries from './pages/Deliveries'
 
 function App() {
   return (
@@ -33,8 +38,13 @@ function App() {
         />
         <Routes>
           {/* Public routes */}
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+
+          {/* Auth-required but no sidebar layout */}
+          <Route path="/onboarding" element={<Onboarding />} />
 
           {/* Protected routes with layout */}
           <Route
@@ -51,10 +61,12 @@ function App() {
             <Route path="/suppliers" element={<Suppliers />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/quick-update" element={<QuickUpdate />} />
+            <Route path="/deliveries" element={<Deliveries />} />
           </Route>
 
-          {/* Default redirect */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          {/* Default: unauthenticated → landing, authenticated → dashboard */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
