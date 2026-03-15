@@ -1,1 +1,430 @@
-{"updatedAt":"2026-03-14T05:56:48.818Z","createdAt":"2026-03-11T16:26:24.805Z","id":"JgDNR0tDWj0Z_DVfHB4Fo","name":"WF-02 Stockout Date Calculator","description":null,"active":true,"isArchived":false,"nodes":[{"parameters":{},"type":"n8n-nodes-base.manualTrigger","typeVersion":1,"position":[-736,-128],"id":"5049f667-324b-4dd1-851a-288ed142a605","name":"Manual Trigger"},{"parameters":{"operation":"getAll","tableId":"Products","returnAll":true},"type":"n8n-nodes-base.supabase","typeVersion":1,"position":[-448,-80],"id":"665e15e3-0f5a-4613-9643-6c93b222fd36","name":"Fetch All Products","credentials":{"supabaseApi":{"id":"cTHIcrIVh1Uh0w7G","name":"Supabase account"}}},{"parameters":{"jsCode":"const items = $input.all();\nconst today = new Date();\n\nreturn items.map(item => {\n  const p = item.json;\n  const stock = parseFloat(p.current_stock) || 0;\n  const sales = parseFloat(p.avg_daily_sales);\n\n  let days;\n\n  if (!sales || sales <= 0) {\n    days = 999;\n  } else if (stock === 0) {\n    days = 0;\n  } else {\n    days = Math.floor(stock / sales);\n  }\n\n  const d = new Date(today);\n  d.setDate(today.getDate() + days);\n  const stockoutDate = d.toISOString().split('T')[0];\n\n  console.log(`${p.product_name}: ${stock} units / ${sales} sales = ${days} days`);\n\n  return {\n    json: {\n      product_id: p.product_id,\n      days_to_stockout: days,\n      estimated_stockout_date: stockoutDate\n    }\n  };\n});"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[-240,-80],"id":"93a24ea3-d212-4402-a067-e34e5d94cf55","name":"Calculate Stockout Dates"},{"parameters":{"operation":"update","tableId":"Products","filters":{"conditions":[{"keyName":"product_id","condition":"eq","keyValue":"={{ $json.product_id }}"}]},"fieldsUi":{"fieldValues":[{"fieldId":"days_to_stockout","fieldValue":"={{ $json.days_to_stockout }}"},{"fieldId":"estimated_stockout_date","fieldValue":"={{ $json.estimated_stockout_date }}"}]}},"type":"n8n-nodes-base.supabase","typeVersion":1,"position":[-32,-80],"id":"34d23b12-175c-4a24-bb05-62e6f36877e0","name":"Update Products","credentials":{"supabaseApi":{"id":"cTHIcrIVh1Uh0w7G","name":"Supabase account"}}},{"parameters":{"inputSource":"passthrough"},"type":"n8n-nodes-base.executeWorkflowTrigger","typeVersion":1.1,"position":[-768,64],"id":"0f9c4903-d3ed-4c9b-a2a4-9a9cd291623a","name":"When Executed by Another Workflow"}],"connections":{"Manual Trigger":{"main":[[{"node":"Fetch All Products","type":"main","index":0}]]},"Fetch All Products":{"main":[[{"node":"Calculate Stockout Dates","type":"main","index":0}]]},"Calculate Stockout Dates":{"main":[[{"node":"Update Products","type":"main","index":0}]]},"When Executed by Another Workflow":{"main":[[{"node":"Fetch All Products","type":"main","index":0}]]}},"settings":{"executionOrder":"v1","availableInMCP":false,"timeSavedMode":"fixed","callerPolicy":"workflowsFromSameOwner"},"staticData":null,"meta":{"templateCredsSetupCompleted":true},"pinData":{},"versionId":"21d5f79d-fbbc-4410-97b9-2800a269e81d","activeVersionId":"21d5f79d-fbbc-4410-97b9-2800a269e81d","versionCounter":37,"triggerCount":0,"shared":[{"updatedAt":"2026-03-11T16:26:24.817Z","createdAt":"2026-03-11T16:26:24.817Z","role":"workflow:owner","workflowId":"JgDNR0tDWj0Z_DVfHB4Fo","projectId":"ilqDzvKBCaYiT4Cg","project":{"updatedAt":"2025-07-08T20:13:53.401Z","createdAt":"2025-07-08T19:51:26.738Z","id":"ilqDzvKBCaYiT4Cg","name":"Vyshakh Vijayan <vyshakhvponnachat@gmail.com>","type":"personal","icon":null,"description":null,"creatorId":"9e48b6f1-8e64-4176-8e7a-011246de5dea","projectRelations":[{"updatedAt":"2025-07-08T19:51:26.738Z","createdAt":"2025-07-08T19:51:26.738Z","userId":"9e48b6f1-8e64-4176-8e7a-011246de5dea","projectId":"ilqDzvKBCaYiT4Cg","user":{"updatedAt":"2026-03-14T05:50:53.000Z","createdAt":"2025-07-08T19:51:25.310Z","id":"9e48b6f1-8e64-4176-8e7a-011246de5dea","email":"vyshakhvponnachat@gmail.com","firstName":"Vyshakh","lastName":"Vijayan","personalizationAnswers":{"version":"v4","personalization_survey_submitted_at":"2025-07-08T20:14:28.526Z","personalization_survey_n8n_version":"1.100.1","automationGoalDevops":["other"],"automationGoalDevopsOther":"Projects","companySize":"personalUser","companyType":"education","role":"engineering","reportedSource":"google"},"settings":{"userActivated":true,"easyAIWorkflowOnboarded":true,"firstSuccessfulWorkflowId":"JgDNR0tDWj0Z_DVfHB4Fo","userActivatedAt":1773375331682},"disabled":false,"mfaEnabled":false,"lastActiveAt":"2026-03-14","isPending":false}}]}}],"tags":[],"activeVersion":{"updatedAt":"2026-03-14T05:56:28.000Z","createdAt":"2026-03-13T04:13:46.183Z","versionId":"21d5f79d-fbbc-4410-97b9-2800a269e81d","workflowId":"JgDNR0tDWj0Z_DVfHB4Fo","nodes":[{"parameters":{},"type":"n8n-nodes-base.manualTrigger","typeVersion":1,"position":[-736,-128],"id":"5049f667-324b-4dd1-851a-288ed142a605","name":"Manual Trigger"},{"parameters":{"operation":"getAll","tableId":"Products","returnAll":true},"type":"n8n-nodes-base.supabase","typeVersion":1,"position":[-448,-80],"id":"665e15e3-0f5a-4613-9643-6c93b222fd36","name":"Fetch All Products","credentials":{"supabaseApi":{"id":"cTHIcrIVh1Uh0w7G","name":"Supabase account"}}},{"parameters":{"jsCode":"const items = $input.all();\nconst today = new Date();\n\nreturn items.map(item => {\n  const p = item.json;\n  const stock = parseFloat(p.current_stock) || 0;\n  const sales = parseFloat(p.avg_daily_sales);\n\n  let days;\n\n  if (!sales || sales <= 0) {\n    days = 999;\n  } else if (stock === 0) {\n    days = 0;\n  } else {\n    days = Math.floor(stock / sales);\n  }\n\n  const d = new Date(today);\n  d.setDate(today.getDate() + days);\n  const stockoutDate = d.toISOString().split('T')[0];\n\n  console.log(`${p.product_name}: ${stock} units / ${sales} sales = ${days} days`);\n\n  return {\n    json: {\n      product_id: p.product_id,\n      days_to_stockout: days,\n      estimated_stockout_date: stockoutDate\n    }\n  };\n});"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[-240,-80],"id":"93a24ea3-d212-4402-a067-e34e5d94cf55","name":"Calculate Stockout Dates"},{"parameters":{"operation":"update","tableId":"Products","filters":{"conditions":[{"keyName":"product_id","condition":"eq","keyValue":"={{ $json.product_id }}"}]},"fieldsUi":{"fieldValues":[{"fieldId":"days_to_stockout","fieldValue":"={{ $json.days_to_stockout }}"},{"fieldId":"estimated_stockout_date","fieldValue":"={{ $json.estimated_stockout_date }}"}]}},"type":"n8n-nodes-base.supabase","typeVersion":1,"position":[-32,-80],"id":"34d23b12-175c-4a24-bb05-62e6f36877e0","name":"Update Products","credentials":{"supabaseApi":{"id":"cTHIcrIVh1Uh0w7G","name":"Supabase account"}}},{"parameters":{"inputSource":"passthrough"},"type":"n8n-nodes-base.executeWorkflowTrigger","typeVersion":1.1,"position":[-768,64],"id":"0f9c4903-d3ed-4c9b-a2a4-9a9cd291623a","name":"When Executed by Another Workflow"}],"connections":{"Manual Trigger":{"main":[[{"node":"Fetch All Products","type":"main","index":0}]]},"Fetch All Products":{"main":[[{"node":"Calculate Stockout Dates","type":"main","index":0}]]},"Calculate Stockout Dates":{"main":[[{"node":"Update Products","type":"main","index":0}]]},"When Executed by Another Workflow":{"main":[[{"node":"Fetch All Products","type":"main","index":0}]]}},"authors":"Vyshakh Vijayan","name":"Version 21d5f79d","description":"","autosaved":true,"workflowPublishHistory":[{"createdAt":"2026-03-14T05:56:28.450Z","id":6,"workflowId":"JgDNR0tDWj0Z_DVfHB4Fo","versionId":"21d5f79d-fbbc-4410-97b9-2800a269e81d","event":"activated","userId":"9e48b6f1-8e64-4176-8e7a-011246de5dea"},{"createdAt":"2026-03-14T05:56:48.922Z","id":7,"workflowId":"JgDNR0tDWj0Z_DVfHB4Fo","versionId":"21d5f79d-fbbc-4410-97b9-2800a269e81d","event":"activated","userId":"9e48b6f1-8e64-4176-8e7a-011246de5dea"}]}}
+{
+  "updatedAt": "2026-03-14T05:56:48.818Z",
+  "createdAt": "2026-03-11T16:26:24.805Z",
+  "id": "JgDNR0tDWj0Z_DVfHB4Fo",
+  "name": "WF-02 Stockout Date Calculator",
+  "description": "Calculates days-to-stockout and estimated stockout dates for all products. Divides current_stock by avg_daily_sales to project when each product will run out. Called daily by WF-08 Daily Orchestrator.",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -736,
+        -128
+      ],
+      "id": "5049f667-324b-4dd1-851a-288ed142a605",
+      "name": "Manual Trigger",
+      "notesInFlow": true,
+      "notes": "Manual entry point for testing.\nUse this to run the stockout calculator independently."
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "Products",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -448,
+        -80
+      ],
+      "id": "665e15e3-0f5a-4613-9643-6c93b222fd36",
+      "name": "Fetch All Products",
+      "credentials": {
+        "supabaseApi": {
+          "id": "cTHIcrIVh1Uh0w7G",
+          "name": "Supabase account"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "Retrieves all product rows from the Supabase Products table.\nReturns current_stock, avg_daily_sales, and product_id for each."
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst today = new Date();\n\nreturn items.map(item => {\n  const p = item.json;\n  const stock = parseFloat(p.current_stock) || 0;\n  const sales = parseFloat(p.avg_daily_sales);\n\n  let days;\n\n  if (!sales || sales <= 0) {\n    days = 999;\n  } else if (stock === 0) {\n    days = 0;\n  } else {\n    days = Math.floor(stock / sales);\n  }\n\n  const d = new Date(today);\n  d.setDate(today.getDate() + days);\n  const stockoutDate = d.toISOString().split('T')[0];\n\n  console.log(`${p.product_name}: ${stock} units / ${sales} sales = ${days} days`);\n\n  return {\n    json: {\n      product_id: p.product_id,\n      days_to_stockout: days,\n      estimated_stockout_date: stockoutDate\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        -80
+      ],
+      "id": "93a24ea3-d212-4402-a067-e34e5d94cf55",
+      "name": "Calculate Stockout Dates",
+      "notesInFlow": true,
+      "notes": "JavaScript logic that computes for each product:\n- days_to_stockout = floor(current_stock / avg_daily_sales)\n- estimated_stockout_date = today + days_to_stockout\n\nEdge cases: sales=0 → 999 days, stock=0 → 0 days."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "Products",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "product_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.product_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "days_to_stockout",
+              "fieldValue": "={{ $json.days_to_stockout }}"
+            },
+            {
+              "fieldId": "estimated_stockout_date",
+              "fieldValue": "={{ $json.estimated_stockout_date }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        -80
+      ],
+      "id": "34d23b12-175c-4a24-bb05-62e6f36877e0",
+      "name": "Update Products",
+      "credentials": {
+        "supabaseApi": {
+          "id": "cTHIcrIVh1Uh0w7G",
+          "name": "Supabase account"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "Writes the calculated days_to_stockout and estimated_stockout_date back to each product row in the Products table."
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -768,
+        64
+      ],
+      "id": "0f9c4903-d3ed-4c9b-a2a4-9a9cd291623a",
+      "name": "When Executed by Another Workflow",
+      "notesInFlow": true,
+      "notes": "Sub-workflow entry point.\nCalled by WF-08 Daily Orchestrator during the daily pipeline run."
+    },
+    {
+      "parameters": {
+        "width": 520,
+        "height": 260,
+        "content": "## WF-02: Stockout Date Calculator\n\n**Triggers:** Manual execution or sub-workflow call from WF-08\n\n**Purpose:** Projects when each product will run out of stock based on current inventory levels and average daily sales velocity.\n\n**Calculation:**\n- `days_to_stockout = floor(current_stock / avg_daily_sales)`\n- `estimated_stockout_date = today + days_to_stockout`\n\n**Edge cases:**\n- No sales data (avg=0) → 999 days (safe default)\n- Zero stock → 0 days (immediate stockout)"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        -400
+      ],
+      "id": "sticky-wf02-overview",
+      "name": "Sticky Note"
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch All Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch All Products": {
+      "main": [
+        [
+          {
+            "node": "Calculate Stockout Dates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Stockout Dates": {
+      "main": [
+        [
+          {
+            "node": "Update Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Fetch All Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "21d5f79d-fbbc-4410-97b9-2800a269e81d",
+  "activeVersionId": "21d5f79d-fbbc-4410-97b9-2800a269e81d",
+  "versionCounter": 37,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-03-11T16:26:24.817Z",
+      "createdAt": "2026-03-11T16:26:24.817Z",
+      "role": "workflow:owner",
+      "workflowId": "JgDNR0tDWj0Z_DVfHB4Fo",
+      "projectId": "ilqDzvKBCaYiT4Cg",
+      "project": {
+        "updatedAt": "2025-07-08T20:13:53.401Z",
+        "createdAt": "2025-07-08T19:51:26.738Z",
+        "id": "ilqDzvKBCaYiT4Cg",
+        "name": "Vyshakh Vijayan <vyshakhvponnachat@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
+        "projectRelations": [
+          {
+            "updatedAt": "2025-07-08T19:51:26.738Z",
+            "createdAt": "2025-07-08T19:51:26.738Z",
+            "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
+            "projectId": "ilqDzvKBCaYiT4Cg",
+            "user": {
+              "updatedAt": "2026-03-14T05:50:53.000Z",
+              "createdAt": "2025-07-08T19:51:25.310Z",
+              "id": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
+              "email": "vyshakhvponnachat@gmail.com",
+              "firstName": "Vyshakh",
+              "lastName": "Vijayan",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2025-07-08T20:14:28.526Z",
+                "personalization_survey_n8n_version": "1.100.1",
+                "automationGoalDevops": [
+                  "other"
+                ],
+                "automationGoalDevopsOther": "Projects",
+                "companySize": "personalUser",
+                "companyType": "education",
+                "role": "engineering",
+                "reportedSource": "google"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "JgDNR0tDWj0Z_DVfHB4Fo",
+                "userActivatedAt": 1773375331682
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-03-14",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-03-14T05:56:28.000Z",
+    "createdAt": "2026-03-13T04:13:46.183Z",
+    "versionId": "21d5f79d-fbbc-4410-97b9-2800a269e81d",
+    "workflowId": "JgDNR0tDWj0Z_DVfHB4Fo",
+    "nodes": [
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          -736,
+          -128
+        ],
+        "id": "5049f667-324b-4dd1-851a-288ed142a605",
+        "name": "Manual Trigger"
+      },
+      {
+        "parameters": {
+          "operation": "getAll",
+          "tableId": "Products",
+          "returnAll": true
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          -448,
+          -80
+        ],
+        "id": "665e15e3-0f5a-4613-9643-6c93b222fd36",
+        "name": "Fetch All Products",
+        "credentials": {
+          "supabaseApi": {
+            "id": "cTHIcrIVh1Uh0w7G",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const items = $input.all();\nconst today = new Date();\n\nreturn items.map(item => {\n  const p = item.json;\n  const stock = parseFloat(p.current_stock) || 0;\n  const sales = parseFloat(p.avg_daily_sales);\n\n  let days;\n\n  if (!sales || sales <= 0) {\n    days = 999;\n  } else if (stock === 0) {\n    days = 0;\n  } else {\n    days = Math.floor(stock / sales);\n  }\n\n  const d = new Date(today);\n  d.setDate(today.getDate() + days);\n  const stockoutDate = d.toISOString().split('T')[0];\n\n  console.log(`${p.product_name}: ${stock} units / ${sales} sales = ${days} days`);\n\n  return {\n    json: {\n      product_id: p.product_id,\n      days_to_stockout: days,\n      estimated_stockout_date: stockoutDate\n    }\n  };\n});"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -240,
+          -80
+        ],
+        "id": "93a24ea3-d212-4402-a067-e34e5d94cf55",
+        "name": "Calculate Stockout Dates"
+      },
+      {
+        "parameters": {
+          "operation": "update",
+          "tableId": "Products",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "product_id",
+                "condition": "eq",
+                "keyValue": "={{ $json.product_id }}"
+              }
+            ]
+          },
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "days_to_stockout",
+                "fieldValue": "={{ $json.days_to_stockout }}"
+              },
+              {
+                "fieldId": "estimated_stockout_date",
+                "fieldValue": "={{ $json.estimated_stockout_date }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          -32,
+          -80
+        ],
+        "id": "34d23b12-175c-4a24-bb05-62e6f36877e0",
+        "name": "Update Products",
+        "credentials": {
+          "supabaseApi": {
+            "id": "cTHIcrIVh1Uh0w7G",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "inputSource": "passthrough"
+        },
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          -768,
+          64
+        ],
+        "id": "0f9c4903-d3ed-4c9b-a2a4-9a9cd291623a",
+        "name": "When Executed by Another Workflow"
+      }
+    ],
+    "connections": {
+      "Manual Trigger": {
+        "main": [
+          [
+            {
+              "node": "Fetch All Products",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch All Products": {
+        "main": [
+          [
+            {
+              "node": "Calculate Stockout Dates",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Calculate Stockout Dates": {
+        "main": [
+          [
+            {
+              "node": "Update Products",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "When Executed by Another Workflow": {
+        "main": [
+          [
+            {
+              "node": "Fetch All Products",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Vyshakh Vijayan",
+    "name": "Version 21d5f79d",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-14T05:56:28.450Z",
+        "id": 6,
+        "workflowId": "JgDNR0tDWj0Z_DVfHB4Fo",
+        "versionId": "21d5f79d-fbbc-4410-97b9-2800a269e81d",
+        "event": "activated",
+        "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
+      },
+      {
+        "createdAt": "2026-03-14T05:56:48.922Z",
+        "id": 7,
+        "workflowId": "JgDNR0tDWj0Z_DVfHB4Fo",
+        "versionId": "21d5f79d-fbbc-4410-97b9-2800a269e81d",
+        "event": "activated",
+        "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
+      }
+    ]
+  }
+}

@@ -1,1 +1,881 @@
-{"updatedAt":"2026-03-14T05:57:24.698Z","createdAt":"2026-03-11T18:42:50.420Z","id":"ivm5yQJMfSZn0VrNt40RB","name":"WF-05 AI Reorder Intelligence","description":null,"active":true,"isArchived":false,"nodes":[{"parameters":{},"type":"n8n-nodes-base.manualTrigger","typeVersion":1,"position":[-688,0],"id":"2f0cc3b0-89f0-4d6f-8e91-4552ae126c90","name":"Manual Trigger"},{"parameters":{"operation":"getAll","tableId":"Products","returnAll":true,"filters":{"conditions":[{"keyName":"risk_level","condition":"neq","keyValue":"LOW"}]}},"type":"n8n-nodes-base.supabase","typeVersion":1,"position":[-464,-96],"id":"b9c2d7a0-6fca-4a2f-b46f-e8547379440f","name":"Fetch At-Risk Products","credentials":{"supabaseApi":{"id":"cTHIcrIVh1Uh0w7G","name":"Supabase account"}}},{"parameters":{"operation":"getAll","tableId":"Suppliers","returnAll":true},"type":"n8n-nodes-base.supabase","typeVersion":1,"position":[-464,96],"id":"77c9237f-ffe6-4e17-9d70-4e49175e6ef2","name":"Fetch All Suppliers","credentials":{"supabaseApi":{"id":"cTHIcrIVh1Uh0w7G","name":"Supabase account"}}},{"parameters":{},"type":"n8n-nodes-base.merge","typeVersion":3.2,"position":[-96,-32],"id":"5ad93217-7d56-49fb-a2c1-09bb76611026","name":"Merge"},{"parameters":{"jsCode":"const products = $('Fetch At-Risk Products').all().map(i => i.json);\nconst suppliers = $('Fetch All Suppliers').all().map(i => i.json);\n\nconst atRisk = products.filter(p =>\n  p.risk_level === 'HIGH' || p.risk_level === 'MEDIUM' || p.days_to_stockout <= 7\n);\n\nif (atRisk.length === 0) {\n  return [{ json: { skip: true, message: 'No at-risk products found' } }];\n}\n\nconst productLines = atRisk.map(p =>\n  `- product_id: ${p.product_id} | name: ${p.product_name} | category: ${p.category || 'General'} | stock: ${p.current_stock} | daily_sales: ${p.avg_daily_sales} | days_left: ${p.days_to_stockout} | risk: ${p.risk_level}`\n).join('\\n');\n\nconst supplierLines = suppliers.map(s =>\n  `- supplier_id: ${s.supplier_id} | name: ${s.supplier_name} | grade: ${s.supplier_grade} | delivers_in: ${s.delivery_time_days} days | supplies: ${s.supplies_categories}`\n).join('\\n');\n\nconst prompt = `You are an inventory manager for a small Indian kirana store.\n\nAT-RISK PRODUCTS:\n${productLines}\n\nAVAILABLE SUPPLIERS:\n${supplierLines}\n\nFor each at-risk product, generate a reorder suggestion. Use the exact product_id and supplier_id from the data above. Pick the best supplier based on grade and whether they supply that product category. Order quantity = 30 x daily_sales.\n\nRespond ONLY with a valid JSON array. No explanation. No markdown. No code fences.\nFormat: [{\"product_id\":\"TEA_001\",\"supplier_id\":\"SUP_001\",\"suggested_quantity\":90,\"reason\":\"One sentence.\"}]`;\n\nconst requestBody = JSON.stringify({\n  model: \"llama-3.1-8b-instant\",\n  max_tokens: 1000,\n  temperature: 0.3,\n  messages: [{ role: \"user\", content: prompt }]\n});\n\nreturn [{ json: { requestBody, atRisk, suppliers } }];"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[112,-32],"id":"5f7103aa-c713-47c1-bbca-7471a53337bf","name":"Build AI Prompt"},{"parameters":{"method":"POST","url":"https://api.groq.com/openai/v1/chat/completions","sendHeaders":true,"headerParameters":{"parameters":[{"name":"Authorization","value":"Bearer REDACTED_GROQ_API_KEY"},{"name":"Content-Type","value":"application/json"}]},"sendBody":true,"specifyBody":"json","jsonBody":"={{ $json.requestBody }}","options":{}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.3,"position":[320,-32],"id":"87c97d4d-837d-4110-9ca7-5f8997883fb7","name":"HTTP Request"},{"parameters":{"jsCode":"const response = $input.first().json;\nconst context = $('Build AI Prompt').first().json;\n\nif (context.skip) {\n  return [{ json: { message: context.message, saved: 0 } }];\n}\n\nconst atRisk    = context.atRisk;\nconst suppliers = context.suppliers;\n\n// Build a map of product_name → product_id for fixing AI response\nconst nameToId = {};\natRisk.forEach(p => {\n  nameToId[p.product_name.toLowerCase()] = p.product_id;\n});\n\nlet suggestions = [];\ntry {\n  const content = response.choices[0].message.content;\n  const cleaned = content.trim()\n    .replace(/^```json\\n?/, '')\n    .replace(/^```\\n?/, '')\n    .replace(/\\n?```$/, '');\n  suggestions = JSON.parse(cleaned);\n} catch(e) {\n  console.log('AI parse failed, using fallback:', e.message);\n  suggestions = atRisk.map(p => {\n    const cat = (p.category || '').toLowerCase();\n    const best = suppliers\n      .filter(s => s.supplies_categories && s.supplies_categories.toLowerCase().includes(cat))\n      .sort((a,b) => (b.composite_score||0) - (a.composite_score||0))[0]\n      || suppliers[0];\n    return {\n      product_id: p.product_id,\n      supplier_id: best.supplier_id,\n      suggested_quantity: Math.ceil((p.avg_daily_sales || 1) * 30),\n      reason: `Stock critically low (${p.days_to_stockout} days remaining). Ordering 30-day supply.`\n    };\n  });\n}\n\nconst now = new Date().toISOString();\n\nreturn suggestions.map(s => {\n  // Fix: if AI returned product_name instead of product_id, convert it\n  let pid = s.product_id;\n  if (pid && !pid.includes('_')) {\n    const fixed = nameToId[pid.toLowerCase()];\n    if (fixed) pid = fixed;\n  }\n\n  return {\n    json: {\n      product_id:         pid,\n      supplier_id:        s.supplier_id,\n      suggested_quantity: s.suggested_quantity,\n      reason:             s.reason,\n      status:             'Pending',\n      ai_generated:       true,\n      suggestion_date:    now\n    }\n  };\n});"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[528,-32],"id":"d29660e6-307e-4c65-adbc-6295b46cabbd","name":"Code in JavaScript"},{"parameters":{"tableId":"Reorder Suggestions","fieldsUi":{"fieldValues":[{"fieldId":"product_id","fieldValue":"={{ $json.product_id }}"},{"fieldId":"supplier_id","fieldValue":"={{ $json.supplier_id }}"},{"fieldId":"suggested_quantity","fieldValue":"={{ $json.suggested_quantity }}"},{"fieldId":"reason","fieldValue":"={{ $json.reason }}"},{"fieldId":"status","fieldValue":"={{ $json.status }}"},{"fieldId":"ai_generated","fieldValue":"={{ $json.ai_generated }}"},{"fieldId":"suggestion_date","fieldValue":"={{ $json.suggestion_date }}"}]}},"type":"n8n-nodes-base.supabase","typeVersion":1,"position":[1152,-32],"id":"cf974c6e-f590-414e-a505-c439bef2b2fb","name":"Create a row","credentials":{"supabaseApi":{"id":"cTHIcrIVh1Uh0w7G","name":"Supabase account"}}},{"parameters":{"inputSource":"passthrough"},"type":"n8n-nodes-base.executeWorkflowTrigger","typeVersion":1.1,"position":[-688,-160],"id":"ea013653-a004-4b73-b7ee-52e355477d54","name":"When Executed by Another Workflow"},{"parameters":{"method":"DELETE","url":"https://xixdkapttirdedoivskx.supabase.co/rest/v1/Reorder%20Suggestions?id=neq.00000000-0000-0000-0000-000000000000","sendHeaders":true,"headerParameters":{"parameters":[{"name":"apikey","value":"REDACTED_SUPABASE_ANON_KEY"},{"name":"Authorization","value":"Bearer REDACTED_SUPABASE_ANON_KEY"}]},"options":{}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.3,"position":[736,-32],"id":"4052a7bf-7d17-4ab6-bf85-08c00c3efb26","name":"HTTP Request1"},{"parameters":{"jsCode":"return $('Code in JavaScript').all();"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[944,-32],"id":"8ba81601-6590-4718-8a3f-caf3dffd9ecf","name":"Restore Data"}],"connections":{"Manual Trigger":{"main":[[{"node":"Fetch All Suppliers","type":"main","index":0},{"node":"Fetch At-Risk Products","type":"main","index":0}]]},"Fetch At-Risk Products":{"main":[[{"node":"Merge","type":"main","index":0}]]},"Fetch All Suppliers":{"main":[[{"node":"Merge","type":"main","index":1}]]},"Merge":{"main":[[{"node":"Build AI Prompt","type":"main","index":0}]]},"Build AI Prompt":{"main":[[{"node":"HTTP Request","type":"main","index":0}]]},"HTTP Request":{"main":[[{"node":"Code in JavaScript","type":"main","index":0}]]},"Code in JavaScript":{"main":[[{"node":"HTTP Request1","type":"main","index":0}]]},"When Executed by Another Workflow":{"main":[[{"node":"Fetch At-Risk Products","type":"main","index":0},{"node":"Fetch All Suppliers","type":"main","index":0}]]},"HTTP Request1":{"main":[[{"node":"Restore Data","type":"main","index":0}]]},"Restore Data":{"main":[[{"node":"Create a row","type":"main","index":0}]]}},"settings":{"executionOrder":"v1","availableInMCP":false,"timeSavedMode":"fixed","callerPolicy":"workflowsFromSameOwner"},"staticData":null,"meta":{"templateCredsSetupCompleted":true},"pinData":{},"versionId":"4866d200-1ad2-49fa-b6b9-3b5ca7103046","activeVersionId":"4866d200-1ad2-49fa-b6b9-3b5ca7103046","versionCounter":118,"triggerCount":0,"shared":[{"updatedAt":"2026-03-11T18:42:50.420Z","createdAt":"2026-03-11T18:42:50.420Z","role":"workflow:owner","workflowId":"ivm5yQJMfSZn0VrNt40RB","projectId":"ilqDzvKBCaYiT4Cg","project":{"updatedAt":"2025-07-08T20:13:53.401Z","createdAt":"2025-07-08T19:51:26.738Z","id":"ilqDzvKBCaYiT4Cg","name":"Vyshakh Vijayan <vyshakhvponnachat@gmail.com>","type":"personal","icon":null,"description":null,"creatorId":"9e48b6f1-8e64-4176-8e7a-011246de5dea","projectRelations":[{"updatedAt":"2025-07-08T19:51:26.738Z","createdAt":"2025-07-08T19:51:26.738Z","userId":"9e48b6f1-8e64-4176-8e7a-011246de5dea","projectId":"ilqDzvKBCaYiT4Cg","user":{"updatedAt":"2026-03-14T05:50:53.000Z","createdAt":"2025-07-08T19:51:25.310Z","id":"9e48b6f1-8e64-4176-8e7a-011246de5dea","email":"vyshakhvponnachat@gmail.com","firstName":"Vyshakh","lastName":"Vijayan","personalizationAnswers":{"version":"v4","personalization_survey_submitted_at":"2025-07-08T20:14:28.526Z","personalization_survey_n8n_version":"1.100.1","automationGoalDevops":["other"],"automationGoalDevopsOther":"Projects","companySize":"personalUser","companyType":"education","role":"engineering","reportedSource":"google"},"settings":{"userActivated":true,"easyAIWorkflowOnboarded":true,"firstSuccessfulWorkflowId":"JgDNR0tDWj0Z_DVfHB4Fo","userActivatedAt":1773375331682},"disabled":false,"mfaEnabled":false,"lastActiveAt":"2026-03-14","isPending":false}}]}}],"tags":[],"activeVersion":{"updatedAt":"2026-03-14T05:57:21.000Z","createdAt":"2026-03-13T14:31:02.829Z","versionId":"4866d200-1ad2-49fa-b6b9-3b5ca7103046","workflowId":"ivm5yQJMfSZn0VrNt40RB","nodes":[{"parameters":{},"type":"n8n-nodes-base.manualTrigger","typeVersion":1,"position":[-688,0],"id":"2f0cc3b0-89f0-4d6f-8e91-4552ae126c90","name":"Manual Trigger"},{"parameters":{"operation":"getAll","tableId":"Products","returnAll":true,"filters":{"conditions":[{"keyName":"risk_level","condition":"neq","keyValue":"LOW"}]}},"type":"n8n-nodes-base.supabase","typeVersion":1,"position":[-464,-96],"id":"b9c2d7a0-6fca-4a2f-b46f-e8547379440f","name":"Fetch At-Risk Products","credentials":{"supabaseApi":{"id":"cTHIcrIVh1Uh0w7G","name":"Supabase account"}}},{"parameters":{"operation":"getAll","tableId":"Suppliers","returnAll":true},"type":"n8n-nodes-base.supabase","typeVersion":1,"position":[-464,96],"id":"77c9237f-ffe6-4e17-9d70-4e49175e6ef2","name":"Fetch All Suppliers","credentials":{"supabaseApi":{"id":"cTHIcrIVh1Uh0w7G","name":"Supabase account"}}},{"parameters":{},"type":"n8n-nodes-base.merge","typeVersion":3.2,"position":[-96,-32],"id":"5ad93217-7d56-49fb-a2c1-09bb76611026","name":"Merge"},{"parameters":{"jsCode":"const products = $('Fetch At-Risk Products').all().map(i => i.json);\nconst suppliers = $('Fetch All Suppliers').all().map(i => i.json);\n\nconst atRisk = products.filter(p =>\n  p.risk_level === 'HIGH' || p.risk_level === 'MEDIUM' || p.days_to_stockout <= 7\n);\n\nif (atRisk.length === 0) {\n  return [{ json: { skip: true, message: 'No at-risk products found' } }];\n}\n\nconst productLines = atRisk.map(p =>\n  `- product_id: ${p.product_id} | name: ${p.product_name} | category: ${p.category || 'General'} | stock: ${p.current_stock} | daily_sales: ${p.avg_daily_sales} | days_left: ${p.days_to_stockout} | risk: ${p.risk_level}`\n).join('\\n');\n\nconst supplierLines = suppliers.map(s =>\n  `- supplier_id: ${s.supplier_id} | name: ${s.supplier_name} | grade: ${s.supplier_grade} | delivers_in: ${s.delivery_time_days} days | supplies: ${s.supplies_categories}`\n).join('\\n');\n\nconst prompt = `You are an inventory manager for a small Indian kirana store.\n\nAT-RISK PRODUCTS:\n${productLines}\n\nAVAILABLE SUPPLIERS:\n${supplierLines}\n\nFor each at-risk product, generate a reorder suggestion. Use the exact product_id and supplier_id from the data above. Pick the best supplier based on grade and whether they supply that product category. Order quantity = 30 x daily_sales.\n\nRespond ONLY with a valid JSON array. No explanation. No markdown. No code fences.\nFormat: [{\"product_id\":\"TEA_001\",\"supplier_id\":\"SUP_001\",\"suggested_quantity\":90,\"reason\":\"One sentence.\"}]`;\n\nconst requestBody = JSON.stringify({\n  model: \"llama-3.1-8b-instant\",\n  max_tokens: 1000,\n  temperature: 0.3,\n  messages: [{ role: \"user\", content: prompt }]\n});\n\nreturn [{ json: { requestBody, atRisk, suppliers } }];"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[112,-32],"id":"5f7103aa-c713-47c1-bbca-7471a53337bf","name":"Build AI Prompt"},{"parameters":{"method":"POST","url":"https://api.groq.com/openai/v1/chat/completions","sendHeaders":true,"headerParameters":{"parameters":[{"name":"Authorization","value":"Bearer REDACTED_GROQ_API_KEY"},{"name":"Content-Type","value":"application/json"}]},"sendBody":true,"specifyBody":"json","jsonBody":"={{ $json.requestBody }}","options":{}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.3,"position":[320,-32],"id":"87c97d4d-837d-4110-9ca7-5f8997883fb7","name":"HTTP Request"},{"parameters":{"jsCode":"const response = $input.first().json;\nconst context = $('Build AI Prompt').first().json;\n\nif (context.skip) {\n  return [{ json: { message: context.message, saved: 0 } }];\n}\n\nconst atRisk    = context.atRisk;\nconst suppliers = context.suppliers;\n\n// Build a map of product_name → product_id for fixing AI response\nconst nameToId = {};\natRisk.forEach(p => {\n  nameToId[p.product_name.toLowerCase()] = p.product_id;\n});\n\nlet suggestions = [];\ntry {\n  const content = response.choices[0].message.content;\n  const cleaned = content.trim()\n    .replace(/^```json\\n?/, '')\n    .replace(/^```\\n?/, '')\n    .replace(/\\n?```$/, '');\n  suggestions = JSON.parse(cleaned);\n} catch(e) {\n  console.log('AI parse failed, using fallback:', e.message);\n  suggestions = atRisk.map(p => {\n    const cat = (p.category || '').toLowerCase();\n    const best = suppliers\n      .filter(s => s.supplies_categories && s.supplies_categories.toLowerCase().includes(cat))\n      .sort((a,b) => (b.composite_score||0) - (a.composite_score||0))[0]\n      || suppliers[0];\n    return {\n      product_id: p.product_id,\n      supplier_id: best.supplier_id,\n      suggested_quantity: Math.ceil((p.avg_daily_sales || 1) * 30),\n      reason: `Stock critically low (${p.days_to_stockout} days remaining). Ordering 30-day supply.`\n    };\n  });\n}\n\nconst now = new Date().toISOString();\n\nreturn suggestions.map(s => {\n  // Fix: if AI returned product_name instead of product_id, convert it\n  let pid = s.product_id;\n  if (pid && !pid.includes('_')) {\n    const fixed = nameToId[pid.toLowerCase()];\n    if (fixed) pid = fixed;\n  }\n\n  return {\n    json: {\n      product_id:         pid,\n      supplier_id:        s.supplier_id,\n      suggested_quantity: s.suggested_quantity,\n      reason:             s.reason,\n      status:             'Pending',\n      ai_generated:       true,\n      suggestion_date:    now\n    }\n  };\n});"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[528,-32],"id":"d29660e6-307e-4c65-adbc-6295b46cabbd","name":"Code in JavaScript"},{"parameters":{"tableId":"Reorder Suggestions","fieldsUi":{"fieldValues":[{"fieldId":"product_id","fieldValue":"={{ $json.product_id }}"},{"fieldId":"supplier_id","fieldValue":"={{ $json.supplier_id }}"},{"fieldId":"suggested_quantity","fieldValue":"={{ $json.suggested_quantity }}"},{"fieldId":"reason","fieldValue":"={{ $json.reason }}"},{"fieldId":"status","fieldValue":"={{ $json.status }}"},{"fieldId":"ai_generated","fieldValue":"={{ $json.ai_generated }}"},{"fieldId":"suggestion_date","fieldValue":"={{ $json.suggestion_date }}"}]}},"type":"n8n-nodes-base.supabase","typeVersion":1,"position":[1152,-32],"id":"cf974c6e-f590-414e-a505-c439bef2b2fb","name":"Create a row","credentials":{"supabaseApi":{"id":"cTHIcrIVh1Uh0w7G","name":"Supabase account"}}},{"parameters":{"inputSource":"passthrough"},"type":"n8n-nodes-base.executeWorkflowTrigger","typeVersion":1.1,"position":[-688,-160],"id":"ea013653-a004-4b73-b7ee-52e355477d54","name":"When Executed by Another Workflow"},{"parameters":{"method":"DELETE","url":"https://xixdkapttirdedoivskx.supabase.co/rest/v1/Reorder%20Suggestions?id=neq.00000000-0000-0000-0000-000000000000","sendHeaders":true,"headerParameters":{"parameters":[{"name":"apikey","value":"REDACTED_SUPABASE_ANON_KEY"},{"name":"Authorization","value":"Bearer REDACTED_SUPABASE_ANON_KEY"}]},"options":{}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.3,"position":[736,-32],"id":"4052a7bf-7d17-4ab6-bf85-08c00c3efb26","name":"HTTP Request1"},{"parameters":{"jsCode":"return $('Code in JavaScript').all();"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[944,-32],"id":"8ba81601-6590-4718-8a3f-caf3dffd9ecf","name":"Restore Data"}],"connections":{"Manual Trigger":{"main":[[{"node":"Fetch All Suppliers","type":"main","index":0},{"node":"Fetch At-Risk Products","type":"main","index":0}]]},"Fetch At-Risk Products":{"main":[[{"node":"Merge","type":"main","index":0}]]},"Fetch All Suppliers":{"main":[[{"node":"Merge","type":"main","index":1}]]},"Merge":{"main":[[{"node":"Build AI Prompt","type":"main","index":0}]]},"Build AI Prompt":{"main":[[{"node":"HTTP Request","type":"main","index":0}]]},"HTTP Request":{"main":[[{"node":"Code in JavaScript","type":"main","index":0}]]},"Code in JavaScript":{"main":[[{"node":"HTTP Request1","type":"main","index":0}]]},"When Executed by Another Workflow":{"main":[[{"node":"Fetch At-Risk Products","type":"main","index":0},{"node":"Fetch All Suppliers","type":"main","index":0}]]},"HTTP Request1":{"main":[[{"node":"Restore Data","type":"main","index":0}]]},"Restore Data":{"main":[[{"node":"Create a row","type":"main","index":0}]]}},"authors":"Vyshakh Vijayan","name":"Version 4866d200","description":"","autosaved":true,"workflowPublishHistory":[{"createdAt":"2026-03-14T05:57:21.664Z","id":12,"workflowId":"ivm5yQJMfSZn0VrNt40RB","versionId":"4866d200-1ad2-49fa-b6b9-3b5ca7103046","event":"activated","userId":"9e48b6f1-8e64-4176-8e7a-011246de5dea"},{"createdAt":"2026-03-14T05:57:24.783Z","id":13,"workflowId":"ivm5yQJMfSZn0VrNt40RB","versionId":"4866d200-1ad2-49fa-b6b9-3b5ca7103046","event":"activated","userId":"9e48b6f1-8e64-4176-8e7a-011246de5dea"}]}}
+{
+  "updatedAt": "2026-03-14T05:57:24.698Z",
+  "createdAt": "2026-03-11T18:42:50.420Z",
+  "id": "ivm5yQJMfSZn0VrNt40RB",
+  "name": "WF-05 AI Reorder Intelligence",
+  "description": "AI-powered reorder intelligence using Groq LLM (Llama 3.1 8B). Fetches at-risk products and supplier data, constructs a detailed prompt, calls the LLM for reorder recommendations (quantities, suppliers, urgency), then stores suggestions in Supabase. Called daily by WF-08 after risk classification.",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -688,
+        0
+      ],
+      "id": "2f0cc3b0-89f0-4d6f-8e91-4552ae126c90",
+      "name": "Manual Trigger",
+      "notes": "Manual entry point for testing.\nRun to generate AI reorder suggestions independently.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "Products",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "risk_level",
+              "condition": "neq",
+              "keyValue": "LOW"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        -96
+      ],
+      "id": "b9c2d7a0-6fca-4a2f-b46f-e8547379440f",
+      "name": "Fetch At-Risk Products",
+      "credentials": {
+        "supabaseApi": {
+          "id": "cTHIcrIVh1Uh0w7G",
+          "name": "Supabase account"
+        }
+      },
+      "notes": "Fetches products where risk_level is not LOW from Supabase.\nThese are the HIGH, MEDIUM, and UNKNOWN risk products that may need reordering.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "Suppliers",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        96
+      ],
+      "id": "77c9237f-ffe6-4e17-9d70-4e49175e6ef2",
+      "name": "Fetch All Suppliers",
+      "credentials": {
+        "supabaseApi": {
+          "id": "cTHIcrIVh1Uh0w7G",
+          "name": "Supabase account"
+        }
+      },
+      "notes": "Fetches all supplier records from the Suppliers table.\nSupplier data (grades, reliability, pricing) is included in the AI prompt for informed recommendations.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -96,
+        -32
+      ],
+      "id": "5ad93217-7d56-49fb-a2c1-09bb76611026",
+      "name": "Merge",
+      "notes": "Combines the at-risk products and suppliers data streams into a single pipeline for prompt construction.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const products = $('Fetch At-Risk Products').all().map(i => i.json);\nconst suppliers = $('Fetch All Suppliers').all().map(i => i.json);\n\nconst atRisk = products.filter(p =>\n  p.risk_level === 'HIGH' || p.risk_level === 'MEDIUM' || p.days_to_stockout <= 7\n);\n\nif (atRisk.length === 0) {\n  return [{ json: { skip: true, message: 'No at-risk products found' } }];\n}\n\nconst productLines = atRisk.map(p =>\n  `- product_id: ${p.product_id} | name: ${p.product_name} | category: ${p.category || 'General'} | stock: ${p.current_stock} | daily_sales: ${p.avg_daily_sales} | days_left: ${p.days_to_stockout} | risk: ${p.risk_level}`\n).join('\\n');\n\nconst supplierLines = suppliers.map(s =>\n  `- supplier_id: ${s.supplier_id} | name: ${s.supplier_name} | grade: ${s.supplier_grade} | delivers_in: ${s.delivery_time_days} days | supplies: ${s.supplies_categories}`\n).join('\\n');\n\nconst prompt = `You are an inventory manager for a small Indian kirana store.\n\nAT-RISK PRODUCTS:\n${productLines}\n\nAVAILABLE SUPPLIERS:\n${supplierLines}\n\nFor each at-risk product, generate a reorder suggestion. Use the exact product_id and supplier_id from the data above. Pick the best supplier based on grade and whether they supply that product category. Order quantity = 30 x daily_sales.\n\nRespond ONLY with a valid JSON array. No explanation. No markdown. No code fences.\nFormat: [{\"product_id\":\"TEA_001\",\"supplier_id\":\"SUP_001\",\"suggested_quantity\":90,\"reason\":\"One sentence.\"}]`;\n\nconst requestBody = JSON.stringify({\n  model: \"llama-3.1-8b-instant\",\n  max_tokens: 1000,\n  temperature: 0.3,\n  messages: [{ role: \"user\", content: prompt }]\n});\n\nreturn [{ json: { requestBody, atRisk, suppliers } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        -32
+      ],
+      "id": "5f7103aa-c713-47c1-bbca-7471a53337bf",
+      "name": "Build AI Prompt",
+      "notes": "Constructs a detailed prompt for the Groq LLM containing:\n- Product inventory details (stock, sales velocity, risk level)\n- Supplier profiles (grades, reliability, delivery times)\n- Instructions for JSON-formatted reorder recommendations\n\nSkips if no at-risk products are found.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer REDACTED_GROQ_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        320,
+        -32
+      ],
+      "id": "87c97d4d-837d-4110-9ca7-5f8997883fb7",
+      "name": "HTTP Request",
+      "notes": "POST request to the Groq API (api.groq.com) with the constructed prompt.\nModel: Llama 3.1 8B Instant\nRequests structured JSON response with reorder suggestions.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst context = $('Build AI Prompt').first().json;\n\nif (context.skip) {\n  return [{ json: { message: context.message, saved: 0 } }];\n}\n\nconst atRisk    = context.atRisk;\nconst suppliers = context.suppliers;\n\n// Build a map of product_name → product_id for fixing AI response\nconst nameToId = {};\natRisk.forEach(p => {\n  nameToId[p.product_name.toLowerCase()] = p.product_id;\n});\n\nlet suggestions = [];\ntry {\n  const content = response.choices[0].message.content;\n  const cleaned = content.trim()\n    .replace(/^```json\\n?/, '')\n    .replace(/^```\\n?/, '')\n    .replace(/\\n?```$/, '');\n  suggestions = JSON.parse(cleaned);\n} catch(e) {\n  console.log('AI parse failed, using fallback:', e.message);\n  suggestions = atRisk.map(p => {\n    const cat = (p.category || '').toLowerCase();\n    const best = suppliers\n      .filter(s => s.supplies_categories && s.supplies_categories.toLowerCase().includes(cat))\n      .sort((a,b) => (b.composite_score||0) - (a.composite_score||0))[0]\n      || suppliers[0];\n    return {\n      product_id: p.product_id,\n      supplier_id: best.supplier_id,\n      suggested_quantity: Math.ceil((p.avg_daily_sales || 1) * 30),\n      reason: `Stock critically low (${p.days_to_stockout} days remaining). Ordering 30-day supply.`\n    };\n  });\n}\n\nconst now = new Date().toISOString();\n\nreturn suggestions.map(s => {\n  // Fix: if AI returned product_name instead of product_id, convert it\n  let pid = s.product_id;\n  if (pid && !pid.includes('_')) {\n    const fixed = nameToId[pid.toLowerCase()];\n    if (fixed) pid = fixed;\n  }\n\n  return {\n    json: {\n      product_id:         pid,\n      supplier_id:        s.supplier_id,\n      suggested_quantity: s.suggested_quantity,\n      reason:             s.reason,\n      status:             'Pending',\n      ai_generated:       true,\n      suggestion_date:    now\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        -32
+      ],
+      "id": "d29660e6-307e-4c65-adbc-6295b46cabbd",
+      "name": "Code in JavaScript",
+      "notes": "Parses the LLM's JSON response into individual reorder suggestion objects.\nExtracts: product_id, product_name, suggested_qty, suggested_supplier, reason, and urgency for each recommendation.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "tableId": "Reorder Suggestions",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "product_id",
+              "fieldValue": "={{ $json.product_id }}"
+            },
+            {
+              "fieldId": "supplier_id",
+              "fieldValue": "={{ $json.supplier_id }}"
+            },
+            {
+              "fieldId": "suggested_quantity",
+              "fieldValue": "={{ $json.suggested_quantity }}"
+            },
+            {
+              "fieldId": "reason",
+              "fieldValue": "={{ $json.reason }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $json.status }}"
+            },
+            {
+              "fieldId": "ai_generated",
+              "fieldValue": "={{ $json.ai_generated }}"
+            },
+            {
+              "fieldId": "suggestion_date",
+              "fieldValue": "={{ $json.suggestion_date }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        -32
+      ],
+      "id": "cf974c6e-f590-414e-a505-c439bef2b2fb",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "cTHIcrIVh1Uh0w7G",
+          "name": "Supabase account"
+        }
+      },
+      "notes": "Inserts each AI-generated reorder suggestion as a new row in the Reorder Suggestions table in Supabase.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -688,
+        -160
+      ],
+      "id": "ea013653-a004-4b73-b7ee-52e355477d54",
+      "name": "When Executed by Another Workflow",
+      "notes": "Sub-workflow entry point.\nCalled by WF-08 Daily Orchestrator after WF-04 completes risk classification.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "https://xixdkapttirdedoivskx.supabase.co/rest/v1/Reorder%20Suggestions?id=neq.00000000-0000-0000-0000-000000000000",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "REDACTED_SUPABASE_ANON_KEY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer REDACTED_SUPABASE_ANON_KEY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        736,
+        -32
+      ],
+      "id": "4052a7bf-7d17-4ab6-bf85-08c00c3efb26",
+      "name": "HTTP Request1",
+      "notes": "Deletes all existing rows from the Reorder Suggestions table.\nFull-refresh approach — old suggestions are cleared before inserting new AI-generated ones.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return $('Code in JavaScript').all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        -32
+      ],
+      "id": "8ba81601-6590-4718-8a3f-caf3dffd9ecf",
+      "name": "Restore Data",
+      "notes": "Restores the parsed suggestion data after the delete operation.\nNeeded because the HTTP delete node output replaces the pipeline data.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "width": 580,
+        "height": 300,
+        "content": "## WF-05: AI Reorder Intelligence\n\n**Triggers:** Manual execution or sub-workflow call from WF-08\n**Depends on:** WF-04 (needs risk_level classified first)\n**AI Model:** Groq — Llama 3.1 8B Instant\n\n**Purpose:** Uses LLM intelligence to generate smart reorder recommendations for at-risk products, considering supplier reliability, pricing, and delivery speed.\n\n**Flow:**\n1. Fetch at-risk products (HIGH/MEDIUM/UNKNOWN risk)\n2. Fetch all supplier profiles\n3. Build detailed AI prompt with inventory + supplier context\n4. Call Groq LLM API for recommendations\n5. Parse JSON response into suggestion rows\n6. Clear old suggestions & insert fresh ones"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        -480
+      ],
+      "id": "sticky-wf05-overview",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "width": 380,
+        "height": 160,
+        "content": "## AI Response Parsing\n\nThe LLM returns a JSON array of suggestions.\nEach suggestion includes:\n- `product_id` & `product_name`\n- `suggested_qty` (units to reorder)\n- `suggested_supplier` (best supplier)\n- `reason` (AI explanation)\n- `urgency` (HIGH/MEDIUM/LOW)"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        490,
+        -300
+      ],
+      "id": "sticky-wf05-parsing",
+      "name": "Sticky Note1"
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch All Suppliers",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch At-Risk Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch At-Risk Products": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch All Suppliers": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Build AI Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build AI Prompt": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Fetch At-Risk Products",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch All Suppliers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Restore Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Data": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "4866d200-1ad2-49fa-b6b9-3b5ca7103046",
+  "activeVersionId": "4866d200-1ad2-49fa-b6b9-3b5ca7103046",
+  "versionCounter": 118,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-03-11T18:42:50.420Z",
+      "createdAt": "2026-03-11T18:42:50.420Z",
+      "role": "workflow:owner",
+      "workflowId": "ivm5yQJMfSZn0VrNt40RB",
+      "projectId": "ilqDzvKBCaYiT4Cg",
+      "project": {
+        "updatedAt": "2025-07-08T20:13:53.401Z",
+        "createdAt": "2025-07-08T19:51:26.738Z",
+        "id": "ilqDzvKBCaYiT4Cg",
+        "name": "Vyshakh Vijayan <vyshakhvponnachat@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
+        "projectRelations": [
+          {
+            "updatedAt": "2025-07-08T19:51:26.738Z",
+            "createdAt": "2025-07-08T19:51:26.738Z",
+            "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
+            "projectId": "ilqDzvKBCaYiT4Cg",
+            "user": {
+              "updatedAt": "2026-03-14T05:50:53.000Z",
+              "createdAt": "2025-07-08T19:51:25.310Z",
+              "id": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
+              "email": "vyshakhvponnachat@gmail.com",
+              "firstName": "Vyshakh",
+              "lastName": "Vijayan",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2025-07-08T20:14:28.526Z",
+                "personalization_survey_n8n_version": "1.100.1",
+                "automationGoalDevops": [
+                  "other"
+                ],
+                "automationGoalDevopsOther": "Projects",
+                "companySize": "personalUser",
+                "companyType": "education",
+                "role": "engineering",
+                "reportedSource": "google"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "JgDNR0tDWj0Z_DVfHB4Fo",
+                "userActivatedAt": 1773375331682
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-03-14",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-03-14T05:57:21.000Z",
+    "createdAt": "2026-03-13T14:31:02.829Z",
+    "versionId": "4866d200-1ad2-49fa-b6b9-3b5ca7103046",
+    "workflowId": "ivm5yQJMfSZn0VrNt40RB",
+    "nodes": [
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          -688,
+          0
+        ],
+        "id": "2f0cc3b0-89f0-4d6f-8e91-4552ae126c90",
+        "name": "Manual Trigger"
+      },
+      {
+        "parameters": {
+          "operation": "getAll",
+          "tableId": "Products",
+          "returnAll": true,
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "risk_level",
+                "condition": "neq",
+                "keyValue": "LOW"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          -464,
+          -96
+        ],
+        "id": "b9c2d7a0-6fca-4a2f-b46f-e8547379440f",
+        "name": "Fetch At-Risk Products",
+        "credentials": {
+          "supabaseApi": {
+            "id": "cTHIcrIVh1Uh0w7G",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "getAll",
+          "tableId": "Suppliers",
+          "returnAll": true
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          -464,
+          96
+        ],
+        "id": "77c9237f-ffe6-4e17-9d70-4e49175e6ef2",
+        "name": "Fetch All Suppliers",
+        "credentials": {
+          "supabaseApi": {
+            "id": "cTHIcrIVh1Uh0w7G",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3.2,
+        "position": [
+          -96,
+          -32
+        ],
+        "id": "5ad93217-7d56-49fb-a2c1-09bb76611026",
+        "name": "Merge"
+      },
+      {
+        "parameters": {
+          "jsCode": "const products = $('Fetch At-Risk Products').all().map(i => i.json);\nconst suppliers = $('Fetch All Suppliers').all().map(i => i.json);\n\nconst atRisk = products.filter(p =>\n  p.risk_level === 'HIGH' || p.risk_level === 'MEDIUM' || p.days_to_stockout <= 7\n);\n\nif (atRisk.length === 0) {\n  return [{ json: { skip: true, message: 'No at-risk products found' } }];\n}\n\nconst productLines = atRisk.map(p =>\n  `- product_id: ${p.product_id} | name: ${p.product_name} | category: ${p.category || 'General'} | stock: ${p.current_stock} | daily_sales: ${p.avg_daily_sales} | days_left: ${p.days_to_stockout} | risk: ${p.risk_level}`\n).join('\\n');\n\nconst supplierLines = suppliers.map(s =>\n  `- supplier_id: ${s.supplier_id} | name: ${s.supplier_name} | grade: ${s.supplier_grade} | delivers_in: ${s.delivery_time_days} days | supplies: ${s.supplies_categories}`\n).join('\\n');\n\nconst prompt = `You are an inventory manager for a small Indian kirana store.\n\nAT-RISK PRODUCTS:\n${productLines}\n\nAVAILABLE SUPPLIERS:\n${supplierLines}\n\nFor each at-risk product, generate a reorder suggestion. Use the exact product_id and supplier_id from the data above. Pick the best supplier based on grade and whether they supply that product category. Order quantity = 30 x daily_sales.\n\nRespond ONLY with a valid JSON array. No explanation. No markdown. No code fences.\nFormat: [{\"product_id\":\"TEA_001\",\"supplier_id\":\"SUP_001\",\"suggested_quantity\":90,\"reason\":\"One sentence.\"}]`;\n\nconst requestBody = JSON.stringify({\n  model: \"llama-3.1-8b-instant\",\n  max_tokens: 1000,\n  temperature: 0.3,\n  messages: [{ role: \"user\", content: prompt }]\n});\n\nreturn [{ json: { requestBody, atRisk, suppliers } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          112,
+          -32
+        ],
+        "id": "5f7103aa-c713-47c1-bbca-7471a53337bf",
+        "name": "Build AI Prompt"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.groq.com/openai/v1/chat/completions",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "Bearer REDACTED_GROQ_API_KEY"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ $json.requestBody }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          320,
+          -32
+        ],
+        "id": "87c97d4d-837d-4110-9ca7-5f8997883fb7",
+        "name": "HTTP Request"
+      },
+      {
+        "parameters": {
+          "jsCode": "const response = $input.first().json;\nconst context = $('Build AI Prompt').first().json;\n\nif (context.skip) {\n  return [{ json: { message: context.message, saved: 0 } }];\n}\n\nconst atRisk    = context.atRisk;\nconst suppliers = context.suppliers;\n\n// Build a map of product_name → product_id for fixing AI response\nconst nameToId = {};\natRisk.forEach(p => {\n  nameToId[p.product_name.toLowerCase()] = p.product_id;\n});\n\nlet suggestions = [];\ntry {\n  const content = response.choices[0].message.content;\n  const cleaned = content.trim()\n    .replace(/^```json\\n?/, '')\n    .replace(/^```\\n?/, '')\n    .replace(/\\n?```$/, '');\n  suggestions = JSON.parse(cleaned);\n} catch(e) {\n  console.log('AI parse failed, using fallback:', e.message);\n  suggestions = atRisk.map(p => {\n    const cat = (p.category || '').toLowerCase();\n    const best = suppliers\n      .filter(s => s.supplies_categories && s.supplies_categories.toLowerCase().includes(cat))\n      .sort((a,b) => (b.composite_score||0) - (a.composite_score||0))[0]\n      || suppliers[0];\n    return {\n      product_id: p.product_id,\n      supplier_id: best.supplier_id,\n      suggested_quantity: Math.ceil((p.avg_daily_sales || 1) * 30),\n      reason: `Stock critically low (${p.days_to_stockout} days remaining). Ordering 30-day supply.`\n    };\n  });\n}\n\nconst now = new Date().toISOString();\n\nreturn suggestions.map(s => {\n  // Fix: if AI returned product_name instead of product_id, convert it\n  let pid = s.product_id;\n  if (pid && !pid.includes('_')) {\n    const fixed = nameToId[pid.toLowerCase()];\n    if (fixed) pid = fixed;\n  }\n\n  return {\n    json: {\n      product_id:         pid,\n      supplier_id:        s.supplier_id,\n      suggested_quantity: s.suggested_quantity,\n      reason:             s.reason,\n      status:             'Pending',\n      ai_generated:       true,\n      suggestion_date:    now\n    }\n  };\n});"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          528,
+          -32
+        ],
+        "id": "d29660e6-307e-4c65-adbc-6295b46cabbd",
+        "name": "Code in JavaScript"
+      },
+      {
+        "parameters": {
+          "tableId": "Reorder Suggestions",
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "product_id",
+                "fieldValue": "={{ $json.product_id }}"
+              },
+              {
+                "fieldId": "supplier_id",
+                "fieldValue": "={{ $json.supplier_id }}"
+              },
+              {
+                "fieldId": "suggested_quantity",
+                "fieldValue": "={{ $json.suggested_quantity }}"
+              },
+              {
+                "fieldId": "reason",
+                "fieldValue": "={{ $json.reason }}"
+              },
+              {
+                "fieldId": "status",
+                "fieldValue": "={{ $json.status }}"
+              },
+              {
+                "fieldId": "ai_generated",
+                "fieldValue": "={{ $json.ai_generated }}"
+              },
+              {
+                "fieldId": "suggestion_date",
+                "fieldValue": "={{ $json.suggestion_date }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          1152,
+          -32
+        ],
+        "id": "cf974c6e-f590-414e-a505-c439bef2b2fb",
+        "name": "Create a row",
+        "credentials": {
+          "supabaseApi": {
+            "id": "cTHIcrIVh1Uh0w7G",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "inputSource": "passthrough"
+        },
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          -688,
+          -160
+        ],
+        "id": "ea013653-a004-4b73-b7ee-52e355477d54",
+        "name": "When Executed by Another Workflow"
+      },
+      {
+        "parameters": {
+          "method": "DELETE",
+          "url": "https://xixdkapttirdedoivskx.supabase.co/rest/v1/Reorder%20Suggestions?id=neq.00000000-0000-0000-0000-000000000000",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "REDACTED_SUPABASE_ANON_KEY"
+              },
+              {
+                "name": "Authorization",
+                "value": "Bearer REDACTED_SUPABASE_ANON_KEY"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          736,
+          -32
+        ],
+        "id": "4052a7bf-7d17-4ab6-bf85-08c00c3efb26",
+        "name": "HTTP Request1"
+      },
+      {
+        "parameters": {
+          "jsCode": "return $('Code in JavaScript').all();"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          944,
+          -32
+        ],
+        "id": "8ba81601-6590-4718-8a3f-caf3dffd9ecf",
+        "name": "Restore Data"
+      }
+    ],
+    "connections": {
+      "Manual Trigger": {
+        "main": [
+          [
+            {
+              "node": "Fetch All Suppliers",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Fetch At-Risk Products",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch At-Risk Products": {
+        "main": [
+          [
+            {
+              "node": "Merge",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch All Suppliers": {
+        "main": [
+          [
+            {
+              "node": "Merge",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Merge": {
+        "main": [
+          [
+            {
+              "node": "Build AI Prompt",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build AI Prompt": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request": {
+        "main": [
+          [
+            {
+              "node": "Code in JavaScript",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code in JavaScript": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "When Executed by Another Workflow": {
+        "main": [
+          [
+            {
+              "node": "Fetch At-Risk Products",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Fetch All Suppliers",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request1": {
+        "main": [
+          [
+            {
+              "node": "Restore Data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Restore Data": {
+        "main": [
+          [
+            {
+              "node": "Create a row",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Vyshakh Vijayan",
+    "name": "Version 4866d200",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-14T05:57:21.664Z",
+        "id": 12,
+        "workflowId": "ivm5yQJMfSZn0VrNt40RB",
+        "versionId": "4866d200-1ad2-49fa-b6b9-3b5ca7103046",
+        "event": "activated",
+        "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
+      },
+      {
+        "createdAt": "2026-03-14T05:57:24.783Z",
+        "id": 13,
+        "workflowId": "ivm5yQJMfSZn0VrNt40RB",
+        "versionId": "4866d200-1ad2-49fa-b6b9-3b5ca7103046",
+        "event": "activated",
+        "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
+      }
+    ]
+  }
+}
