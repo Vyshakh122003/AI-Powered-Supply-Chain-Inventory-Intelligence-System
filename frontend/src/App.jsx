@@ -1,23 +1,36 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
-import Landing from './pages/Landing'
-import Login from './pages/Login'
-import Signup from './pages/Signup'
-import ResetPassword from './pages/ResetPassword'
-import Onboarding from './pages/Onboarding'
-import Dashboard from './pages/Dashboard'
-import Products from './pages/Products'
-import Alerts from './pages/Alerts'
-import Reorder from './pages/Reorder'
-import Suppliers from './pages/Suppliers'
-import Reports from './pages/Reports'
-import Settings from './pages/Settings'
-import QuickUpdate from './pages/QuickUpdate'
-import Deliveries from './pages/Deliveries'
-import Logs from './pages/Logs'
+
+const Landing = lazy(() => import('./pages/Landing'))
+const Login = lazy(() => import('./pages/Login'))
+const Signup = lazy(() => import('./pages/Signup'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
+const Onboarding = lazy(() => import('./pages/Onboarding'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Products = lazy(() => import('./pages/Products'))
+const Alerts = lazy(() => import('./pages/Alerts'))
+const Reorder = lazy(() => import('./pages/Reorder'))
+const Suppliers = lazy(() => import('./pages/Suppliers'))
+const Reports = lazy(() => import('./pages/Reports'))
+const Settings = lazy(() => import('./pages/Settings'))
+const QuickUpdate = lazy(() => import('./pages/QuickUpdate'))
+const Deliveries = lazy(() => import('./pages/Deliveries'))
+const Logs = lazy(() => import('./pages/Logs'))
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-3 border-accent border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-muted">Loading...</p>
+      </div>
+    </div>
+  )
+}
 
 function App() {
   return (
@@ -37,6 +50,7 @@ function App() {
             },
           }}
         />
+        <Suspense fallback={<LoadingFallback />}>
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Landing />} />
@@ -70,6 +84,7 @@ function App() {
           {/* Default: unauthenticated → landing, authenticated → dashboard */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </AuthProvider>
     </BrowserRouter>
   )

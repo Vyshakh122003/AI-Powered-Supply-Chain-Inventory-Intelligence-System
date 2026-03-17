@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-03-14T05:56:48.818Z",
+  "updatedAt": "2026-03-17T05:53:20.629Z",
   "createdAt": "2026-03-11T16:26:24.805Z",
   "id": "JgDNR0tDWj0Z_DVfHB4Fo",
   "name": "WF-02 Stockout Date Calculator",
-  "description": "Calculates days-to-stockout and estimated stockout dates for all products. Divides current_stock by avg_daily_sales to project when each product will run out. Called daily by WF-08 Daily Orchestrator.",
+  "description": null,
   "active": true,
   "isArchived": false,
   "nodes": [
@@ -34,13 +34,13 @@
       ],
       "id": "665e15e3-0f5a-4613-9643-6c93b222fd36",
       "name": "Fetch All Products",
+      "notesInFlow": true,
       "credentials": {
         "supabaseApi": {
           "id": "cTHIcrIVh1Uh0w7G",
           "name": "Supabase account"
         }
       },
-      "notesInFlow": true,
       "notes": "Retrieves all product rows from the Supabase Products table.\nReturns current_stock, avg_daily_sales, and product_id for each."
     },
     {
@@ -56,7 +56,7 @@
       "id": "93a24ea3-d212-4402-a067-e34e5d94cf55",
       "name": "Calculate Stockout Dates",
       "notesInFlow": true,
-      "notes": "JavaScript logic that computes for each product:\n- days_to_stockout = floor(current_stock / avg_daily_sales)\n- estimated_stockout_date = today + days_to_stockout\n\nEdge cases: sales=0 → 999 days, stock=0 → 0 days."
+      "notes": "JavaScript logic that computes for each product:\n- days_to_stockout = floor(current_stock / avg_daily_sales)\n- estimated_stockout_date = today + days_to_stockout\n\nEdge cases: sales=0 ? 999 days, stock=0 ? 0 days."
     },
     {
       "parameters": {
@@ -92,13 +92,13 @@
       ],
       "id": "34d23b12-175c-4a24-bb05-62e6f36877e0",
       "name": "Update Products",
+      "notesInFlow": true,
       "credentials": {
         "supabaseApi": {
           "id": "cTHIcrIVh1Uh0w7G",
           "name": "Supabase account"
         }
       },
-      "notesInFlow": true,
       "notes": "Writes the calculated days_to_stockout and estimated_stockout_date back to each product row in the Products table."
     },
     {
@@ -118,15 +118,15 @@
     },
     {
       "parameters": {
-        "width": 520,
-        "height": 260,
-        "content": "## WF-02: Stockout Date Calculator\n\n**Triggers:** Manual execution or sub-workflow call from WF-08\n\n**Purpose:** Projects when each product will run out of stock based on current inventory levels and average daily sales velocity.\n\n**Calculation:**\n- `days_to_stockout = floor(current_stock / avg_daily_sales)`\n- `estimated_stockout_date = today + days_to_stockout`\n\n**Edge cases:**\n- No sales data (avg=0) → 999 days (safe default)\n- Zero stock → 0 days (immediate stockout)"
+        "content": "## WF-02: Stockout Date Calculator\n\n**Triggers:** Manual execution or sub-workflow call from WF-08\n\n**Purpose:** Projects when each product will run out of stock based on current inventory levels and average daily sales velocity.\n\n**Calculation:**\n- `days_to_stockout = floor(current_stock / avg_daily_sales)`\n- `estimated_stockout_date = today + days_to_stockout`\n\n**Edge cases:**\n- No sales data (avg=0) ? 999 days (safe default)\n- Zero stock ? 0 days (immediate stockout)",
+        "height": 340,
+        "width": 520
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -800,
-        -400
+        -1280,
+        -464
       ],
       "id": "sticky-wf02-overview",
       "name": "Sticky Note"
@@ -182,16 +182,16 @@
     "executionOrder": "v1",
     "availableInMCP": false,
     "timeSavedMode": "fixed",
-    "callerPolicy": "workflowsFromSameOwner"
+    "callerPolicy": "any"
   },
   "staticData": null,
   "meta": {
     "templateCredsSetupCompleted": true
   },
   "pinData": {},
-  "versionId": "21d5f79d-fbbc-4410-97b9-2800a269e81d",
-  "activeVersionId": "21d5f79d-fbbc-4410-97b9-2800a269e81d",
-  "versionCounter": 37,
+  "versionId": "02247e62-d596-44ea-9188-9894b8c0977c",
+  "activeVersionId": "02247e62-d596-44ea-9188-9894b8c0977c",
+  "versionCounter": 50,
   "triggerCount": 0,
   "shared": [
     {
@@ -216,7 +216,7 @@
             "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
             "projectId": "ilqDzvKBCaYiT4Cg",
             "user": {
-              "updatedAt": "2026-03-14T05:50:53.000Z",
+              "updatedAt": "2026-03-17T06:13:54.573Z",
               "createdAt": "2025-07-08T19:51:25.310Z",
               "id": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
               "email": "vyshakhvponnachat@gmail.com",
@@ -239,11 +239,15 @@
                 "userActivated": true,
                 "easyAIWorkflowOnboarded": true,
                 "firstSuccessfulWorkflowId": "JgDNR0tDWj0Z_DVfHB4Fo",
-                "userActivatedAt": 1773375331682
+                "userActivatedAt": 1773375331682,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1773728030505
+                }
               },
               "disabled": false,
               "mfaEnabled": false,
-              "lastActiveAt": "2026-03-14",
+              "lastActiveAt": "2026-03-17",
               "isPending": false
             }
           }
@@ -253,9 +257,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-03-14T05:56:28.000Z",
-    "createdAt": "2026-03-13T04:13:46.183Z",
-    "versionId": "21d5f79d-fbbc-4410-97b9-2800a269e81d",
+    "updatedAt": "2026-03-17T05:53:20.635Z",
+    "createdAt": "2026-03-17T05:53:20.635Z",
+    "versionId": "02247e62-d596-44ea-9188-9894b8c0977c",
     "workflowId": "JgDNR0tDWj0Z_DVfHB4Fo",
     "nodes": [
       {
@@ -267,7 +271,9 @@
           -128
         ],
         "id": "5049f667-324b-4dd1-851a-288ed142a605",
-        "name": "Manual Trigger"
+        "name": "Manual Trigger",
+        "notesInFlow": true,
+        "notes": "Manual entry point for testing.\nUse this to run the stockout calculator independently."
       },
       {
         "parameters": {
@@ -283,12 +289,14 @@
         ],
         "id": "665e15e3-0f5a-4613-9643-6c93b222fd36",
         "name": "Fetch All Products",
+        "notesInFlow": true,
         "credentials": {
           "supabaseApi": {
             "id": "cTHIcrIVh1Uh0w7G",
             "name": "Supabase account"
           }
-        }
+        },
+        "notes": "Retrieves all product rows from the Supabase Products table.\nReturns current_stock, avg_daily_sales, and product_id for each."
       },
       {
         "parameters": {
@@ -301,7 +309,9 @@
           -80
         ],
         "id": "93a24ea3-d212-4402-a067-e34e5d94cf55",
-        "name": "Calculate Stockout Dates"
+        "name": "Calculate Stockout Dates",
+        "notesInFlow": true,
+        "notes": "JavaScript logic that computes for each product:\n- days_to_stockout = floor(current_stock / avg_daily_sales)\n- estimated_stockout_date = today + days_to_stockout\n\nEdge cases: sales=0 ? 999 days, stock=0 ? 0 days."
       },
       {
         "parameters": {
@@ -337,12 +347,14 @@
         ],
         "id": "34d23b12-175c-4a24-bb05-62e6f36877e0",
         "name": "Update Products",
+        "notesInFlow": true,
         "credentials": {
           "supabaseApi": {
             "id": "cTHIcrIVh1Uh0w7G",
             "name": "Supabase account"
           }
-        }
+        },
+        "notes": "Writes the calculated days_to_stockout and estimated_stockout_date back to each product row in the Products table."
       },
       {
         "parameters": {
@@ -355,7 +367,24 @@
           64
         ],
         "id": "0f9c4903-d3ed-4c9b-a2a4-9a9cd291623a",
-        "name": "When Executed by Another Workflow"
+        "name": "When Executed by Another Workflow",
+        "notesInFlow": true,
+        "notes": "Sub-workflow entry point.\nCalled by WF-08 Daily Orchestrator during the daily pipeline run."
+      },
+      {
+        "parameters": {
+          "content": "## WF-02: Stockout Date Calculator\n\n**Triggers:** Manual execution or sub-workflow call from WF-08\n\n**Purpose:** Projects when each product will run out of stock based on current inventory levels and average daily sales velocity.\n\n**Calculation:**\n- `days_to_stockout = floor(current_stock / avg_daily_sales)`\n- `estimated_stockout_date = today + days_to_stockout`\n\n**Edge cases:**\n- No sales data (avg=0) ? 999 days (safe default)\n- Zero stock ? 0 days (immediate stockout)",
+          "height": 340,
+          "width": 520
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          -1280,
+          -464
+        ],
+        "id": "sticky-wf02-overview",
+        "name": "Sticky Note"
       }
     ],
     "connections": {
@@ -405,23 +434,15 @@
       }
     },
     "authors": "Vyshakh Vijayan",
-    "name": "Version 21d5f79d",
-    "description": "",
-    "autosaved": true,
+    "name": null,
+    "description": null,
+    "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-03-14T05:56:28.450Z",
-        "id": 6,
+        "createdAt": "2026-03-17T05:53:20.749Z",
+        "id": 34,
         "workflowId": "JgDNR0tDWj0Z_DVfHB4Fo",
-        "versionId": "21d5f79d-fbbc-4410-97b9-2800a269e81d",
-        "event": "activated",
-        "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
-      },
-      {
-        "createdAt": "2026-03-14T05:56:48.922Z",
-        "id": 7,
-        "workflowId": "JgDNR0tDWj0Z_DVfHB4Fo",
-        "versionId": "21d5f79d-fbbc-4410-97b9-2800a269e81d",
+        "versionId": "02247e62-d596-44ea-9188-9894b8c0977c",
         "event": "activated",
         "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
       }

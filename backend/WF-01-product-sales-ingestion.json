@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-03-14T06:22:18.036Z",
+  "updatedAt": "2026-03-15T07:02:22.934Z",
   "createdAt": "2026-01-30T14:39:39.855Z",
   "id": "bMJ_c4ogbOgNfObNKpbuE",
   "name": "WF-01  Product & Sales Data Ingestion",
-  "description": "Ingests product and sales data from the frontend via POST webhook. Cleans input fields, checks for existing products in Supabase, then creates or updates the product row accordingly. Called by the React frontend's AddProductModal and CsvImportModal.",
+  "description": null,
   "active": true,
   "isArchived": false,
   "nodes": [
@@ -42,8 +42,8 @@
       ],
       "id": "2bff2aa1-ad88-4637-a663-afc1ef1966e6",
       "name": "Respond to Webhook1",
-      "notes": "Returns a success JSON response with action: 'created' and the product_id back to the frontend caller.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "notes": "Returns a success JSON response with action: 'created' and the product_id back to the frontend caller."
     },
     {
       "parameters": {
@@ -89,14 +89,14 @@
       ],
       "id": "37b051dc-c464-497c-81fd-a01266904841",
       "name": "Create a row",
+      "notesInFlow": true,
       "credentials": {
         "supabaseApi": {
           "id": "cTHIcrIVh1Uh0w7G",
           "name": "Supabase account"
         }
       },
-      "notes": "Inserts a new row into the Products table in Supabase with all the cleaned product data fields.",
-      "notesInFlow": true
+      "notes": "Inserts a new row into the Products table in Supabase with all the cleaned product data fields."
     },
     {
       "parameters": {
@@ -122,14 +122,14 @@
       "id": "823f6ef6-f840-4c93-b804-8278a6a4a463",
       "name": "Get many rows",
       "alwaysOutputData": true,
+      "notesInFlow": true,
       "credentials": {
         "supabaseApi": {
           "id": "cTHIcrIVh1Uh0w7G",
           "name": "Supabase account"
         }
       },
-      "notes": "Queries the Products table in Supabase to check if a product with the same product_id already exists.\nThis determines whether to update or create.",
-      "notesInFlow": true
+      "notes": "Queries the Products table in Supabase to check if a product with the same product_id already exists.\nThis determines whether to update or create."
     },
     {
       "parameters": {
@@ -165,8 +165,8 @@
       ],
       "id": "82e45369-c9c0-4b26-ac55-ae117ade0404",
       "name": "If",
-      "notes": "Branches the flow based on whether the product was found.\nTrue (exists) = route to Update.\nFalse (new) = route to Create.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "notes": "Branches the flow based on whether the product was found.\nTrue (exists) = route to Update.\nFalse (new) = route to Create."
     },
     {
       "parameters": {
@@ -218,14 +218,14 @@
       ],
       "id": "dea54bef-a0a1-471b-a2bf-69e7e4e6c54e",
       "name": "Update a row",
+      "notesInFlow": true,
       "credentials": {
         "supabaseApi": {
           "id": "cTHIcrIVh1Uh0w7G",
           "name": "Supabase account"
         }
       },
-      "notes": "Updates the existing product row in the Products table with the cleaned data from the webhook payload.",
-      "notesInFlow": true
+      "notes": "Updates the existing product row in the Products table with the cleaned data from the webhook payload."
     },
     {
       "parameters": {
@@ -243,8 +243,8 @@
       ],
       "id": "267ffe47-77f8-45ff-ad7b-5e39e6ad41e9",
       "name": "Respond to Webhook",
-      "notes": "Returns a success JSON response with action: 'updated' and the product_id back to the frontend caller.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "notes": "Returns a success JSON response with action: 'updated' and the product_id back to the frontend caller."
     },
     {
       "parameters": {
@@ -304,35 +304,35 @@
       ],
       "id": "e7d16b33-18bb-4afb-8d55-ccdec24aae09",
       "name": "Edit Fields (Data Cleaning)",
-      "notes": "Normalizes and sanitizes incoming product data.\nTrims strings, converts numeric fields (current_stock, avg_daily_sales, reorder_threshold, unit_price) to proper types, and sets defaults for missing values.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "notes": "Normalizes and sanitizes incoming product data.\nTrims strings, converts numeric fields (current_stock, avg_daily_sales, reorder_threshold, unit_price) to proper types, and sets defaults for missing values."
     },
     {
       "parameters": {
-        "width": 560,
-        "height": 280,
-        "content": "## WF-01: Product & Sales Data Ingestion\n\n**Trigger:** POST webhook `/product-sales-ingest`\n**Called by:** React frontend (AddProductModal, CsvImportModal)\n\n**Purpose:** Receives product/sales data from the store owner, cleans and normalizes the input, then upserts the product into the Supabase `Products` table.\n\n**Flow:**\n1. Receive POST payload from frontend\n2. Clean & normalize fields (trim strings, parse numbers)\n3. Check if product_id already exists\n4. If exists → Update row | If new → Create row\n5. Return success response with action taken"
+        "content": "## WF-01: Product & Sales Data Ingestion\n\n**Trigger:** POST webhook `/product-sales-ingest`\n**Called by:** React frontend (AddProductModal, CsvImportModal)\n\n**Purpose:** Receives product/sales data from the store owner, cleans and normalizes the input, then upserts the product into the Supabase `Products` table.\n\n**Flow:**\n1. Receive POST payload from frontend\n2. Clean & normalize fields (trim strings, parse numbers)\n3. Check if product_id already exists\n4. If exists → Update row | If new → Create row\n5. Return success response with action taken",
+        "height": 392,
+        "width": 560
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -1400,
-        -480
+        -1664,
+        -672
       ],
       "id": "sticky-wf01-overview",
       "name": "Sticky Note"
     },
     {
       "parameters": {
-        "width": 400,
-        "height": 160,
-        "content": "## Upsert Logic\n\nThe If node checks whether the Supabase query returned an existing product.\n- **True branch:** Product exists → Update row\n- **False branch:** New product → Create row\n\nBoth branches return a JSON response confirming the action taken."
+        "content": "## Upsert Logic\n\nThe If node checks whether the Supabase query returned an existing product.\n- **True branch:** Product exists → Update row\n- **False branch:** New product → Create row\n\nBoth branches return a JSON response confirming the action taken.",
+        "height": 256,
+        "width": 400
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -700,
-        -380
+        -928,
+        -624
       ],
       "id": "sticky-wf01-upsert",
       "name": "Sticky Note1"
@@ -415,16 +415,17 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "availableInMCP": true
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
   },
   "staticData": null,
   "meta": {
     "templateCredsSetupCompleted": true
   },
   "pinData": {},
-  "versionId": "a1ad2a7d-87b0-4ee1-9a68-108d80fecaa0",
-  "activeVersionId": "a1ad2a7d-87b0-4ee1-9a68-108d80fecaa0",
-  "versionCounter": 778,
+  "versionId": "f84306e3-6ce7-43ff-a4fd-4ad9439a8d2d",
+  "activeVersionId": "27daff38-d4e1-47e3-9d34-57dd387d018a",
+  "versionCounter": 786,
   "triggerCount": 1,
   "shared": [
     {
@@ -449,7 +450,7 @@
             "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
             "projectId": "ilqDzvKBCaYiT4Cg",
             "user": {
-              "updatedAt": "2026-03-14T05:50:53.000Z",
+              "updatedAt": "2026-03-17T06:13:54.573Z",
               "createdAt": "2025-07-08T19:51:25.310Z",
               "id": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
               "email": "vyshakhvponnachat@gmail.com",
@@ -472,11 +473,15 @@
                 "userActivated": true,
                 "easyAIWorkflowOnboarded": true,
                 "firstSuccessfulWorkflowId": "JgDNR0tDWj0Z_DVfHB4Fo",
-                "userActivatedAt": 1773375331682
+                "userActivatedAt": 1773375331682,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1773728030505
+                }
               },
               "disabled": false,
               "mfaEnabled": false,
-              "lastActiveAt": "2026-03-14",
+              "lastActiveAt": "2026-03-17",
               "isPending": false
             }
           }
@@ -486,9 +491,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-02-07T10:33:23.000Z",
-    "createdAt": "2026-02-07T10:21:05.652Z",
-    "versionId": "a1ad2a7d-87b0-4ee1-9a68-108d80fecaa0",
+    "updatedAt": "2026-03-15T07:00:57.982Z",
+    "createdAt": "2026-03-15T07:00:57.982Z",
+    "versionId": "27daff38-d4e1-47e3-9d34-57dd387d018a",
     "workflowId": "bMJ_c4ogbOgNfObNKpbuE",
     "nodes": [
       {
@@ -525,7 +530,9 @@
           -32
         ],
         "id": "2bff2aa1-ad88-4637-a663-afc1ef1966e6",
-        "name": "Respond to Webhook1"
+        "name": "Respond to Webhook1",
+        "notes": "Returns a success JSON response with action: 'created' and the product_id back to the frontend caller.",
+        "notesInFlow": true
       },
       {
         "parameters": {
@@ -576,7 +583,9 @@
             "id": "cTHIcrIVh1Uh0w7G",
             "name": "Supabase account"
           }
-        }
+        },
+        "notes": "Inserts a new row into the Products table in Supabase with all the cleaned product data fields.",
+        "notesInFlow": true
       },
       {
         "parameters": {
@@ -607,7 +616,9 @@
             "id": "cTHIcrIVh1Uh0w7G",
             "name": "Supabase account"
           }
-        }
+        },
+        "notes": "Queries the Products table in Supabase to check if a product with the same product_id already exists.\nThis determines whether to update or create.",
+        "notesInFlow": true
       },
       {
         "parameters": {
@@ -642,7 +653,9 @@
           -128
         ],
         "id": "82e45369-c9c0-4b26-ac55-ae117ade0404",
-        "name": "If"
+        "name": "If",
+        "notes": "Branches the flow based on whether the product was found.\nTrue (exists) = route to Update.\nFalse (new) = route to Create.",
+        "notesInFlow": true
       },
       {
         "parameters": {
@@ -699,7 +712,9 @@
             "id": "cTHIcrIVh1Uh0w7G",
             "name": "Supabase account"
           }
-        }
+        },
+        "notes": "Updates the existing product row in the Products table with the cleaned data from the webhook payload.",
+        "notesInFlow": true
       },
       {
         "parameters": {
@@ -716,7 +731,9 @@
           -272
         ],
         "id": "267ffe47-77f8-45ff-ad7b-5e39e6ad41e9",
-        "name": "Respond to Webhook"
+        "name": "Respond to Webhook",
+        "notes": "Returns a success JSON response with action: 'updated' and the product_id back to the frontend caller.",
+        "notesInFlow": true
       },
       {
         "parameters": {
@@ -775,7 +792,39 @@
           -128
         ],
         "id": "e7d16b33-18bb-4afb-8d55-ccdec24aae09",
-        "name": "Edit Fields (Data Cleaning)"
+        "name": "Edit Fields (Data Cleaning)",
+        "notes": "Normalizes and sanitizes incoming product data.\nTrims strings, converts numeric fields (current_stock, avg_daily_sales, reorder_threshold, unit_price) to proper types, and sets defaults for missing values.",
+        "notesInFlow": true
+      },
+      {
+        "parameters": {
+          "width": 560,
+          "height": 280,
+          "content": "## WF-01: Product & Sales Data Ingestion\n\n**Trigger:** POST webhook `/product-sales-ingest`\n**Called by:** React frontend (AddProductModal, CsvImportModal)\n\n**Purpose:** Receives product/sales data from the store owner, cleans and normalizes the input, then upserts the product into the Supabase `Products` table.\n\n**Flow:**\n1. Receive POST payload from frontend\n2. Clean & normalize fields (trim strings, parse numbers)\n3. Check if product_id already exists\n4. If exists → Update row | If new → Create row\n5. Return success response with action taken"
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          -1400,
+          -480
+        ],
+        "id": "sticky-wf01-overview",
+        "name": "Sticky Note"
+      },
+      {
+        "parameters": {
+          "width": 400,
+          "height": 160,
+          "content": "## Upsert Logic\n\nThe If node checks whether the Supabase query returned an existing product.\n- **True branch:** Product exists → Update row\n- **False branch:** New product → Create row\n\nBoth branches return a JSON response confirming the action taken."
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          -700,
+          -380
+        ],
+        "id": "sticky-wf01-upsert",
+        "name": "Sticky Note1"
       }
     ],
     "connections": {
@@ -854,39 +903,15 @@
       }
     },
     "authors": "Vyshakh Vijayan",
-    "name": "WF 1 - V2",
-    "description": "",
-    "autosaved": true,
+    "name": null,
+    "description": null,
+    "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-07T10:33:23.683Z",
-        "id": 2,
+        "createdAt": "2026-03-15T07:00:58.134Z",
+        "id": 26,
         "workflowId": "bMJ_c4ogbOgNfObNKpbuE",
-        "versionId": "a1ad2a7d-87b0-4ee1-9a68-108d80fecaa0",
-        "event": "activated",
-        "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
-      },
-      {
-        "createdAt": "2026-02-25T06:59:20.429Z",
-        "id": 3,
-        "workflowId": "bMJ_c4ogbOgNfObNKpbuE",
-        "versionId": "a1ad2a7d-87b0-4ee1-9a68-108d80fecaa0",
-        "event": "activated",
-        "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
-      },
-      {
-        "createdAt": "2026-02-25T06:59:38.807Z",
-        "id": 4,
-        "workflowId": "bMJ_c4ogbOgNfObNKpbuE",
-        "versionId": "a1ad2a7d-87b0-4ee1-9a68-108d80fecaa0",
-        "event": "activated",
-        "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
-      },
-      {
-        "createdAt": "2026-03-14T06:22:18.145Z",
-        "id": 19,
-        "workflowId": "bMJ_c4ogbOgNfObNKpbuE",
-        "versionId": "a1ad2a7d-87b0-4ee1-9a68-108d80fecaa0",
+        "versionId": "27daff38-d4e1-47e3-9d34-57dd387d018a",
         "event": "activated",
         "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
       }

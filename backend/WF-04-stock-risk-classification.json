@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-03-14T05:57:15.559Z",
+  "updatedAt": "2026-03-17T05:53:21.235Z",
   "createdAt": "2026-02-09T10:01:41.725Z",
   "id": "VkFbE0ZONeTximBLOw5Wx",
   "name": "WF-04 Stock Risk Classification",
-  "description": "Classifies products into risk levels (HIGH/MEDIUM/LOW/UNKNOWN) based on days_to_stockout. HIGH = 3 days or less, MEDIUM = 4-7 days, LOW = more than 7 days. Updates each product's risk_level in Supabase. Called daily by WF-08 after WF-02.",
+  "description": null,
   "active": true,
   "isArchived": false,
   "nodes": [
@@ -16,7 +16,7 @@
         -32
       ],
       "id": "21c0dbef-378b-4f37-9f0e-28a9a34b7e77",
-      "name": "When clicking ‘Execute workflow’",
+      "name": "When clicking 'Execute workflow'",
       "notesInFlow": true,
       "notes": "Manual entry point for testing.\nRun to re-classify all products independently."
     },
@@ -34,13 +34,13 @@
       ],
       "id": "693b175e-469c-4725-b9cc-97d4583dcc27",
       "name": "Fetch All Products",
+      "notesInFlow": true,
       "credentials": {
         "supabaseApi": {
           "id": "cTHIcrIVh1Uh0w7G",
           "name": "Supabase account"
         }
       },
-      "notesInFlow": true,
       "notes": "Retrieves all products from Supabase.\nNeeds the days_to_stockout field (calculated by WF-02) for classification."
     },
     {
@@ -88,13 +88,13 @@
       ],
       "id": "bc7c05f7-2dc2-4a84-a701-4beb16d72ecf",
       "name": "Update a row",
+      "notesInFlow": true,
       "credentials": {
         "supabaseApi": {
           "id": "cTHIcrIVh1Uh0w7G",
           "name": "Supabase account"
         }
       },
-      "notesInFlow": true,
       "notes": "Writes the computed risk_level back to each product row in the Supabase Products table."
     },
     {
@@ -114,22 +114,22 @@
     },
     {
       "parameters": {
-        "width": 520,
-        "height": 260,
-        "content": "## WF-04: Stock Risk Classification\n\n**Triggers:** Manual execution or sub-workflow call from WF-08\n**Depends on:** WF-02 (needs days_to_stockout calculated first)\n\n**Purpose:** Assigns a risk tier to every product based on how many days of stock remain.\n\n**Risk Tiers:**\n| Level | Condition | Meaning |\n|-------|-----------|----------|\n| HIGH | <= 3 days | Critical — reorder immediately |\n| MEDIUM | 4-7 days | Warning — plan reorder soon |\n| LOW | > 7 days | Healthy stock level |\n| UNKNOWN | No data | Missing sales/stockout data |"
+        "content": "## WF-04: Stock Risk Classification\n\n**Triggers:** Manual execution or sub-workflow call from WF-08\n**Depends on:** WF-02 (needs days_to_stockout calculated first)\n\n**Purpose:** Assigns a risk tier to every product based on how many days of stock remain.\n\n**Risk Tiers:**\n| Level     | Condition     | Meaning |\n|-------  |----------       -|----------|\n| HIGH    | <= 3 days | Critical - reorder immediately |\n| MEDIUM | 4-7 days | Warning - plan reorder soon |\n| LOW | > 7 days | Healthy stock level |\n| UNKNOWN | No data | Missing sales/stockout data |",
+        "height": 372,
+        "width": 520
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -680,
-        -480
+        -464,
+        -528
       ],
       "id": "sticky-wf04-overview",
       "name": "Sticky Note"
     }
   ],
   "connections": {
-    "When clicking ‘Execute workflow’": {
+    "When clicking 'Execute workflow'": {
       "main": [
         [
           {
@@ -178,16 +178,16 @@
     "executionOrder": "v1",
     "availableInMCP": false,
     "timeSavedMode": "fixed",
-    "callerPolicy": "workflowsFromSameOwner"
+    "callerPolicy": "any"
   },
   "staticData": null,
   "meta": {
     "templateCredsSetupCompleted": true
   },
   "pinData": {},
-  "versionId": "0d5cf690-60a8-46a5-9aba-68aa22615f71",
-  "activeVersionId": "0d5cf690-60a8-46a5-9aba-68aa22615f71",
-  "versionCounter": 64,
+  "versionId": "db56d0d8-644c-47ed-b698-546728322c8f",
+  "activeVersionId": "db56d0d8-644c-47ed-b698-546728322c8f",
+  "versionCounter": 81,
   "triggerCount": 0,
   "shared": [
     {
@@ -212,7 +212,7 @@
             "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
             "projectId": "ilqDzvKBCaYiT4Cg",
             "user": {
-              "updatedAt": "2026-03-14T05:50:53.000Z",
+              "updatedAt": "2026-03-17T06:13:54.573Z",
               "createdAt": "2025-07-08T19:51:25.310Z",
               "id": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
               "email": "vyshakhvponnachat@gmail.com",
@@ -235,11 +235,15 @@
                 "userActivated": true,
                 "easyAIWorkflowOnboarded": true,
                 "firstSuccessfulWorkflowId": "JgDNR0tDWj0Z_DVfHB4Fo",
-                "userActivatedAt": 1773375331682
+                "userActivatedAt": 1773375331682,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1773728030505
+                }
               },
               "disabled": false,
               "mfaEnabled": false,
-              "lastActiveAt": "2026-03-14",
+              "lastActiveAt": "2026-03-17",
               "isPending": false
             }
           }
@@ -249,9 +253,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-03-14T05:57:11.000Z",
-    "createdAt": "2026-03-13T04:14:19.683Z",
-    "versionId": "0d5cf690-60a8-46a5-9aba-68aa22615f71",
+    "updatedAt": "2026-03-17T05:53:21.237Z",
+    "createdAt": "2026-03-17T05:53:21.237Z",
+    "versionId": "db56d0d8-644c-47ed-b698-546728322c8f",
     "workflowId": "VkFbE0ZONeTximBLOw5Wx",
     "nodes": [
       {
@@ -263,7 +267,9 @@
           -32
         ],
         "id": "21c0dbef-378b-4f37-9f0e-28a9a34b7e77",
-        "name": "When clicking ‘Execute workflow’"
+        "name": "When clicking 'Execute workflow'",
+        "notesInFlow": true,
+        "notes": "Manual entry point for testing.\nRun to re-classify all products independently."
       },
       {
         "parameters": {
@@ -279,12 +285,14 @@
         ],
         "id": "693b175e-469c-4725-b9cc-97d4583dcc27",
         "name": "Fetch All Products",
+        "notesInFlow": true,
         "credentials": {
           "supabaseApi": {
             "id": "cTHIcrIVh1Uh0w7G",
             "name": "Supabase account"
           }
-        }
+        },
+        "notes": "Retrieves all products from Supabase.\nNeeds the days_to_stockout field (calculated by WF-02) for classification."
       },
       {
         "parameters": {
@@ -297,7 +305,9 @@
           -32
         ],
         "id": "bbfca0e5-57a3-471b-923f-dd1de9aa850c",
-        "name": "Process All Items"
+        "name": "Process All Items",
+        "notesInFlow": true,
+        "notes": "Classifies each product into a risk tier:\n- HIGH: days_to_stockout <= 3 (critical)\n- MEDIUM: days_to_stockout <= 7 (warning)\n- LOW: days_to_stockout > 7 (healthy)\n- UNKNOWN: no stockout data available"
       },
       {
         "parameters": {
@@ -329,12 +339,14 @@
         ],
         "id": "bc7c05f7-2dc2-4a84-a701-4beb16d72ecf",
         "name": "Update a row",
+        "notesInFlow": true,
         "credentials": {
           "supabaseApi": {
             "id": "cTHIcrIVh1Uh0w7G",
             "name": "Supabase account"
           }
-        }
+        },
+        "notes": "Writes the computed risk_level back to each product row in the Supabase Products table."
       },
       {
         "parameters": {
@@ -347,11 +359,28 @@
           -208
         ],
         "id": "7c8937e5-f5eb-4b10-9b37-dd7b2d5885e0",
-        "name": "When Executed by Another Workflow"
+        "name": "When Executed by Another Workflow",
+        "notesInFlow": true,
+        "notes": "Sub-workflow entry point.\nCalled by WF-08 Daily Orchestrator after WF-02 completes stockout calculations."
+      },
+      {
+        "parameters": {
+          "content": "## WF-04: Stock Risk Classification\n\n**Triggers:** Manual execution or sub-workflow call from WF-08\n**Depends on:** WF-02 (needs days_to_stockout calculated first)\n\n**Purpose:** Assigns a risk tier to every product based on how many days of stock remain.\n\n**Risk Tiers:**\n| Level     | Condition     | Meaning |\n|-------  |----------       -|----------|\n| HIGH    | <= 3 days | Critical - reorder immediately |\n| MEDIUM | 4-7 days | Warning - plan reorder soon |\n| LOW | > 7 days | Healthy stock level |\n| UNKNOWN | No data | Missing sales/stockout data |",
+          "height": 372,
+          "width": 520
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          -464,
+          -528
+        ],
+        "id": "sticky-wf04-overview",
+        "name": "Sticky Note"
       }
     ],
     "connections": {
-      "When clicking ‘Execute workflow’": {
+      "When clicking 'Execute workflow'": {
         "main": [
           [
             {
@@ -397,23 +426,15 @@
       }
     },
     "authors": "Vyshakh Vijayan",
-    "name": "Version 0d5cf690",
-    "description": "",
-    "autosaved": true,
+    "name": null,
+    "description": null,
+    "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-03-14T05:57:11.782Z",
-        "id": 10,
+        "createdAt": "2026-03-17T05:53:21.316Z",
+        "id": 36,
         "workflowId": "VkFbE0ZONeTximBLOw5Wx",
-        "versionId": "0d5cf690-60a8-46a5-9aba-68aa22615f71",
-        "event": "activated",
-        "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
-      },
-      {
-        "createdAt": "2026-03-14T05:57:15.615Z",
-        "id": 11,
-        "workflowId": "VkFbE0ZONeTximBLOw5Wx",
-        "versionId": "0d5cf690-60a8-46a5-9aba-68aa22615f71",
+        "versionId": "db56d0d8-644c-47ed-b698-546728322c8f",
         "event": "activated",
         "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
       }

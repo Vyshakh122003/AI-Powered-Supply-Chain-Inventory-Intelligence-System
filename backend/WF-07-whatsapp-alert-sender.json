@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-03-14T06:22:22.213Z",
+  "updatedAt": "2026-03-15T07:05:07.698Z",
   "createdAt": "2026-03-12T09:53:17.564Z",
   "id": "C_-48mOxTzD9s-2H8UBT8",
   "name": "WF-07 WhatsApp Alert Sender",
-  "description": "Sends WhatsApp stock alert notifications via Twilio. Fetches active alerts, applies 24-hour anti-spam filtering, builds a formatted alert message, and sends it to the store owner's WhatsApp number. Called by WF-08 or manually via webhook.",
+  "description": null,
   "active": true,
   "isArchived": false,
   "nodes": [
@@ -22,8 +22,8 @@
       "id": "d38f89f2-1eb1-441c-b75d-a51e30cbc6e6",
       "name": "Webhook Trigger",
       "webhookId": "65a84497-fe57-4b39-a986-2c58d5bed335",
-      "notes": "POST webhook entry point at /send-whatsapp.\nCalled by WF-08 Daily Orchestrator or manually from the frontend Settings page.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "notes": "POST webhook entry point at /send-whatsapp.\nCalled by WF-08 Daily Orchestrator or manually from the frontend Settings page."
     },
     {
       "parameters": {
@@ -48,14 +48,14 @@
       ],
       "id": "bb188f06-6aed-4f0f-aebe-948e22f75bb8",
       "name": "Fetch Active Alerts",
+      "notesInFlow": true,
       "credentials": {
         "supabaseApi": {
           "id": "cTHIcrIVh1Uh0w7G",
           "name": "Supabase account"
         }
       },
-      "notes": "Queries the Stock Alerts table for rows where alert_status = 'Active'.\nReturns product names, stock levels, and last alert timestamps.",
-      "notesInFlow": true
+      "notes": "Queries the Stock Alerts table for rows where alert_status = 'Active'.\nReturns product names, stock levels, and last alert timestamps."
     },
     {
       "parameters": {
@@ -69,8 +69,8 @@
       ],
       "id": "89eeea4b-e0c0-4da1-a756-b9d59b8ed6f6",
       "name": "Build WhatsApp Message",
-      "notes": "Builds a formatted WhatsApp alert message.\n\nIncludes anti-spam logic:\n- Filters out alerts already sent within the last 24 hours\n- Sorts by urgency (lowest stock first)\n- Formats product lines with stock levels\n- Returns skip=true if no alerts need sending.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "notes": "Builds a formatted WhatsApp alert message.\n\nIncludes anti-spam logic:\n- Filters out alerts already sent within the last 24 hours\n- Sorts by urgency (lowest stock first)\n- Formats product lines with stock levels\n- Returns skip=true if no alerts need sending."
     },
     {
       "parameters": {
@@ -106,14 +106,14 @@
       ],
       "id": "f813bcee-589b-4aa4-9e38-ac5a166e449a",
       "name": "Send WhatsApp via Twilio",
+      "notesInFlow": true,
       "credentials": {
         "twilioApi": {
           "id": "5H4e5JnuH9F3B605",
           "name": "Twilio account"
         }
       },
-      "notes": "HTTP POST request to the Twilio WhatsApp API.\nSends the formatted alert message to the store owner's registered WhatsApp number.\nUses Twilio sandbox or production credentials.",
-      "notesInFlow": true
+      "notes": "HTTP POST request to the Twilio WhatsApp API.\nSends the formatted alert message to the store owner's registered WhatsApp number.\nUses Twilio sandbox or production credentials."
     },
     {
       "parameters": {
@@ -127,8 +127,8 @@
       ],
       "id": "576c16d3-9d27-4c67-b179-8878f0411dce",
       "name": "Update last_alerted_at",
-      "notes": "Updates the last_alerted_at timestamp on each alert that was successfully sent.\nThis powers the 24-hour anti-spam filter on subsequent runs.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "notes": "Updates the last_alerted_at timestamp on each alert that was successfully sent.\nThis powers the 24-hour anti-spam filter on subsequent runs."
     },
     {
       "parameters": {
@@ -142,35 +142,35 @@
       ],
       "id": "00527ee6-f973-420b-8542-33bbfc9ad71d",
       "name": "When Executed by Another Workflow",
-      "notes": "Sub-workflow entry point.\nCalled by WF-08 Daily Orchestrator at the end of the daily pipeline.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "notes": "Sub-workflow entry point.\nCalled by WF-08 Daily Orchestrator at the end of the daily pipeline."
     },
     {
       "parameters": {
-        "width": 560,
-        "height": 260,
-        "content": "## WF-07: WhatsApp Alert Sender\n\n**Triggers:** POST webhook `/send-whatsapp` or sub-workflow call from WF-08\n**External API:** Twilio WhatsApp Messaging API\n\n**Purpose:** Notifies the store owner via WhatsApp when products need urgent restocking attention.\n\n**Flow:**\n1. Fetch all active stock alerts from Supabase\n2. Apply 24-hour anti-spam filter\n3. Sort by urgency (lowest stock first)\n4. Build formatted WhatsApp message\n5. Send via Twilio API\n6. Update alert timestamps to prevent re-sending"
+        "content": "## WF-07: WhatsApp Alert Sender\n\n**Triggers:** POST webhook `/send-whatsapp` or sub-workflow call from WF-08\n**External API:** Twilio WhatsApp Messaging API\n\n**Purpose:** Notifies the store owner via WhatsApp when products need urgent restocking attention.\n\n**Flow:**\n1. Fetch all active stock alerts from Supabase\n2. Apply 24-hour anti-spam filter\n3. Sort by urgency (lowest stock first)\n4. Build formatted WhatsApp message\n5. Send via Twilio API\n6. Update alert timestamps to prevent re-sending",
+        "height": 404,
+        "width": 560
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -480,
-        -500
+        -944,
+        -640
       ],
       "id": "sticky-wf07-overview",
       "name": "Sticky Note"
     },
     {
       "parameters": {
-        "width": 340,
-        "height": 140,
-        "content": "## Anti-Spam Protection\n\nAlerts sent within the last 24 hours are automatically filtered out to prevent notification fatigue.\nThe `last_alerted_at` timestamp is updated after each successful send."
+        "content": "## Anti-Spam Protection\n\nAlerts sent within the last 24 hours are automatically filtered out to prevent notification fatigue.\nThe `last_alerted_at` timestamp is updated after each successful send.",
+        "height": 204,
+        "width": 340
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -60,
-        -280
+        -256,
+        -544
       ],
       "id": "sticky-wf07-antispam",
       "name": "Sticky Note1"
@@ -235,16 +235,17 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "availableInMCP": true
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
   },
   "staticData": null,
   "meta": {
     "templateCredsSetupCompleted": true
   },
   "pinData": {},
-  "versionId": "0719e7fc-450c-456e-aa4d-0ba50d32f3e6",
-  "activeVersionId": "0719e7fc-450c-456e-aa4d-0ba50d32f3e6",
-  "versionCounter": 63,
+  "versionId": "6e8b19dd-aae9-4da9-9f3e-426790176ad1",
+  "activeVersionId": "244098cb-9464-4733-9647-54fe9dbe8da2",
+  "versionCounter": 73,
   "triggerCount": 1,
   "shared": [
     {
@@ -269,7 +270,7 @@
             "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
             "projectId": "ilqDzvKBCaYiT4Cg",
             "user": {
-              "updatedAt": "2026-03-14T05:50:53.000Z",
+              "updatedAt": "2026-03-17T06:13:54.573Z",
               "createdAt": "2025-07-08T19:51:25.310Z",
               "id": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
               "email": "vyshakhvponnachat@gmail.com",
@@ -292,11 +293,15 @@
                 "userActivated": true,
                 "easyAIWorkflowOnboarded": true,
                 "firstSuccessfulWorkflowId": "JgDNR0tDWj0Z_DVfHB4Fo",
-                "userActivatedAt": 1773375331682
+                "userActivatedAt": 1773375331682,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1773728030505
+                }
               },
               "disabled": false,
               "mfaEnabled": false,
-              "lastActiveAt": "2026-03-14",
+              "lastActiveAt": "2026-03-17",
               "isPending": false
             }
           }
@@ -306,9 +311,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-03-13T14:00:07.000Z",
-    "createdAt": "2026-03-13T04:14:59.473Z",
-    "versionId": "0719e7fc-450c-456e-aa4d-0ba50d32f3e6",
+    "updatedAt": "2026-03-15T07:00:59.317Z",
+    "createdAt": "2026-03-15T07:00:59.317Z",
+    "versionId": "244098cb-9464-4733-9647-54fe9dbe8da2",
     "workflowId": "C_-48mOxTzD9s-2H8UBT8",
     "nodes": [
       {
@@ -325,7 +330,9 @@
         ],
         "id": "d38f89f2-1eb1-441c-b75d-a51e30cbc6e6",
         "name": "Webhook Trigger",
-        "webhookId": "65a84497-fe57-4b39-a986-2c58d5bed335"
+        "webhookId": "65a84497-fe57-4b39-a986-2c58d5bed335",
+        "notes": "POST webhook entry point at /send-whatsapp.\nCalled by WF-08 Daily Orchestrator or manually from the frontend Settings page.",
+        "notesInFlow": true
       },
       {
         "parameters": {
@@ -355,7 +362,9 @@
             "id": "cTHIcrIVh1Uh0w7G",
             "name": "Supabase account"
           }
-        }
+        },
+        "notes": "Queries the Stock Alerts table for rows where alert_status = 'Active'.\nReturns product names, stock levels, and last alert timestamps.",
+        "notesInFlow": true
       },
       {
         "parameters": {
@@ -368,7 +377,9 @@
           -32
         ],
         "id": "89eeea4b-e0c0-4da1-a756-b9d59b8ed6f6",
-        "name": "Build WhatsApp Message"
+        "name": "Build WhatsApp Message",
+        "notes": "Builds a formatted WhatsApp alert message.\n\nIncludes anti-spam logic:\n- Filters out alerts already sent within the last 24 hours\n- Sorts by urgency (lowest stock first)\n- Formats product lines with stock levels\n- Returns skip=true if no alerts need sending.",
+        "notesInFlow": true
       },
       {
         "parameters": {
@@ -409,7 +420,9 @@
             "id": "5H4e5JnuH9F3B605",
             "name": "Twilio account"
           }
-        }
+        },
+        "notes": "HTTP POST request to the Twilio WhatsApp API.\nSends the formatted alert message to the store owner's registered WhatsApp number.\nUses Twilio sandbox or production credentials.",
+        "notesInFlow": true
       },
       {
         "parameters": {
@@ -422,7 +435,9 @@
           -32
         ],
         "id": "576c16d3-9d27-4c67-b179-8878f0411dce",
-        "name": "Update last_alerted_at"
+        "name": "Update last_alerted_at",
+        "notes": "Updates the last_alerted_at timestamp on each alert that was successfully sent.\nThis powers the 24-hour anti-spam filter on subsequent runs.",
+        "notesInFlow": true
       },
       {
         "parameters": {
@@ -435,7 +450,39 @@
           -224
         ],
         "id": "00527ee6-f973-420b-8542-33bbfc9ad71d",
-        "name": "When Executed by Another Workflow"
+        "name": "When Executed by Another Workflow",
+        "notes": "Sub-workflow entry point.\nCalled by WF-08 Daily Orchestrator at the end of the daily pipeline.",
+        "notesInFlow": true
+      },
+      {
+        "parameters": {
+          "width": 560,
+          "height": 260,
+          "content": "## WF-07: WhatsApp Alert Sender\n\n**Triggers:** POST webhook `/send-whatsapp` or sub-workflow call from WF-08\n**External API:** Twilio WhatsApp Messaging API\n\n**Purpose:** Notifies the store owner via WhatsApp when products need urgent restocking attention.\n\n**Flow:**\n1. Fetch all active stock alerts from Supabase\n2. Apply 24-hour anti-spam filter\n3. Sort by urgency (lowest stock first)\n4. Build formatted WhatsApp message\n5. Send via Twilio API\n6. Update alert timestamps to prevent re-sending"
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          -480,
+          -500
+        ],
+        "id": "sticky-wf07-overview",
+        "name": "Sticky Note"
+      },
+      {
+        "parameters": {
+          "width": 340,
+          "height": 140,
+          "content": "## Anti-Spam Protection\n\nAlerts sent within the last 24 hours are automatically filtered out to prevent notification fatigue.\nThe `last_alerted_at` timestamp is updated after each successful send."
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          -60,
+          -280
+        ],
+        "id": "sticky-wf07-antispam",
+        "name": "Sticky Note1"
       }
     ],
     "connections": {
@@ -496,23 +543,15 @@
       }
     },
     "authors": "Vyshakh Vijayan",
-    "name": "Version 0719e7fc",
-    "description": "",
-    "autosaved": true,
+    "name": null,
+    "description": null,
+    "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-03-13T14:00:07.325Z",
-        "id": 5,
+        "createdAt": "2026-03-15T07:00:59.432Z",
+        "id": 32,
         "workflowId": "C_-48mOxTzD9s-2H8UBT8",
-        "versionId": "0719e7fc-450c-456e-aa4d-0ba50d32f3e6",
-        "event": "activated",
-        "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
-      },
-      {
-        "createdAt": "2026-03-14T06:22:22.319Z",
-        "id": 20,
-        "workflowId": "C_-48mOxTzD9s-2H8UBT8",
-        "versionId": "0719e7fc-450c-456e-aa4d-0ba50d32f3e6",
+        "versionId": "244098cb-9464-4733-9647-54fe9dbe8da2",
         "event": "activated",
         "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
       }

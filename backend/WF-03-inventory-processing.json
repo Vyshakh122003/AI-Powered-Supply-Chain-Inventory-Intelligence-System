@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-03-14T05:57:03.621Z",
+  "updatedAt": "2026-03-17T06:00:26.638Z",
   "createdAt": "2026-03-13T06:39:05.020Z",
   "id": "P_JZINAHgGw-IVQOjI4eg",
   "name": "WF-03 Inventory Processing & Stock Depletion",
-  "description": "Processes inventory levels and generates stock alerts. Compares current_stock against reorder_threshold for each product, clears existing alerts, and creates fresh alerts for all products currently below threshold. Called daily by WF-08.",
+  "description": null,
   "active": true,
   "isArchived": false,
   "nodes": [
@@ -17,8 +17,8 @@
       ],
       "id": "f63934f4-2bec-48e7-9f2d-27c6243e0731",
       "name": "When clicking 'Execute workflow'",
-      "notes": "Manual entry point for testing.\nUse to run the inventory processor independently.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "notes": "Manual entry point for testing.\nUse to run the inventory processor independently."
     },
     {
       "parameters": {
@@ -32,8 +32,8 @@
       ],
       "id": "bbf8261d-093b-4ebe-9156-1b63a190935e",
       "name": "When Executed by Another Workflow",
-      "notes": "Sub-workflow entry point.\nCalled by WF-08 Daily Orchestrator during the daily pipeline.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "notes": "Sub-workflow entry point.\nCalled by WF-08 Daily Orchestrator during the daily pipeline."
     },
     {
       "parameters": {
@@ -49,14 +49,14 @@
       ],
       "id": "03b7f7b9-e022-4df8-929a-7f57879dc470",
       "name": "Fetch All Products",
+      "notesInFlow": true,
       "credentials": {
         "supabaseApi": {
           "id": "cTHIcrIVh1Uh0w7G",
           "name": "Supabase account"
         }
       },
-      "notes": "Retrieves all products from the Supabase Products table.\nNeeds current_stock and reorder_threshold for comparison.",
-      "notesInFlow": true
+      "notes": "Retrieves all products from the Supabase Products table.\nNeeds current_stock and reorder_threshold for comparison."
     },
     {
       "parameters": {
@@ -70,38 +70,42 @@
       ],
       "id": "2da16326-4ff8-40c8-80e5-dc40fd6b0fcb",
       "name": "Compute & Filter",
-      "notes": "Filters products where current_stock <= reorder_threshold.\nBuilds alert objects with product_id, product_name, alert_name, current_stock, and alert_status='Active'.\nReturns skip=true if no low-stock products found.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "notes": "Filters products where current_stock <= reorder_threshold.\nBuilds alert objects with product_id, product_name, alert_name, current_stock, and alert_status='Active'.\nReturns skip=true if no low-stock products found."
     },
     {
+      "id": "b7a3bc67-9e34-4559-920d-da2a8468b61f",
+      "name": "Delete All Alerts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "notes": "HTTP DELETE request to clear ALL existing rows from the Stock Alerts table.\nThis is a full-refresh approach - all alerts are regenerated each run.",
       "parameters": {
         "method": "DELETE",
-        "url": "https://xixdkapttirdedoivskx.supabase.co/rest/v1/Stock%20Alerts?id=neq.00000000-0000-0000-0000-000000000000",
+        "url": "https://xixdkapttirdedoivskx.supabase.co/rest/v1/Stock%20Alerts?id=not.is.null",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
-              "name": "apikey",
-              "value": "REDACTED_SUPABASE_ANON_KEY"
+              "value": "REDACTED_SUPABASE_ANON_KEY",
+              "name": "apikey"
             },
             {
-              "name": "Authorization",
-              "value": "Bearer REDACTED_SUPABASE_ANON_KEY"
+              "value": "Bearer REDACTED_SUPABASE_ANON_KEY",
+              "name": "Authorization"
+            },
+            {
+              "value": "return=minimal",
+              "name": "Prefer"
             }
           ]
         },
         "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
+      "notesInFlow": true,
       "position": [
         672,
         208
-      ],
-      "id": "b7a3bc67-9e34-4559-920d-da2a8468b61f",
-      "name": "Delete All Alerts",
-      "notes": "HTTP DELETE request to clear ALL existing rows from the Stock Alerts table.\nThis is a full-refresh approach — all alerts are regenerated each run.",
-      "notesInFlow": true
+      ]
     },
     {
       "parameters": {
@@ -147,14 +151,14 @@
       ],
       "id": "76c24b3c-1d9e-4c9a-aa07-26082f0dceb0",
       "name": "Create Alerts",
+      "notesInFlow": true,
       "credentials": {
         "supabaseApi": {
           "id": "cTHIcrIVh1Uh0w7G",
           "name": "Supabase account"
         }
       },
-      "notes": "Inserts fresh Stock Alert rows into Supabase for each product that is currently below its reorder threshold.",
-      "notesInFlow": true
+      "notes": "Inserts fresh Stock Alert rows into Supabase for each product that is currently below its reorder threshold."
     },
     {
       "parameters": {
@@ -168,20 +172,20 @@
       ],
       "id": "990bfc3e-4b61-44e1-a066-8913936ce200",
       "name": "Restore Data",
-      "notes": "Restores the filtered alert data that was computed before the delete.\nNeeded because the HTTP delete node output replaces the pipeline data.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "notes": "Restores the filtered alert data that was computed before the delete.\nNeeded because the HTTP delete node output replaces the pipeline data."
     },
     {
       "parameters": {
-        "width": 560,
-        "height": 260,
-        "content": "## WF-03: Inventory Processing & Stock Alerts\n\n**Triggers:** Manual execution or sub-workflow call from WF-08\n\n**Purpose:** Identifies products with dangerously low stock levels and generates active alerts for the dashboard and WhatsApp notifications.\n\n**Strategy:** Full-refresh approach:\n1. Fetch all products from Supabase\n2. Filter where current_stock <= reorder_threshold\n3. Delete ALL existing Stock Alerts\n4. Re-create alerts for currently low-stock items\n\n**Note:** The delete-and-recreate pattern ensures alerts always reflect the current state. No stale alerts persist."
+        "content": "## WF-03: Inventory Processing & Stock Alerts\n\n**Triggers:** Manual execution or sub-workflow call from WF-08\n\n**Purpose:** Identifies products with dangerously low stock levels and generates active alerts for the dashboard and WhatsApp notifications.\n\n**Strategy:** Full-refresh approach:\n1. Fetch all products from Supabase\n2. Filter where current_stock <= reorder_threshold\n3. Delete ALL existing Stock Alerts\n4. Re-create alerts for currently low-stock items\n\n**Note:** The delete-and-recreate pattern ensures alerts always reflect the current state. No stale alerts persist.",
+        "height": 372,
+        "width": 560
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -30,
-        -200
+        224,
+        -256
       ],
       "id": "sticky-wf03-overview",
       "name": "Sticky Note"
@@ -259,14 +263,14 @@
     "executionOrder": "v1",
     "availableInMCP": false,
     "timeSavedMode": "fixed",
-    "callerPolicy": "workflowsFromSameOwner"
+    "callerPolicy": "any"
   },
   "staticData": null,
   "meta": null,
   "pinData": {},
-  "versionId": "8000924a-b455-4dbd-a501-9d2184ea5d63",
-  "activeVersionId": "8000924a-b455-4dbd-a501-9d2184ea5d63",
-  "versionCounter": 10,
+  "versionId": "16ed7d41-ce6f-461f-b31a-3666fbb6c20e",
+  "activeVersionId": "16ed7d41-ce6f-461f-b31a-3666fbb6c20e",
+  "versionCounter": 23,
   "triggerCount": 0,
   "shared": [
     {
@@ -291,7 +295,7 @@
             "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
             "projectId": "ilqDzvKBCaYiT4Cg",
             "user": {
-              "updatedAt": "2026-03-14T05:50:53.000Z",
+              "updatedAt": "2026-03-17T06:13:54.573Z",
               "createdAt": "2025-07-08T19:51:25.310Z",
               "id": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
               "email": "vyshakhvponnachat@gmail.com",
@@ -314,11 +318,15 @@
                 "userActivated": true,
                 "easyAIWorkflowOnboarded": true,
                 "firstSuccessfulWorkflowId": "JgDNR0tDWj0Z_DVfHB4Fo",
-                "userActivatedAt": 1773375331682
+                "userActivatedAt": 1773375331682,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1773728030505
+                }
               },
               "disabled": false,
               "mfaEnabled": false,
-              "lastActiveAt": "2026-03-14",
+              "lastActiveAt": "2026-03-17",
               "isPending": false
             }
           }
@@ -328,9 +336,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-03-14T05:56:58.000Z",
-    "createdAt": "2026-03-13T17:03:00.852Z",
-    "versionId": "8000924a-b455-4dbd-a501-9d2184ea5d63",
+    "updatedAt": "2026-03-17T06:00:26.640Z",
+    "createdAt": "2026-03-17T06:00:26.640Z",
+    "versionId": "16ed7d41-ce6f-461f-b31a-3666fbb6c20e",
     "workflowId": "P_JZINAHgGw-IVQOjI4eg",
     "nodes": [
       {
@@ -342,7 +350,9 @@
           208
         ],
         "id": "f63934f4-2bec-48e7-9f2d-27c6243e0731",
-        "name": "When clicking 'Execute workflow'"
+        "name": "When clicking 'Execute workflow'",
+        "notesInFlow": true,
+        "notes": "Manual entry point for testing.\nUse to run the inventory processor independently."
       },
       {
         "parameters": {
@@ -355,7 +365,9 @@
           0
         ],
         "id": "bbf8261d-093b-4ebe-9156-1b63a190935e",
-        "name": "When Executed by Another Workflow"
+        "name": "When Executed by Another Workflow",
+        "notesInFlow": true,
+        "notes": "Sub-workflow entry point.\nCalled by WF-08 Daily Orchestrator during the daily pipeline."
       },
       {
         "parameters": {
@@ -371,12 +383,14 @@
         ],
         "id": "03b7f7b9-e022-4df8-929a-7f57879dc470",
         "name": "Fetch All Products",
+        "notesInFlow": true,
         "credentials": {
           "supabaseApi": {
             "id": "cTHIcrIVh1Uh0w7G",
             "name": "Supabase account"
           }
-        }
+        },
+        "notes": "Retrieves all products from the Supabase Products table.\nNeeds current_stock and reorder_threshold for comparison."
       },
       {
         "parameters": {
@@ -389,35 +403,43 @@
           208
         ],
         "id": "2da16326-4ff8-40c8-80e5-dc40fd6b0fcb",
-        "name": "Compute & Filter"
+        "name": "Compute & Filter",
+        "notesInFlow": true,
+        "notes": "Filters products where current_stock <= reorder_threshold.\nBuilds alert objects with product_id, product_name, alert_name, current_stock, and alert_status='Active'.\nReturns skip=true if no low-stock products found."
       },
       {
+        "id": "b7a3bc67-9e34-4559-920d-da2a8468b61f",
+        "name": "Delete All Alerts",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "notes": "HTTP DELETE request to clear ALL existing rows from the Stock Alerts table.\nThis is a full-refresh approach - all alerts are regenerated each run.",
         "parameters": {
           "method": "DELETE",
-          "url": "https://xixdkapttirdedoivskx.supabase.co/rest/v1/Stock%20Alerts?id=neq.00000000-0000-0000-0000-000000000000",
+          "url": "https://xixdkapttirdedoivskx.supabase.co/rest/v1/Stock%20Alerts?id=not.is.null",
           "sendHeaders": true,
           "headerParameters": {
             "parameters": [
               {
-                "name": "apikey",
-                "value": "REDACTED_SUPABASE_ANON_KEY"
+                "value": "REDACTED_SUPABASE_ANON_KEY",
+                "name": "apikey"
               },
               {
-                "name": "Authorization",
-                "value": "Bearer REDACTED_SUPABASE_ANON_KEY"
+                "value": "Bearer REDACTED_SUPABASE_ANON_KEY",
+                "name": "Authorization"
+              },
+              {
+                "value": "return=minimal",
+                "name": "Prefer"
               }
             ]
           },
           "options": {}
         },
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.3,
+        "notesInFlow": true,
         "position": [
           672,
           208
-        ],
-        "id": "b7a3bc67-9e34-4559-920d-da2a8468b61f",
-        "name": "Delete All Alerts"
+        ]
       },
       {
         "parameters": {
@@ -463,12 +485,14 @@
         ],
         "id": "76c24b3c-1d9e-4c9a-aa07-26082f0dceb0",
         "name": "Create Alerts",
+        "notesInFlow": true,
         "credentials": {
           "supabaseApi": {
             "id": "cTHIcrIVh1Uh0w7G",
             "name": "Supabase account"
           }
-        }
+        },
+        "notes": "Inserts fresh Stock Alert rows into Supabase for each product that is currently below its reorder threshold."
       },
       {
         "parameters": {
@@ -481,7 +505,24 @@
           208
         ],
         "id": "990bfc3e-4b61-44e1-a066-8913936ce200",
-        "name": "Restore Data"
+        "name": "Restore Data",
+        "notesInFlow": true,
+        "notes": "Restores the filtered alert data that was computed before the delete.\nNeeded because the HTTP delete node output replaces the pipeline data."
+      },
+      {
+        "parameters": {
+          "content": "## WF-03: Inventory Processing & Stock Alerts\n\n**Triggers:** Manual execution or sub-workflow call from WF-08\n\n**Purpose:** Identifies products with dangerously low stock levels and generates active alerts for the dashboard and WhatsApp notifications.\n\n**Strategy:** Full-refresh approach:\n1. Fetch all products from Supabase\n2. Filter where current_stock <= reorder_threshold\n3. Delete ALL existing Stock Alerts\n4. Re-create alerts for currently low-stock items\n\n**Note:** The delete-and-recreate pattern ensures alerts always reflect the current state. No stale alerts persist.",
+          "height": 372,
+          "width": 560
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          224,
+          -256
+        ],
+        "id": "sticky-wf03-overview",
+        "name": "Sticky Note"
       }
     ],
     "connections": {
@@ -553,23 +594,15 @@
       }
     },
     "authors": "Vyshakh Vijayan",
-    "name": "Version 8000924a",
-    "description": "",
-    "autosaved": true,
+    "name": null,
+    "description": null,
+    "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-03-14T05:56:58.054Z",
-        "id": 8,
+        "createdAt": "2026-03-17T06:00:26.724Z",
+        "id": 39,
         "workflowId": "P_JZINAHgGw-IVQOjI4eg",
-        "versionId": "8000924a-b455-4dbd-a501-9d2184ea5d63",
-        "event": "activated",
-        "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
-      },
-      {
-        "createdAt": "2026-03-14T05:57:03.684Z",
-        "id": 9,
-        "workflowId": "P_JZINAHgGw-IVQOjI4eg",
-        "versionId": "8000924a-b455-4dbd-a501-9d2184ea5d63",
+        "versionId": "16ed7d41-ce6f-461f-b31a-3666fbb6c20e",
         "event": "activated",
         "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
       }

@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-03-14T05:57:35.806Z",
+  "updatedAt": "2026-03-17T05:53:21.871Z",
   "createdAt": "2026-03-11T17:14:44.338Z",
   "id": "WkRvETkpAySDKEAzPwRWi",
   "name": "WF-06 Supplier Scoring",
-  "description": "Scores and grades suppliers using a Weighted Sum Model (WSM). Evaluates reliability (40%), price competitiveness (35%), and delivery speed (25%) to produce a composite score (0-100) and letter grade (A-D). Updates supplier records in Supabase.",
+  "description": null,
   "active": true,
   "isArchived": false,
   "nodes": [
@@ -45,7 +45,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst suppliers = items.map(i => i.json);\n\n// Step 1: Find min and max delivery days for normalization\nconst deliveryDays = suppliers.map(s => parseInt(s.delivery_time_days) || 3);\nconst minDays = Math.min(...deliveryDays);\nconst maxDays = Math.max(...deliveryDays);\n\nreturn suppliers.map(supplier => {\n  const reliability = parseFloat(supplier.reliability_score) || 0;\n  const price       = parseFloat(supplier.price_score) || 0;\n  const days        = parseInt(supplier.delivery_time_days) || 3;\n\n  // Min-Max normalize delivery time\n  // 1 = fastest, 0 = slowest\n  const deliveryScore = (maxDays === minDays)\n    ? 1\n    : 1 - ((days - minDays) / (maxDays - minDays));\n\n  // Weighted Sum Model\n  const composite = (\n    (reliability * 0.40) +\n    (price       * 0.35) +\n    (deliveryScore * 0.25)\n  ) * 100;\n\n  const rounded = Math.round(composite * 10) / 10;\n\n  // Grade assignment\n  const grade = rounded >= 80 ? 'A'\n              : rounded >= 65 ? 'B'\n              : rounded >= 50 ? 'C'\n              : 'D';\n\n  // Human-readable breakdown\n  const breakdown = `Reliability: ${Math.round(reliability*40)}pts | Price: ${Math.round(price*35)}pts | Speed: ${Math.round(deliveryScore*25)}pts`;\n\n  console.log(`${supplier.supplier_name}: ${rounded} (${grade}) — ${breakdown}`);\n\n  return {\n    json: {\n      supplier_id:     supplier.supplier_id,\n      composite_score: rounded,\n      supplier_grade:  grade,\n      score_breakdown: breakdown\n    }\n  };\n});"
+        "jsCode": "const items = $input.all();\nconst suppliers = items.map(i => i.json);\n\n// Step 1: Find min and max delivery days for normalization\nconst deliveryDays = suppliers.map(s => parseInt(s.delivery_time_days) || 3);\nconst minDays = Math.min(...deliveryDays);\nconst maxDays = Math.max(...deliveryDays);\n\nreturn suppliers.map(supplier => {\n  const reliability = parseFloat(supplier.reliability_score) || 0;\n  const price       = parseFloat(supplier.price_score) || 0;\n  const days        = parseInt(supplier.delivery_time_days) || 3;\n\n  // Min-Max normalize delivery time\n  // 1 = fastest, 0 = slowest\n  const deliveryScore = (maxDays === minDays)\n    ? 1\n    : 1 - ((days - minDays) / (maxDays - minDays));\n\n  // Weighted Sum Model\n  const composite = (\n    (reliability * 0.40) +\n    (price       * 0.35) +\n    (deliveryScore * 0.25)\n  ) * 100;\n\n  const rounded = Math.round(composite * 10) / 10;\n\n  // Grade assignment\n  const grade = rounded >= 80 ? 'A'\n              : rounded >= 65 ? 'B'\n              : rounded >= 50 ? 'C'\n              : 'D';\n\n  // Human-readable breakdown\n  const breakdown = `Reliability: ${Math.round(reliability*40)}pts | Price: ${Math.round(price*35)}pts | Speed: ${Math.round(deliveryScore*25)}pts`;\n\n  console.log(`${supplier.supplier_name}: ${rounded} (${grade}) - ${breakdown}`);\n\n  return {\n    json: {\n      supplier_id:     supplier.supplier_id,\n      composite_score: rounded,\n      supplier_grade:  grade,\n      score_breakdown: breakdown\n    }\n  };\n});"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -186,16 +186,16 @@
     "executionOrder": "v1",
     "availableInMCP": false,
     "timeSavedMode": "fixed",
-    "callerPolicy": "workflowsFromSameOwner"
+    "callerPolicy": "any"
   },
   "staticData": null,
   "meta": {
     "templateCredsSetupCompleted": true
   },
   "pinData": {},
-  "versionId": "4d3c1e81-abcb-4186-ad7b-fbba96bdaf05",
-  "activeVersionId": "4d3c1e81-abcb-4186-ad7b-fbba96bdaf05",
-  "versionCounter": 31,
+  "versionId": "591f76b0-d559-4799-ae68-a519b7382f14",
+  "activeVersionId": "591f76b0-d559-4799-ae68-a519b7382f14",
+  "versionCounter": 40,
   "triggerCount": 0,
   "shared": [
     {
@@ -220,7 +220,7 @@
             "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
             "projectId": "ilqDzvKBCaYiT4Cg",
             "user": {
-              "updatedAt": "2026-03-14T05:50:53.000Z",
+              "updatedAt": "2026-03-17T06:13:54.573Z",
               "createdAt": "2025-07-08T19:51:25.310Z",
               "id": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
               "email": "vyshakhvponnachat@gmail.com",
@@ -243,11 +243,15 @@
                 "userActivated": true,
                 "easyAIWorkflowOnboarded": true,
                 "firstSuccessfulWorkflowId": "JgDNR0tDWj0Z_DVfHB4Fo",
-                "userActivatedAt": 1773375331682
+                "userActivatedAt": 1773375331682,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1773728030505
+                }
               },
               "disabled": false,
               "mfaEnabled": false,
-              "lastActiveAt": "2026-03-14",
+              "lastActiveAt": "2026-03-17",
               "isPending": false
             }
           }
@@ -257,9 +261,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-03-14T05:57:31.000Z",
-    "createdAt": "2026-03-13T04:14:48.365Z",
-    "versionId": "4d3c1e81-abcb-4186-ad7b-fbba96bdaf05",
+    "updatedAt": "2026-03-17T05:53:21.869Z",
+    "createdAt": "2026-03-17T05:53:21.869Z",
+    "versionId": "591f76b0-d559-4799-ae68-a519b7382f14",
     "workflowId": "WkRvETkpAySDKEAzPwRWi",
     "nodes": [
       {
@@ -271,7 +275,9 @@
           -16
         ],
         "id": "1cce4e43-24cc-4594-a484-819c0f52fbea",
-        "name": "Manual Trigger"
+        "name": "Manual Trigger",
+        "notes": "Manual entry point for testing.\nRun to recalculate all supplier scores independently.",
+        "notesInFlow": true
       },
       {
         "parameters": {
@@ -292,11 +298,13 @@
             "id": "cTHIcrIVh1Uh0w7G",
             "name": "Supabase account"
           }
-        }
+        },
+        "notes": "Retrieves all supplier records from the Supabase Suppliers table.\nNeeds reliability_score, price_score, and delivery_time_days for scoring.",
+        "notesInFlow": true
       },
       {
         "parameters": {
-          "jsCode": "const items = $input.all();\nconst suppliers = items.map(i => i.json);\n\n// Step 1: Find min and max delivery days for normalization\nconst deliveryDays = suppliers.map(s => parseInt(s.delivery_time_days) || 3);\nconst minDays = Math.min(...deliveryDays);\nconst maxDays = Math.max(...deliveryDays);\n\nreturn suppliers.map(supplier => {\n  const reliability = parseFloat(supplier.reliability_score) || 0;\n  const price       = parseFloat(supplier.price_score) || 0;\n  const days        = parseInt(supplier.delivery_time_days) || 3;\n\n  // Min-Max normalize delivery time\n  // 1 = fastest, 0 = slowest\n  const deliveryScore = (maxDays === minDays)\n    ? 1\n    : 1 - ((days - minDays) / (maxDays - minDays));\n\n  // Weighted Sum Model\n  const composite = (\n    (reliability * 0.40) +\n    (price       * 0.35) +\n    (deliveryScore * 0.25)\n  ) * 100;\n\n  const rounded = Math.round(composite * 10) / 10;\n\n  // Grade assignment\n  const grade = rounded >= 80 ? 'A'\n              : rounded >= 65 ? 'B'\n              : rounded >= 50 ? 'C'\n              : 'D';\n\n  // Human-readable breakdown\n  const breakdown = `Reliability: ${Math.round(reliability*40)}pts | Price: ${Math.round(price*35)}pts | Speed: ${Math.round(deliveryScore*25)}pts`;\n\n  console.log(`${supplier.supplier_name}: ${rounded} (${grade}) — ${breakdown}`);\n\n  return {\n    json: {\n      supplier_id:     supplier.supplier_id,\n      composite_score: rounded,\n      supplier_grade:  grade,\n      score_breakdown: breakdown\n    }\n  };\n});"
+          "jsCode": "const items = $input.all();\nconst suppliers = items.map(i => i.json);\n\n// Step 1: Find min and max delivery days for normalization\nconst deliveryDays = suppliers.map(s => parseInt(s.delivery_time_days) || 3);\nconst minDays = Math.min(...deliveryDays);\nconst maxDays = Math.max(...deliveryDays);\n\nreturn suppliers.map(supplier => {\n  const reliability = parseFloat(supplier.reliability_score) || 0;\n  const price       = parseFloat(supplier.price_score) || 0;\n  const days        = parseInt(supplier.delivery_time_days) || 3;\n\n  // Min-Max normalize delivery time\n  // 1 = fastest, 0 = slowest\n  const deliveryScore = (maxDays === minDays)\n    ? 1\n    : 1 - ((days - minDays) / (maxDays - minDays));\n\n  // Weighted Sum Model\n  const composite = (\n    (reliability * 0.40) +\n    (price       * 0.35) +\n    (deliveryScore * 0.25)\n  ) * 100;\n\n  const rounded = Math.round(composite * 10) / 10;\n\n  // Grade assignment\n  const grade = rounded >= 80 ? 'A'\n              : rounded >= 65 ? 'B'\n              : rounded >= 50 ? 'C'\n              : 'D';\n\n  // Human-readable breakdown\n  const breakdown = `Reliability: ${Math.round(reliability*40)}pts | Price: ${Math.round(price*35)}pts | Speed: ${Math.round(deliveryScore*25)}pts`;\n\n  console.log(`${supplier.supplier_name}: ${rounded} (${grade}) - ${breakdown}`);\n\n  return {\n    json: {\n      supplier_id:     supplier.supplier_id,\n      composite_score: rounded,\n      supplier_grade:  grade,\n      score_breakdown: breakdown\n    }\n  };\n});"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -305,7 +313,9 @@
           -16
         ],
         "id": "aa65f198-3c47-455a-b674-4bc8475662bf",
-        "name": "Calculate Scores"
+        "name": "Calculate Scores",
+        "notes": "Weighted Sum Model scoring for each supplier:\n- Reliability: 40% weight (0-1 scale)\n- Price: 35% weight (0-1 scale)\n- Delivery: 25% weight (min-max normalized)\n\nGrade assignment: A>=80, B>=65, C>=50, D<50\nAlso generates a human-readable score breakdown string.",
+        "notesInFlow": true
       },
       {
         "parameters": {
@@ -350,7 +360,9 @@
             "id": "cTHIcrIVh1Uh0w7G",
             "name": "Supabase account"
           }
-        }
+        },
+        "notes": "Writes composite_score, grade, and score_breakdown back to each supplier row in the Supabase Suppliers table.",
+        "notesInFlow": true
       },
       {
         "parameters": {
@@ -363,7 +375,24 @@
           -160
         ],
         "id": "b20c74fd-7779-4737-a1bf-3613e8a4ad65",
-        "name": "When Executed by Another Workflow"
+        "name": "When Executed by Another Workflow",
+        "notes": "Sub-workflow entry point.\nCan be called by WF-08 or other orchestration workflows.",
+        "notesInFlow": true
+      },
+      {
+        "parameters": {
+          "width": 540,
+          "height": 300,
+          "content": "## WF-06: Supplier Scoring\n\n**Triggers:** Manual execution or sub-workflow call\n\n**Purpose:** Evaluates and ranks suppliers using a multi-criteria Weighted Sum Model to help store owners identify the best suppliers for reordering.\n\n**Scoring Formula (WSM):**\n- Reliability Score: 40% weight\n- Price Score: 35% weight  \n- Delivery Speed: 25% weight (min-max normalized)\n\n**Grade Scale:**\n| Grade | Score Range | Meaning |\n|-------|------------|----------|\n| A | >= 80 | Excellent supplier |\n| B | 65-79 | Good supplier |\n| C | 50-64 | Average supplier |\n| D | < 50 | Below average |"
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          -660,
+          -380
+        ],
+        "id": "sticky-wf06-overview",
+        "name": "Sticky Note"
       }
     ],
     "connections": {
@@ -413,23 +442,15 @@
       }
     },
     "authors": "Vyshakh Vijayan",
-    "name": "Version 4d3c1e81",
-    "description": "",
-    "autosaved": true,
+    "name": null,
+    "description": null,
+    "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-03-14T05:57:31.650Z",
-        "id": 14,
+        "createdAt": "2026-03-17T05:53:21.958Z",
+        "id": 38,
         "workflowId": "WkRvETkpAySDKEAzPwRWi",
-        "versionId": "4d3c1e81-abcb-4186-ad7b-fbba96bdaf05",
-        "event": "activated",
-        "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
-      },
-      {
-        "createdAt": "2026-03-14T05:57:35.882Z",
-        "id": 15,
-        "workflowId": "WkRvETkpAySDKEAzPwRWi",
-        "versionId": "4d3c1e81-abcb-4186-ad7b-fbba96bdaf05",
+        "versionId": "591f76b0-d559-4799-ae68-a519b7382f14",
         "event": "activated",
         "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
       }
