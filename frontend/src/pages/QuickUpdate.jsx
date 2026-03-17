@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import { postWebhook, WEBHOOKS } from '../lib/config'
 import toast from 'react-hot-toast'
 import {
   Zap, Loader2, Search, Save, Check, Minus, Plus,
@@ -82,17 +81,35 @@ export default function QuickUpdate() {
         const product = products.find((p) => p.product_id === productId)
         if (!product) continue
 
+        const quantityChange = newQty - product.current_stock
+
         try {
-          await postWebhook(WEBHOOKS.productIngest, {
+          // Direct update to Products table
+          const { error: updateError } = await supabase
+            .from('Products')
+            .update({
+              current_stock: newQty,
+              last_manual_update: new Date().toISOString()
+            })
+            .eq('product_id', productId)
+          
+          if (updateError) throw updateError
+
+          // Log transaction
+          await supabase.from('Stock Transactions').insert({
             product_id: productId,
             product_name: product.product_name,
-            category: product.category,
-            current_stock: newQty,
-            unit: product.unit,
-          })
+            transaction_type: 'manual_update',
+            quantity_change: quantityChange,
+            new_stock_level: newQty,
+            notes: 'Quick Update',
+            store_id: product.store_id // assumes product record doesn't have it directly mapped well enough for RLS though, we'll just omit or RLS handles it
+          }).then(({ error }) => { if (error) console.warn('Could not log transaction:', error.message) })
+
           successCount++
           setSaved((prev) => ({ ...prev, [productId]: true }))
-        } catch {
+        } catch (err) {
+          console.error(err)
           toast.error(`Failed to update ${product.product_name}`)
         }
       }

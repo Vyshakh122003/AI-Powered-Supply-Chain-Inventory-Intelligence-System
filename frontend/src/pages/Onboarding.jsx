@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import {
-  Package, Store, User, Phone, MapPin, Clock,
+  Package, Store, User, Clock,
   ArrowRight, ArrowLeft, Loader2, CheckCircle2,
 } from 'lucide-react'
 
@@ -296,12 +296,7 @@ export default function Onboarding() {
                 Back
               </button>
             ) : (
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="text-sm font-medium text-muted hover:text-text transition-colors cursor-pointer"
-              >
-                Skip for now
-              </button>
+              <div />
             )}
 
             {isLastStep ? (

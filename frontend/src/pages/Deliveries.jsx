@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { postWebhook, WEBHOOKS } from '../lib/config'
 import toast from 'react-hot-toast'
 import {
-  Truck, Loader2, Plus, Trash2, Search, Package,
+  Truck, Loader2, Plus, Trash2, Package,
   CheckCircle2, ClipboardList,
 } from 'lucide-react'
 
@@ -50,7 +50,7 @@ export default function Deliveries() {
       const { data, error } = await supabase
         .from('Stock Transactions')
         .select('*')
-        .eq('type', 'delivery')
+        .eq('transaction_type', 'delivery')
         .order('created_at', { ascending: false })
         .limit(20)
       if (error) throw error
@@ -115,12 +115,11 @@ export default function Deliveries() {
           // Also log to Stock Transactions (best-effort)
           await supabase.from('Stock Transactions').insert({
             product_id: item.product_id,
-            type: 'delivery',
-            quantity: parseInt(item.quantity, 10),
-            previous_stock: product.current_stock || 0,
-            new_stock: newStock,
-            supplier_id: selectedSupplier || null,
-            notes: notes || null,
+            product_name: product.product_name,
+            transaction_type: 'delivery',
+            quantity_change: parseInt(item.quantity, 10),
+            new_stock_level: newStock,
+            notes: notes ? `${notes} (Supplier: ${selectedSupplier || 'None'})` : `Supplier: ${selectedSupplier || 'None'}`,
           }).then(({ error }) => {
             if (error) console.warn('Could not log transaction:', error.message)
           })
@@ -282,13 +281,13 @@ export default function Deliveries() {
                 className="flex items-center justify-between py-2 border-b border-border last:border-0"
               >
                 <div>
-                  <p className="text-sm font-medium text-text">{d.product_id}</p>
+                  <p className="text-sm font-medium text-text">{d.product_name || d.product_id}</p>
                   <p className="text-xs text-muted">
-                    +{d.quantity} units &middot; {new Date(d.created_at).toLocaleDateString('en-IN')}
+                    +{d.quantity_change} units &middot; {new Date(d.created_at).toLocaleDateString('en-IN')}
                   </p>
                 </div>
                 <span className="text-xs text-muted">
-                  {d.previous_stock} &rarr; {d.new_stock}
+                  Stock: {d.new_stock_level}
                 </span>
               </div>
             ))}

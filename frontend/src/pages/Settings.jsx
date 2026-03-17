@@ -1,22 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { apiTriggerWorkflow, triggerWebhook, WEBHOOKS, WORKFLOW_IDS } from '../lib/config'
+import { triggerWebhook, WEBHOOKS } from '../lib/config'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import {
   Settings as SettingsIcon, Save, Loader2, Play,
-  Calculator, AlertTriangle, ShieldCheck, Brain,
-  Star, MessageCircle, Zap, MapPin, Clock, Store,
+  MessageCircle, Zap, MapPin, Clock, Store,
 } from 'lucide-react'
 
 const workflowButtons = [
-  { key: 'runWF02', label: 'Calculate Stockout Dates', icon: Calculator, trigger: () => apiTriggerWorkflow(WORKFLOW_IDS.WF02) },
-  { key: 'runWF03', label: 'Generate Alerts', icon: AlertTriangle, trigger: () => apiTriggerWorkflow(WORKFLOW_IDS.WF03) },
-  { key: 'runWF04', label: 'Classify Risk', icon: ShieldCheck, trigger: () => apiTriggerWorkflow(WORKFLOW_IDS.WF04) },
-  { key: 'runWF05', label: 'Run AI Analysis', icon: Brain, trigger: () => apiTriggerWorkflow(WORKFLOW_IDS.WF05), cooldown: 60 },
-  { key: 'runWF06', label: 'Score Suppliers', icon: Star, trigger: () => apiTriggerWorkflow(WORKFLOW_IDS.WF06) },
-  { key: 'sendWhatsApp', label: 'Send WhatsApp', icon: MessageCircle, trigger: () => triggerWebhook(WEBHOOKS.sendWhatsApp) },
-  { key: 'runWF08', label: 'Run Full Pipeline', icon: Zap, trigger: () => apiTriggerWorkflow(WORKFLOW_IDS.WF08) },
+  { key: 'runWF08', label: 'Run Full Pipeline', icon: Zap, trigger: () => triggerWebhook(WEBHOOKS.runPipeline), description: 'Calculates stockouts, classifies risk, generates alerts, scores suppliers' },
+  { key: 'sendWhatsApp', label: 'Send WhatsApp Alert', icon: MessageCircle, trigger: () => triggerWebhook(WEBHOOKS.sendWhatsApp), description: 'Send current alerts summary to WhatsApp' },
 ]
 
 export default function Settings() {
@@ -323,10 +317,10 @@ export default function Settings() {
       <div className="bg-white rounded-xl border border-border p-6">
         <h2 className="text-base font-semibold text-text mb-2 flex items-center gap-2">
           <Play className="w-5 h-5 text-accent" />
-          Manual Workflow Triggers
+          Workflow Actions
         </h2>
         <p className="text-sm text-muted mb-4">
-          Manually trigger individual pipeline steps or the full pipeline.
+          Manually run the AI pipeline or send WhatsApp alerts.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -341,7 +335,7 @@ export default function Settings() {
                 key={wf.key}
                 onClick={() => handleRunWorkflow(wf)}
                 disabled={isDisabled}
-                className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg border transition-colors text-left disabled:opacity-50 cursor-pointer ${
+                className={`flex items-center gap-3 px-4 py-3.5 text-sm font-medium rounded-lg border transition-colors text-left disabled:opacity-50 cursor-pointer ${
                   wf.key === 'runWF08'
                     ? 'bg-primary text-white border-primary hover:bg-primary/90'
                     : 'bg-white text-text border-border hover:bg-gray-50'
@@ -354,6 +348,9 @@ export default function Settings() {
                 )}
                 <div className="min-w-0">
                   <p>{wf.label}</p>
+                  {wf.description && !cooldownRemaining && (
+                    <p className={`text-xs mt-0.5 ${wf.key === 'runWF08' ? 'text-white/70' : 'text-muted'}`}>{wf.description}</p>
+                  )}
                   {cooldownRemaining > 0 && (
                     <p className="text-xs opacity-70">Wait {cooldownRemaining}s</p>
                   )}

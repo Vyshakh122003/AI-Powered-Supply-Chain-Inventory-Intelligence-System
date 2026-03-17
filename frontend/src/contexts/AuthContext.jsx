@@ -16,7 +16,7 @@ export function AuthProvider({ children }) {
         .from('Store Profiles')
         .select('*')
         .eq('id', userId)
-        .single()
+        .maybeSingle()
       if (!error && data) {
         setStoreProfile(data)
       }

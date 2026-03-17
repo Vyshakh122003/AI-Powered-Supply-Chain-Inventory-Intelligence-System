@@ -62,6 +62,7 @@ export default function Products() {
 
   // Fetch all categories for filter dropdown
   const [categories, setCategories] = useState([])
+  const [suppliers, setSuppliers] = useState([])
   useEffect(() => {
     supabase
       .from('Products')
@@ -70,6 +71,13 @@ export default function Products() {
         const cats = [...new Set((data || []).map(d => d.category).filter(Boolean))]
         setCategories(cats.sort())
       })
+
+    // Fetch suppliers for the inline edit dropdown and table view
+    supabase
+      .from('Suppliers')
+      .select('supplier_id, supplier_name')
+      .order('supplier_name')
+      .then(({ data }) => setSuppliers(data || []))
   }, [])
 
   useEffect(() => {
@@ -103,6 +111,7 @@ export default function Products() {
       reorder_threshold: product.reorder_threshold,
       unit_price: product.unit_price,
       avg_daily_sales: product.avg_daily_sales,
+      preferred_supplier_id: product.preferred_supplier_id,
     })
   }
 
@@ -116,8 +125,15 @@ export default function Products() {
         reorder_threshold: Number(editData.reorder_threshold),
         unit_price: Number(editData.unit_price),
         avg_daily_sales: Number(editData.avg_daily_sales),
+        preferred_supplier_id: editData.preferred_supplier_id || null,
       }
       await postWebhook(WEBHOOKS.productIngest, body)
+
+      // Patch supplier association directly (since webhook might not handle it)
+      await supabase.from('Products').update({
+        preferred_supplier_id: editData.preferred_supplier_id || null
+      }).eq('product_id', productId)
+
       toast.success('Product updated')
       setEditingId(null)
       fetchProducts()
@@ -212,6 +228,7 @@ export default function Products() {
                 <tr className="border-b border-border bg-gray-50">
                   <th className="text-left px-4 py-3 font-medium text-muted">Product</th>
                   <th className="text-left px-4 py-3 font-medium text-muted">Category</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted">Supplier</th>
                   <th className="text-right px-4 py-3 font-medium text-muted">Stock</th>
                   <th className="text-right px-4 py-3 font-medium text-muted">Threshold</th>
                   <th className="text-right px-4 py-3 font-medium text-muted">Days to Stockout</th>
@@ -238,6 +255,18 @@ export default function Products() {
                             onChange={(e) => setEditData(prev => ({ ...prev, category: e.target.value }))}
                             className="w-full px-2 py-1 border border-border rounded text-sm"
                           />
+                        </td>
+                        <td className="px-4 py-3">
+                          <select
+                            value={editData.preferred_supplier_id || ''}
+                            onChange={(e) => setEditData(prev => ({ ...prev, preferred_supplier_id: e.target.value }))}
+                            className="w-full px-2 py-1 border border-border rounded text-sm bg-white"
+                          >
+                            <option value="">None</option>
+                            {suppliers.map(s => (
+                              <option key={s.supplier_id} value={s.supplier_id}>{s.supplier_name}</option>
+                            ))}
+                          </select>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <input
@@ -291,6 +320,12 @@ export default function Products() {
                       <>
                         <td className="px-4 py-3 font-medium text-text">{product.product_name}</td>
                         <td className="px-4 py-3 text-muted">{product.category || '—'}</td>
+                        <td 
+                          className="px-4 py-3 text-muted truncate max-w-[120px]" 
+                          title={suppliers.find(s => s.supplier_id === product.preferred_supplier_id)?.supplier_name || '—'}
+                        >
+                          {suppliers.find(s => s.supplier_id === product.preferred_supplier_id)?.supplier_name || '—'}
+                        </td>
                         <td className="px-4 py-3 text-right font-mono">{product.current_stock}</td>
                         <td className="px-4 py-3 text-right font-mono">{product.reorder_threshold}</td>
                         <td className="px-4 py-3 text-right font-mono">

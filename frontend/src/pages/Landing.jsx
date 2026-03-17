@@ -2,7 +2,7 @@ import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
   Package, BarChart3, AlertTriangle, Truck, Brain,
-  MessageCircle, ArrowRight, CheckCircle2, Loader2,
+  MessageCircle, ArrowRight, Loader2,
 } from 'lucide-react'
 
 const features = [

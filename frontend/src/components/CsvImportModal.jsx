@@ -6,11 +6,6 @@ import {
   AlertTriangle, Download,
 } from 'lucide-react'
 
-const EXPECTED_HEADERS = [
-  'product_id', 'product_name', 'category', 'current_stock',
-  'reorder_threshold', 'unit_price', 'avg_daily_sales', 'unit',
-]
-
 const SAMPLE_CSV = `product_id,product_name,category,current_stock,reorder_threshold,unit_price,avg_daily_sales,unit
 RICE_001,Basmati Rice 5kg,Rice & Grains,25,10,450,3.5,bags
 OIL_001,Sunflower Oil 1L,Cooking Oil,15,8,180,2.0,bottles

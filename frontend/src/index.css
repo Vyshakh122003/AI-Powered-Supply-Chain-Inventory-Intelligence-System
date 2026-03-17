@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-@source "../node_modules/@tremor/react/dist/**/*.js";
-
 @theme {
   --color-primary: #1E3A5F;
   --color-accent: #2563EB;
@@ -20,8 +18,8 @@ html {
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #F8FAFC;
-  color: #1E293B;
+  background-color: var(--color-surface);
+  color: var(--color-text);
   margin: 0;
 }
 
@@ -39,14 +37,4 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
-}
-
-/* Toast overrides */
-.toast-success {
-  background: #059669 !important;
-  color: white !important;
-}
-.toast-error {
-  background: #DC2626 !important;
-  color: white !important;
 }

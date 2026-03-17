@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import {
-  FileText, Loader2, RefreshCw, Search, Filter,
+  FileText, Loader2, RefreshCw, Search,
   CheckCircle2, XCircle, Clock, AlertTriangle, Info,
   ChevronLeft, ChevronRight,
 } from 'lucide-react'
@@ -129,6 +129,7 @@ export default function Logs() {
           <option value="success">Success</option>
           <option value="warning">Warning</option>
           <option value="error">Error</option>
+          <option value="info">Info</option>
         </select>
       </div>
 

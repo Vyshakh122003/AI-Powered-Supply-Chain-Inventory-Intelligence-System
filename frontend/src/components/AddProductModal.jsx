@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { WEBHOOKS, postWebhook } from '../lib/config'
+import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import { X, Loader2 } from 'lucide-react'
 
 export default function AddProductModal({ isOpen, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false)
+  const [suppliers, setSuppliers] = useState([])
   const [formData, setFormData] = useState({
     product_id: '',
     product_name: '',
@@ -13,7 +15,15 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }) {
     avg_daily_sales: '',
     reorder_threshold: '',
     unit_price: '',
+    preferred_supplier_id: '',
   })
+
+  useEffect(() => {
+    if (isOpen) {
+      supabase.from('Suppliers').select('supplier_id, supplier_name').order('supplier_name')
+        .then(({ data }) => setSuppliers(data || []))
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -37,12 +47,22 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }) {
         avg_daily_sales: Number(formData.avg_daily_sales) || 0,
         reorder_threshold: Number(formData.reorder_threshold) || 0,
         unit_price: Number(formData.unit_price) || 0,
+        preferred_supplier_id: formData.preferred_supplier_id || null,
       }
       await postWebhook(WEBHOOKS.productIngest, body)
+      
+      // Patch supplier association directly (since webhook might not handle it)
+      if (formData.preferred_supplier_id) {
+        await supabase.from('Products').update({
+          preferred_supplier_id: formData.preferred_supplier_id
+        }).eq('product_id', formData.product_id)
+      }
+
       toast.success('Product added successfully!')
       setFormData({
         product_id: '', product_name: '', category: '',
         current_stock: '', avg_daily_sales: '', reorder_threshold: '', unit_price: '',
+        preferred_supplier_id: '',
       })
       onSuccess?.()
       onClose()
@@ -90,15 +110,31 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }) {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-text mb-1.5">Product Name *</label>
-            <input
-              name="product_name"
-              value={formData.product_name}
-              onChange={handleChange}
-              placeholder="e.g. Amul Butter 500g"
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-text mb-1.5">Product Name *</label>
+              <input
+                name="product_name"
+                value={formData.product_name}
+                onChange={handleChange}
+                placeholder="e.g. Amul Butter 500g"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text mb-1.5">Preferred Supplier</label>
+              <select
+                name="preferred_supplier_id"
+                value={formData.preferred_supplier_id}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-accent"
+              >
+                <option value="">Select supplier...</option>
+                {suppliers.map(s => (
+                  <option key={s.supplier_id} value={s.supplier_id}>{s.supplier_name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

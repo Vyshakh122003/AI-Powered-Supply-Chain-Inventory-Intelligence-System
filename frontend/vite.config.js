@@ -15,16 +15,14 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       proxy: {
         '/webhook': {
-          target: env.VITE_N8N_BASE_URL,
+          target: 'http://localhost:5678', // Bypass ngrok locally to prevent 405 block
           changeOrigin: true,
           secure: false,
-          headers: { 'ngrok-skip-browser-warning': 'true' },
         },
         '/api/v1': {
-          target: env.VITE_N8N_BASE_URL,
+          target: 'http://localhost:5678', // Bypass ngrok locally to prevent 405 block
           changeOrigin: true,
           secure: false,
-          headers: { 'ngrok-skip-browser-warning': 'true' },
         },
       },
     },
