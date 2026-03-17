@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS "Store Profiles" (
     safety_factor   NUMERIC     DEFAULT 1.2,                              -- Multiplier for reorder quantity buffer (1.0–2.0)
     alert_time      TIME        DEFAULT '08:00:00',                       -- Preferred daily alert delivery time (local)
     timezone        TEXT        NOT NULL DEFAULT 'Asia/Kolkata',           -- IANA timezone for scheduling
-    onboarding_complete BOOLEAN DEFAULT false                             -- Whether the store has completed onboarding flow
+    onboarding_completed BOOLEAN DEFAULT false                            -- Whether the store has completed onboarding flow
 );
 
 COMMENT ON TABLE "Store Profiles" IS 'Registered store profiles linked to Supabase auth users. One store per user.';

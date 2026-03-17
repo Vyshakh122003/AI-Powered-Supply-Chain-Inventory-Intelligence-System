@@ -129,10 +129,14 @@ export default function Products() {
       }
       await postWebhook(WEBHOOKS.productIngest, body)
 
-      // Patch supplier association directly (since webhook might not handle it)
-      await supabase.from('Products').update({
-        preferred_supplier_id: editData.preferred_supplier_id || null
-      }).eq('product_id', productId)
+      // Patch supplier association after webhook processes.
+      // Small delay to let the async webhook update the row first.
+      if (editData.preferred_supplier_id !== undefined) {
+        await new Promise(r => setTimeout(r, 1000))
+        await supabase.from('Products').update({
+          preferred_supplier_id: editData.preferred_supplier_id || null
+        }).eq('product_id', productId)
+      }
 
       toast.success('Product updated')
       setEditingId(null)

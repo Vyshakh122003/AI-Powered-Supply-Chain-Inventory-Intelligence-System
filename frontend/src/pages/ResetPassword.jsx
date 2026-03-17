@@ -17,11 +17,21 @@ export default function ResetPassword() {
   const [sent, setSent] = useState(false)
 
   useEffect(() => {
-    // Check if this is a recovery callback (Supabase puts tokens in hash)
+    // Supabase v2 auto-processes the recovery token from the URL hash.
+    // Listen for the PASSWORD_RECOVERY event to switch to update mode.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setMode('update')
+      }
+    })
+
+    // Fallback: also check the URL hash for older Supabase versions
     const hash = window.location.hash
     if (hash && hash.includes('type=recovery')) {
       setMode('update')
     }
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const handleRequestReset = async (e) => {

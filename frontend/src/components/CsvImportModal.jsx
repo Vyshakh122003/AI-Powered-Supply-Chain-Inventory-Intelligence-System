@@ -11,15 +11,53 @@ RICE_001,Basmati Rice 5kg,Rice & Grains,25,10,450,3.5,bags
 OIL_001,Sunflower Oil 1L,Cooking Oil,15,8,180,2.0,bottles
 SOAP_001,Lux Soap Bar,Personal Care,40,20,45,5.0,pcs`
 
+/**
+ * Parse a single CSV line respecting quoted fields (RFC 4180).
+ * Handles commas inside double-quoted values and escaped quotes ("").
+ */
+function parseCsvLine(line) {
+  const fields = []
+  let current = ''
+  let inQuotes = false
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]
+    if (inQuotes) {
+      if (ch === '"') {
+        // Escaped quote ("") or end of quoted field
+        if (i + 1 < line.length && line[i + 1] === '"') {
+          current += '"'
+          i++ // skip next quote
+        } else {
+          inQuotes = false
+        }
+      } else {
+        current += ch
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true
+      } else if (ch === ',') {
+        fields.push(current.trim())
+        current = ''
+      } else {
+        current += ch
+      }
+    }
+  }
+  fields.push(current.trim())
+  return fields
+}
+
 function parseCsv(text) {
   const lines = text.trim().split('\n').map(l => l.trim()).filter(Boolean)
   if (lines.length < 2) return { headers: [], rows: [], error: 'CSV must have at least a header row and one data row' }
 
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''))
+  const headers = parseCsvLine(lines[0]).map(h => h.toLowerCase().replace(/['"]/g, ''))
   const rows = []
 
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map(v => v.trim().replace(/^["']|["']$/g, ''))
+    const values = parseCsvLine(lines[i])
     if (values.length !== headers.length) continue
     const row = {}
     headers.forEach((h, idx) => { row[h] = values[idx] })

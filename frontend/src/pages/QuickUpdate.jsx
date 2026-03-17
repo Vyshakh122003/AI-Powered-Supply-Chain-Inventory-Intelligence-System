@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import {
   Zap, Loader2, Search, Save, Check, Minus, Plus,
@@ -7,6 +8,7 @@ import {
 } from 'lucide-react'
 
 export default function QuickUpdate() {
+  const { storeProfile } = useAuth()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -103,7 +105,7 @@ export default function QuickUpdate() {
             quantity_change: quantityChange,
             new_stock_level: newQty,
             notes: 'Quick Update',
-            store_id: product.store_id // assumes product record doesn't have it directly mapped well enough for RLS though, we'll just omit or RLS handles it
+            store_id: storeProfile?.id || null,
           }).then(({ error }) => { if (error) console.warn('Could not log transaction:', error.message) })
 
           successCount++

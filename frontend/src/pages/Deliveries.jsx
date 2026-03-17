@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { postWebhook, WEBHOOKS } from '../lib/config'
+import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import {
   Truck, Loader2, Plus, Trash2, Package,
@@ -8,6 +9,7 @@ import {
 } from 'lucide-react'
 
 export default function Deliveries() {
+  const { storeProfile } = useAuth()
   const [products, setProducts] = useState([])
   const [suppliers, setSuppliers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -119,6 +121,7 @@ export default function Deliveries() {
             transaction_type: 'delivery',
             quantity_change: parseInt(item.quantity, 10),
             new_stock_level: newStock,
+            store_id: storeProfile?.id || null,
             notes: notes ? `${notes} (Supplier: ${selectedSupplier || 'None'})` : `Supplier: ${selectedSupplier || 'None'}`,
           }).then(({ error }) => {
             if (error) console.warn('Could not log transaction:', error.message)
