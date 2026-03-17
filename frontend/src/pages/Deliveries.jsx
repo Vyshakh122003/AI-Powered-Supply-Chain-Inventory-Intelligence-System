@@ -194,7 +194,7 @@ export default function Deliveries() {
               </button>
             </div>
 
-            {items.map((item, idx) => (
+            {items.map((item) => (
               <div key={item.id} className="flex items-center gap-2">
                 <select
                   value={item.product_id}

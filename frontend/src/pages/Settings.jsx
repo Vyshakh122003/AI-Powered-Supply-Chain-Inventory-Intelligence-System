@@ -21,7 +21,6 @@ const workflowButtons = [
 
 export default function Settings() {
   const { user, storeProfile, refreshProfile } = useAuth()
-  const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     store_name: '',

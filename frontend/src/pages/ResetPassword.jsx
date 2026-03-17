@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import { Package, Loader2, Mail, Lock, CheckCircle2 } from 'lucide-react'
 
 export default function ResetPassword() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(false)
 
   // Determine mode: 'request' (enter email) or 'update' (enter new password)

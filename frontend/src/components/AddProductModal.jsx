@@ -38,7 +38,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }) {
         reorder_threshold: Number(formData.reorder_threshold) || 0,
         unit_price: Number(formData.unit_price) || 0,
       }
-      const res = await postWebhook(WEBHOOKS.productIngest, body)
+      await postWebhook(WEBHOOKS.productIngest, body)
       toast.success('Product added successfully!')
       setFormData({
         product_id: '', product_name: '', category: '',
