@@ -32,3 +32,6 @@ nul
 
 # Local config
 *.local
+
+# Handoff document (contains live credentials)
+HANDOFF.md
