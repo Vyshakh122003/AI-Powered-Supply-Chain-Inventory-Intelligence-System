@@ -122,7 +122,37 @@ export default function Dashboard() {
     setRunningPipeline(true)
     try {
       await triggerWebhook(WEBHOOKS.runPipeline)
-      toast.success('Pipeline started — results update automatically in ~60s')
+      toast('Pipeline triggered — checking status...', { icon: '⏳', duration: 4000 })
+
+      // Poll System Logs after a delay to check if the pipeline succeeded or failed
+      const pollStatus = async (attempt = 1) => {
+        if (attempt > 6) return // Stop after ~60s (6 attempts x 10s)
+        await new Promise(r => setTimeout(r, 10000)) // Wait 10s between checks
+        try {
+          const { data } = await supabase
+            .from('System Logs')
+            .select('status, error_message, records_processed')
+            .order('created_at', { ascending: false })
+            .limit(1)
+
+          if (data && data.length > 0) {
+            const latest = data[0]
+            if (latest.status === 'success') {
+              toast.success(`Pipeline completed — ${latest.records_processed || 0} products processed`)
+              fetchData()
+              return
+            } else if (latest.status === 'error') {
+              toast.error(`Pipeline failed: ${latest.error_message || 'Unknown error'}`)
+              return
+            }
+          }
+          pollStatus(attempt + 1)
+        } catch {
+          // Silently continue polling
+          pollStatus(attempt + 1)
+        }
+      }
+      pollStatus()
     } catch (err) {
       console.error('Pipeline error:', err)
       toast.error(`Failed to start pipeline: ${err.message}`)
@@ -151,7 +181,7 @@ export default function Dashboard() {
     )
   }
 
-  const healthColor = healthScore >= 80 ? '#059669' : healthScore >= 50 ? '#D97706' : '#DC2626'
+  const gaugeColor = healthScore >= 80 ? '#059669' : healthScore >= 50 ? '#D97706' : '#DC2626'
 
   return (
     <div className="space-y-6">
@@ -189,7 +219,7 @@ export default function Dashboard() {
           <div className="relative w-28 h-28 flex items-center justify-center">
             <svg className="w-28 h-28 -rotate-90" viewBox="0 0 120 120">
               <circle cx="60" cy="60" r="52" fill="none" stroke="#E2E8F0" strokeWidth="10" />
-              <circle cx="60" cy="60" r="52" fill="none" stroke={healthColor} strokeWidth="10"
+              <circle cx="60" cy="60" r="52" fill="none" stroke={gaugeColor} strokeWidth="10"
                 strokeDasharray={`${(healthScore / 100) * 2 * Math.PI * 52} ${2 * Math.PI * 52}`}
                 strokeLinecap="round" className="transition-all duration-700" />
             </svg>

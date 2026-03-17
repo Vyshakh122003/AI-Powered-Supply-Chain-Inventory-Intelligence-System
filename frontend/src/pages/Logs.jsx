@@ -10,10 +10,10 @@ import {
 const PAGE_SIZE = 25
 
 const LEVEL_CONFIG = {
-  info:    { icon: Info,          bg: 'bg-accent/10',  text: 'text-accent',  label: 'Info' },
   success: { icon: CheckCircle2,  bg: 'bg-success/10', text: 'text-success', label: 'Success' },
   warning: { icon: AlertTriangle, bg: 'bg-warning/10', text: 'text-warning', label: 'Warning' },
   error:   { icon: XCircle,       bg: 'bg-danger/10',  text: 'text-danger',  label: 'Error' },
+  info:    { icon: Info,          bg: 'bg-accent/10',  text: 'text-accent',  label: 'Info' },
 }
 
 export default function Logs() {
@@ -33,10 +33,10 @@ export default function Logs() {
         .order('created_at', { ascending: false })
 
       if (search) {
-        query = query.or(`message.ilike.%${search}%,source.ilike.%${search}%`)
+        query = query.or(`workflow_name.ilike.%${search}%,error_message.ilike.%${search}%`)
       }
       if (levelFilter !== 'ALL') {
-        query = query.eq('level', levelFilter)
+        query = query.eq('status', levelFilter)
       }
 
       const from = page * PAGE_SIZE
@@ -126,7 +126,6 @@ export default function Logs() {
           className="px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white"
         >
           <option value="ALL">All Levels</option>
-          <option value="info">Info</option>
           <option value="success">Success</option>
           <option value="warning">Warning</option>
           <option value="error">Error</option>
@@ -152,7 +151,7 @@ export default function Logs() {
         ) : (
           <div className="divide-y divide-border">
             {logs.map((log) => {
-              const config = LEVEL_CONFIG[log.level] || LEVEL_CONFIG.info
+              const config = LEVEL_CONFIG[log.status] || LEVEL_CONFIG.info
               const LevelIcon = config.icon
 
               return (
@@ -165,11 +164,14 @@ export default function Logs() {
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-text">{log.message}</p>
+                      <p className="text-sm font-medium text-text">{log.workflow_name}</p>
+                      {log.error_message && (
+                        <p className="text-sm text-danger mt-0.5">{log.error_message}</p>
+                      )}
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                        {log.source && (
+                        {log.records_processed != null && (
                           <span className="text-xs font-medium text-muted bg-gray-100 px-2 py-0.5 rounded">
-                            {log.source}
+                            {log.records_processed} records
                           </span>
                         )}
                         <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${config.bg} ${config.text}`}>
@@ -177,14 +179,9 @@ export default function Logs() {
                         </span>
                         <span className="text-xs text-muted flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          {formatTime(log.created_at)}
+                          {formatTime(log.ran_at || log.created_at)}
                         </span>
                       </div>
-                      {log.metadata && Object.keys(log.metadata).length > 0 && (
-                        <pre className="text-xs text-muted bg-gray-50 border border-border rounded-lg p-2 mt-2 overflow-x-auto max-h-24">
-                          {JSON.stringify(log.metadata, null, 2)}
-                        </pre>
-                      )}
                     </div>
                   </div>
                 </div>
