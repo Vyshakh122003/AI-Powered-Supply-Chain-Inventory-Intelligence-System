@@ -5,9 +5,10 @@ import { formatDate, formatCurrency, getHealthColor, getHealthBg, calculateHealt
 import KPICard from '../components/KPICard'
 import EmptyState from '../components/EmptyState'
 import toast from 'react-hot-toast'
-import { ProgressCircle, DonutChart, BarChart, BarList } from '@tremor/react'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell,
+  BarChart as RBarChart, Bar,
 } from 'recharts'
 import {
   Package, AlertTriangle, RotateCcw, Activity,
@@ -185,9 +186,15 @@ export default function Dashboard() {
         {/* Health Score Gauge */}
         <div className={`rounded-xl border border-border p-5 flex flex-col items-center justify-center ${getHealthBg(healthScore)}`}>
           <p className="text-xs font-medium text-muted mb-2">Store Health</p>
-          <ProgressCircle value={healthScore} size="lg" color={healthScore >= 80 ? 'green' : healthScore >= 50 ? 'yellow' : 'red'}>
-            <span className={`text-2xl font-bold ${getHealthColor(healthScore)}`}>{healthScore}</span>
-          </ProgressCircle>
+          <div className="relative w-28 h-28 flex items-center justify-center">
+            <svg className="w-28 h-28 -rotate-90" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#E2E8F0" strokeWidth="10" />
+              <circle cx="60" cy="60" r="52" fill="none" stroke={healthColor} strokeWidth="10"
+                strokeDasharray={`${(healthScore / 100) * 2 * Math.PI * 52} ${2 * Math.PI * 52}`}
+                strokeLinecap="round" className="transition-all duration-700" />
+            </svg>
+            <span className={`absolute text-2xl font-bold ${getHealthColor(healthScore)}`}>{healthScore}</span>
+          </div>
           <p className="text-xs text-muted mt-2">out of 100</p>
         </div>
 
@@ -219,19 +226,29 @@ export default function Dashboard() {
           </h3>
           {riskDistribution.length > 0 ? (
             <div className="flex flex-col items-center">
-              <DonutChart
-                data={riskDistribution}
-                category="value"
-                index="name"
-                colors={riskDistribution.map(d =>
-                  d.color === '#DC2626' ? 'red' :
-                  d.color === '#D97706' ? 'yellow' :
-                  d.color === '#059669' ? 'green' : 'gray'
-                )}
-                valueFormatter={(v) => `${v} product${v > 1 ? 's' : ''}`}
-                className="h-40"
-                showAnimation
-              />
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie
+                    data={riskDistribution}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={70}
+                    paddingAngle={2}
+                    animationDuration={800}
+                  >
+                    {riskDistribution.map((d, i) => (
+                      <Cell key={i} fill={d.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(v) => `${v} product${v > 1 ? 's' : ''}`}
+                    contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
               <div className="flex flex-wrap justify-center gap-3 mt-3">
                 {riskDistribution.map(d => (
                   <div key={d.name} className="flex items-center gap-1.5 text-xs text-muted">
@@ -253,16 +270,20 @@ export default function Dashboard() {
             Inventory Value by Product
           </h3>
           {inventoryValueData.length > 0 ? (
-            <BarChart
-              data={inventoryValueData}
-              index="name"
-              categories={['Stock Value']}
-              colors={['blue']}
-              valueFormatter={(v) => formatCurrency(v)}
-              className="h-52"
-              showAnimation
-              yAxisWidth={60}
-            />
+            <ResponsiveContainer width="100%" height={208}>
+              <RBarChart data={inventoryValueData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="#94A3B8" />
+                <YAxis tick={{ fontSize: 11 }} stroke="#94A3B8" width={60}
+                  tickFormatter={(v) => `₹${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}`}
+                />
+                <Tooltip
+                  formatter={(v) => [formatCurrency(v), 'Stock Value']}
+                  contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }}
+                />
+                <Bar dataKey="Stock Value" fill="#2563EB" radius={[4, 4, 0, 0]} animationDuration={800} />
+              </RBarChart>
+            </ResponsiveContainer>
           ) : (
             <EmptyState icon={Package} title="No data" description="Add products to see inventory value" />
           )}
@@ -363,13 +384,13 @@ export default function Dashboard() {
                 const supplier = suppliers.find(s => s.supplier_id === p.preferred_supplier_id)
                 return (
                   <div key={p.product_id} className="p-3 bg-gray-50 rounded-lg border border-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-text truncate">{p.product_name}</span>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${getRiskClasses(p.risk_level)}`}>
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <span className="text-sm font-medium text-text leading-snug" title={p.product_name}>{p.product_name}</span>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${getRiskClasses(p.risk_level)}`}>
                         {p.risk_level}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-muted">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
                       <span className={`font-bold ${daysLeft <= 3 ? 'text-red-600' : daysLeft <= 7 ? 'text-orange-600' : 'text-green-600'}`}>
                         {daysLeft === 0 ? 'OUT OF STOCK' : `${daysLeft} days left`}
                       </span>
@@ -403,7 +424,7 @@ export default function Dashboard() {
               >
                 <AlertTriangle className="w-4 h-4 text-warning mt-0.5 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-text truncate">{alert.product_name}</p>
+                  <p className="text-sm font-medium text-text leading-snug" title={alert.product_name}>{alert.product_name}</p>
                   <p className="text-xs text-muted">
                     Stock: {alert.current_stock} / Threshold: {alert.reorder_threshold}
                   </p>
