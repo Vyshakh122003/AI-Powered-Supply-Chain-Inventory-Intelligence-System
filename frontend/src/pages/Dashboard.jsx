@@ -130,11 +130,13 @@ export default function Dashboard() {
     }))
     .sort((a, b) => b.value - a.value)
 
-  // Chart data for health trend
-  const chartData = snapshots.map(s => ({
-    date: new Date(s.snapshot_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-    health: s.health_score,
-  }))
+  // Chart data for health trend (filter out zero/null scores from broken snapshot rows)
+  const chartData = snapshots
+    .filter(s => s.health_score != null && s.health_score > 0)
+    .map(s => ({
+      date: new Date(s.snapshot_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+      health: s.health_score,
+    }))
 
   // Critical products (top 5 by days_to_stockout ascending)
   const criticalProducts = [...products]
