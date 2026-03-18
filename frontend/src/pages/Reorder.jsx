@@ -4,7 +4,7 @@ import { formatCurrency, formatDate } from '../lib/helpers'
 import EmptyState from '../components/EmptyState'
 import toast from 'react-hot-toast'
 import {
-  RotateCcw, Check, X, Loader2, ShoppingCart, Sparkles,
+  RotateCcw, Check, X, Loader2, ShoppingCart, Sparkles, MessageCircle,
 } from 'lucide-react'
 
 export default function Reorder() {
@@ -30,7 +30,7 @@ export default function Reorder() {
       // Fetch products and suppliers in parallel for lookups
       const [productsRes, suppliersRes] = await Promise.all([
         supabase.from('Products').select('product_id, product_name, unit_price'),
-        supabase.from('Suppliers').select('supplier_id, supplier_name'),
+        supabase.from('Suppliers').select('supplier_id, supplier_name, phone_number'),
       ])
 
       // Build lookup maps
@@ -101,6 +101,25 @@ export default function Reorder() {
     } finally {
       setActionId(null)
     }
+  }
+
+  const handleWhatsApp = (suggestion) => {
+    const product = products[suggestion.product_id] || {}
+    const supplier = suppliers[suggestion.supplier_id] || {}
+    const rawPhone = supplier.phone_number || ''
+    if (!rawPhone) {
+      toast.error('No phone number on file for this supplier. Add one in the Suppliers page.')
+      return
+    }
+    // Strip non-digits, remove leading 0 or +91, prepend 91
+    let digits = rawPhone.replace(/\D/g, '')
+    if (digits.startsWith('0')) digits = digits.slice(1)
+    if (digits.startsWith('91') && digits.length > 10) { /* already has country code */ }
+    else digits = '91' + digits
+    const text = encodeURIComponent(
+      `Hi, I would like to order ${suggestion.suggested_quantity} units of ${product.product_name || suggestion.product_id}. Please confirm availability and delivery timeline. Thank you.`
+    )
+    window.open(`https://wa.me/${digits}?text=${text}`, '_blank')
   }
 
   return (
@@ -234,6 +253,17 @@ export default function Reorder() {
                       Dismiss
                     </button>
                   </div>
+                )}
+
+                {/* WhatsApp button for Approved */}
+                {filter === 'Approved' && (
+                  <button
+                    onClick={() => handleWhatsApp(s)}
+                    className="w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    WhatsApp Supplier
+                  </button>
                 )}
               </div>
             )
