@@ -9,7 +9,7 @@ import CsvImportModal from '../components/CsvImportModal'
 import toast from 'react-hot-toast'
 import {
   Package, Search, Plus, ChevronLeft, ChevronRight,
-  Loader2, Pencil, X, Check, Filter, Upload,
+  Loader2, Pencil, X, Check, Filter, Upload, Trash2,
 } from 'lucide-react'
 
 const PAGE_SIZE = 20
@@ -149,6 +149,18 @@ export default function Products() {
   const handleCancelEdit = () => {
     setEditingId(null)
     setEditData({})
+  }
+
+  const handleDelete = async (productId) => {
+    if (!window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) return
+    try {
+      const { error } = await supabase.from('Products').delete().eq('product_id', productId)
+      if (error) throw error
+      toast.success('Product deleted')
+      fetchProducts()
+    } catch {
+      toast.error('Failed to delete product')
+    }
   }
 
   return (
@@ -342,12 +354,20 @@ export default function Products() {
                         </td>
                         <td className="px-4 py-3 text-right font-mono">{formatCurrency(product.unit_price)}</td>
                         <td className="px-4 py-3 text-center">
-                          <button
-                            onClick={() => handleEdit(product)}
-                            className="p-1.5 text-muted hover:text-accent hover:bg-blue-50 rounded cursor-pointer"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => handleEdit(product)}
+                              className="p-1.5 text-muted hover:text-accent hover:bg-blue-50 rounded cursor-pointer"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(product.product_id)}
+                              className="p-1.5 text-muted hover:text-danger hover:bg-red-50 rounded cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </>
                     )}
