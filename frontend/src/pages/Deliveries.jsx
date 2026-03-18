@@ -102,30 +102,42 @@ export default function Deliveries() {
         const product = products.find((p) => p.product_id === item.product_id)
         if (!product) continue
 
-        const newStock = (product.current_stock || 0) + parseInt(item.quantity, 10)
+        const qty = parseInt(item.quantity, 10)
+        const newStock = (product.current_stock || 0) + qty
 
         try {
-          // Update stock via WF-01 webhook
-          await postWebhook(WEBHOOKS.productIngest, {
-            product_id: item.product_id,
-            product_name: product.product_name,
-            category: product.category,
-            current_stock: newStock,
-            unit: product.unit,
-          })
+          // 1. Update Supabase Products table directly (instant)
+          const { error: updateError } = await supabase
+            .from('Products')
+            .update({
+              current_stock: newStock,
+              last_restock_date: new Date().toISOString().split('T')[0],
+            })
+            .eq('product_id', item.product_id)
 
-          // Also log to Stock Transactions (best-effort)
-          await supabase.from('Stock Transactions').insert({
+          if (updateError) throw updateError
+
+          // 2. Log to Stock Transactions (best-effort)
+          supabase.from('Stock Transactions').insert({
             product_id: item.product_id,
             product_name: product.product_name,
             transaction_type: 'delivery',
-            quantity_change: parseInt(item.quantity, 10),
+            quantity_change: qty,
             new_stock_level: newStock,
             store_id: storeProfile?.id || null,
             notes: notes ? `${notes} (Supplier: ${selectedSupplier || 'None'})` : `Supplier: ${selectedSupplier || 'None'}`,
           }).then(({ error }) => {
             if (error) console.warn('Could not log transaction:', error.message)
           })
+
+          // 3. Fire n8n webhook in background (fire-and-forget, non-critical)
+          postWebhook(WEBHOOKS.productIngest, {
+            product_id: item.product_id,
+            product_name: product.product_name,
+            category: product.category,
+            current_stock: newStock,
+            unit: product.unit,
+          }).catch((err) => console.warn('Webhook fire-and-forget failed (non-critical):', err.message))
 
           successCount++
         } catch {
