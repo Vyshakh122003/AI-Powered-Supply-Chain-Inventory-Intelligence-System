@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
 import { WEBHOOKS, postWebhook } from '../lib/config'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
-import { X, Loader2 } from 'lucide-react'
+import { X, Loader2, Info } from 'lucide-react'
 
 export default function AddProductModal({ isOpen, onClose, onSuccess }) {
+  const { storeProfile } = useAuth()
   const [loading, setLoading] = useState(false)
   const [suppliers, setSuppliers] = useState([])
+  const [thresholdAuto, setThresholdAuto] = useState(true) // track if user has manually overridden
   const [formData, setFormData] = useState({
     product_id: '',
     product_name: '',
@@ -20,10 +23,22 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }) {
 
   useEffect(() => {
     if (isOpen) {
-      supabase.from('Suppliers').select('supplier_id, supplier_name').order('supplier_name')
+      supabase.from('Suppliers').select('supplier_id, supplier_name, delivery_time_days').order('supplier_name')
         .then(({ data }) => setSuppliers(data || []))
     }
   }, [isOpen])
+
+  // Auto-calculate reorder threshold when avg_daily_sales or supplier changes
+  useEffect(() => {
+    if (!thresholdAuto) return
+    const sales = Number(formData.avg_daily_sales) || 0
+    const supplier = suppliers.find(s => s.supplier_id === formData.preferred_supplier_id)
+    const deliveryDays = supplier?.delivery_time_days || 3
+    const safetyFactor = storeProfile?.safety_factor || 1.5
+    if (sales > 0) {
+      setFormData(prev => ({ ...prev, reorder_threshold: String(Math.ceil(sales * deliveryDays * safetyFactor)) }))
+    }
+  }, [formData.avg_daily_sales, formData.preferred_supplier_id, suppliers, thresholdAuto, storeProfile])
 
   if (!isOpen) return null
 
@@ -74,6 +89,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }) {
         current_stock: '', avg_daily_sales: '', reorder_threshold: '', unit_price: '',
         preferred_supplier_id: '',
       })
+      setThresholdAuto(true)
       onSuccess?.()
       onClose()
     } catch {
@@ -180,10 +196,19 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }) {
                 name="reorder_threshold"
                 type="number"
                 value={formData.reorder_threshold}
-                onChange={handleChange}
+                onChange={(e) => {
+                  setThresholdAuto(false)
+                  handleChange(e)
+                }}
                 placeholder="0"
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent"
               />
+              {thresholdAuto && Number(formData.reorder_threshold) > 0 && (
+                <p className="flex items-center gap-1 text-xs text-muted mt-1">
+                  <Info className="w-3 h-3" />
+                  Auto-calculated from supplier delivery time &amp; safety buffer
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-text mb-1.5">Unit Price (₹)</label>
