@@ -8,6 +8,10 @@
 --   Week 4 (Mar 6-12): Proactive reorders — health 72-82
 --   Final days (Mar 13-14): Stable operation — health 77-84
 --
+-- Health Score Formula:
+-- Math.max(0, Math.min(100, Math.round(((LOW*100) + (MEDIUM*70) + (HIGH*30) + (OOS*5)) / TOTAL)))
+-- Returns 50 if 0 products.
+--
 -- Run after schema.sql and seed.sql to populate the Reports page immediately.
 -- =============================================================================
 

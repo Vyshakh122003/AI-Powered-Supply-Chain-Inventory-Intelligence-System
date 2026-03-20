@@ -1,5 +1,5 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
-import { ShieldAlert } from 'lucide-react'
+import { ArrowRight, ShieldAlert } from 'lucide-react'
 
 const RISK_COLORS = {
   'Out of Stock': '#94A3B8',
@@ -8,7 +8,14 @@ const RISK_COLORS = {
   'Low Risk': '#059669',
 }
 
-export default function RiskDonutChart({ data, totalProducts, loading }) {
+const RISK_META = [
+  { name: 'Out of Stock', label: 'Out of Stock', icon: '🔴', query: 'OUT_OF_STOCK' },
+  { name: 'High Risk', label: 'High Risk', icon: '🟠', query: 'HIGH' },
+  { name: 'Medium Risk', label: 'Medium Risk', icon: '🟡', query: 'MEDIUM' },
+  { name: 'Low Risk', label: 'Low Risk', icon: '🟢', query: 'LOW' },
+]
+
+export default function RiskDonutChart({ data, totalProducts, loading, onSelectRisk }) {
   if (loading) {
     return (
       <div className="bg-white rounded-xl border border-border p-5 animate-pulse min-h-[280px]">
@@ -28,54 +35,81 @@ export default function RiskDonutChart({ data, totalProducts, loading }) {
     )
   }
 
+  const valueMap = Object.fromEntries((data || []).map(d => [d.name, d.value]))
+
   return (
     <div className="bg-white rounded-xl border border-border p-5">
       <h3 className="text-sm font-semibold text-text mb-1 flex items-center gap-2">
         <ShieldAlert className="w-4 h-4 text-red-500" />
-        Stock Risk Distribution
+        Stock Status Overview
       </h3>
-      <div className="flex flex-col items-center">
-        <ResponsiveContainer width="100%" height={180}>
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              innerRadius={50}
-              outerRadius={75}
-              paddingAngle={3}
-              animationDuration={800}
-              animationBegin={200}
-            >
-              {data.map((d, i) => (
-                <Cell key={i} fill={RISK_COLORS[d.name] || '#94A3B8'} />
-              ))}
-            </Pie>
-            <Tooltip
-              formatter={(v) => `${v} product${v > 1 ? 's' : ''}`}
-              contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }}
-            />
-            {/* Center label */}
-            <text x="50%" y="46%" textAnchor="middle" className="fill-gray-900 text-lg font-bold">
-              {totalProducts}
-            </text>
-            <text x="50%" y="56%" textAnchor="middle" className="fill-gray-400 text-[10px]">
-              products
-            </text>
-          </PieChart>
-        </ResponsiveContainer>
-        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 mt-1">
-          {data.map(d => (
-            <div key={d.name} className="flex items-center gap-1.5 text-xs text-muted">
-              <span
-                className="w-2.5 h-2.5 rounded-full shrink-0"
-                style={{ backgroundColor: RISK_COLORS[d.name] }}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start mt-3">
+        <div className="md:col-span-2 space-y-2">
+          {RISK_META.map(row => {
+            const count = valueMap[row.name] || 0
+            const percent = totalProducts > 0 ? Math.round((count / totalProducts) * 100) : 0
+
+            return (
+              <button
+                key={row.name}
+                onClick={() => onSelectRisk && onSelectRisk(row.query)}
+                className="w-full text-left border border-gray-100 rounded-lg px-3 py-2 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{row.icon}</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-text">{row.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-text">{count}</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-muted" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="h-2 bg-gray-100 rounded-full flex-1 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${percent}%`, backgroundColor: RISK_COLORS[row.name] }}
+                    />
+                  </div>
+                  <span className="text-[10px] font-medium text-muted w-8 text-right">{percent}%</span>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="w-full">
+          <ResponsiveContainer width="100%" height={170}>
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={40}
+                outerRadius={62}
+                paddingAngle={3}
+                animationDuration={800}
+                animationBegin={200}
+              >
+                {data.map((d, i) => (
+                  <Cell key={i} fill={RISK_COLORS[d.name] || '#94A3B8'} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(v) => `${v} product${v > 1 ? 's' : ''}`}
+                contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #E2E8F0' }}
               />
-              {d.name}: {d.value} ({totalProducts > 0 ? Math.round((d.value / totalProducts) * 100) : 0}%)
-            </div>
-          ))}
+              <text x="50%" y="46%" textAnchor="middle" className="fill-gray-900 text-base font-bold">
+                {totalProducts}
+              </text>
+              <text x="50%" y="57%" textAnchor="middle" className="fill-gray-400 text-[10px]">
+                products
+              </text>
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

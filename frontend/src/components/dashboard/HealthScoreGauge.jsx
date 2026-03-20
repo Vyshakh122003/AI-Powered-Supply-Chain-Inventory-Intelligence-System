@@ -11,13 +11,12 @@ function getScoreColor(score) {
 }
 
 function getScoreLabel(score) {
-  if (score >= 80) return 'Excellent'
-  if (score >= 65) return 'Good'
-  if (score >= 45) return 'Warning'
+  if (score >= 75) return 'Healthy'
+  if (score >= 50) return 'Warning'
   return 'Critical'
 }
 
-export default function HealthScoreGauge({ score, totalProducts, loading }) {
+export default function HealthScoreGauge({ score, totalProducts, insight, loading }) {
   const [animatedScore, setAnimatedScore] = useState(0)
 
   useEffect(() => {
@@ -41,7 +40,7 @@ export default function HealthScoreGauge({ score, totalProducts, loading }) {
   const dashOffset = CIRCUMFERENCE - (animatedScore / 100) * CIRCUMFERENCE
 
   return (
-    <div className="bg-white rounded-xl border border-border p-6 flex flex-col items-center justify-center">
+    <div className="bg-white rounded-xl border border-border p-6 flex flex-col items-center justify-center text-center">
       <div className="relative w-40 h-40 flex items-center justify-center">
         <svg className="w-40 h-40 -rotate-90" viewBox="0 0 128 128">
           <circle
@@ -71,6 +70,7 @@ export default function HealthScoreGauge({ score, totalProducts, loading }) {
         Store Health Score
       </p>
       <p className="text-xs text-muted mt-1">Based on {totalProducts} products</p>
+      {insight && <p className="text-xs font-medium mt-2" style={{ color }}>{insight}</p>}
     </div>
   )
 }

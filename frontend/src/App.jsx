@@ -15,7 +15,7 @@ const Products = lazy(() => import('./pages/Products'))
 const Alerts = lazy(() => import('./pages/Alerts'))
 const Reorder = lazy(() => import('./pages/Reorder'))
 const Suppliers = lazy(() => import('./pages/Suppliers'))
-const Reports = lazy(() => import('./pages/Reports'))
+
 const Settings = lazy(() => import('./pages/Settings'))
 const QuickUpdate = lazy(() => import('./pages/QuickUpdate'))
 const Deliveries = lazy(() => import('./pages/Deliveries'))
@@ -57,6 +57,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/dashboard-preview" element={<Dashboard />} />
 
           {/* Auth-required but no sidebar layout */}
           <Route path="/onboarding" element={<Onboarding />} />
@@ -74,7 +75,7 @@ function App() {
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/reorder" element={<Reorder />} />
             <Route path="/suppliers" element={<Suppliers />} />
-            <Route path="/reports" element={<Reports />} />
+
             <Route path="/settings" element={<Settings />} />
             <Route path="/quick-update" element={<QuickUpdate />} />
             <Route path="/deliveries" element={<Deliveries />} />

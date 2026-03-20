@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { WEBHOOKS, postWebhook } from '../lib/config'
 import { formatCurrency } from '../lib/helpers'
@@ -9,16 +10,25 @@ import CsvImportModal from '../components/CsvImportModal'
 import toast from 'react-hot-toast'
 import {
   Package, Search, Plus, ChevronLeft, ChevronRight,
-  Loader2, Pencil, X, Check, Filter, Upload, Trash2,
+  Loader2, Pencil, X, Check, Upload, Trash2,
 } from 'lucide-react'
 
 const PAGE_SIZE = 20
 
 export default function Products() {
+  const location = useLocation()
+  const initialParams = new URLSearchParams(location.search)
+  const initialRisk = (() => {
+    const risk = initialParams.get('risk')
+    return ['HIGH', 'MEDIUM', 'LOW'].includes(risk) ? risk : 'ALL'
+  })()
+  const initialOutOfStockOnly = initialParams.get('outOfStock') === '1'
+
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [riskFilter, setRiskFilter] = useState('ALL')
+  const [riskFilter, setRiskFilter] = useState(initialRisk)
+  const [outOfStockOnly, setOutOfStockOnly] = useState(initialOutOfStockOnly)
   const [categoryFilter, setCategoryFilter] = useState('ALL')
   const [page, setPage] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
@@ -40,6 +50,9 @@ export default function Products() {
       }
       if (riskFilter !== 'ALL') {
         query = query.eq('risk_level', riskFilter)
+      }
+      if (outOfStockOnly) {
+        query = query.eq('current_stock', 0)
       }
       if (categoryFilter !== 'ALL') {
         query = query.eq('category', categoryFilter)
@@ -82,12 +95,27 @@ export default function Products() {
 
   useEffect(() => {
     fetchProducts()
-  }, [search, riskFilter, categoryFilter, page])
+  }, [search, riskFilter, outOfStockOnly, categoryFilter, page])
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const risk = params.get('risk')
+    const oos = params.get('outOfStock') === '1'
+
+    if (['HIGH', 'MEDIUM', 'LOW'].includes(risk)) {
+      setRiskFilter(risk)
+      setOutOfStockOnly(false)
+    } else {
+      setRiskFilter('ALL')
+    }
+
+    setOutOfStockOnly(oos)
+  }, [location.search])
 
   // Reset page when filters change
   useEffect(() => {
     setPage(0)
-  }, [search, riskFilter, categoryFilter])
+  }, [search, riskFilter, outOfStockOnly, categoryFilter])
 
   // Realtime subscription
   useEffect(() => {
@@ -98,7 +126,7 @@ export default function Products() {
       })
       .subscribe()
     return () => supabase.removeChannel(channel)
-  }, [search, riskFilter, categoryFilter, page])
+  }, [search, riskFilter, outOfStockOnly, categoryFilter, page])
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE)
 
@@ -221,6 +249,12 @@ export default function Products() {
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
+        <button
+          onClick={() => setOutOfStockOnly(prev => !prev)}
+          className={`px-3 py-2 border rounded-lg text-sm transition-colors cursor-pointer ${outOfStockOnly ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-border text-muted hover:bg-gray-50'}`}
+        >
+          Out of Stock Only
+        </button>
       </div>
 
       {/* Table */}
@@ -234,6 +268,7 @@ export default function Products() {
             icon={Package}
             title="No products found"
             description={search || riskFilter !== 'ALL' || categoryFilter !== 'ALL'
+              || outOfStockOnly
               ? 'Try adjusting your filters'
               : 'Add your first product to get started'}
           />

@@ -27,7 +27,7 @@ const navItems = [
   { to: '/alerts', label: 'Alerts', icon: AlertTriangle },
   { to: '/reorder', label: 'Reorder', icon: RotateCcw },
   { to: '/suppliers', label: 'Suppliers', icon: Truck },
-  { to: '/reports', label: 'Reports', icon: BarChart3 },
+
   { to: '/logs', label: 'System Logs', icon: FileText },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]

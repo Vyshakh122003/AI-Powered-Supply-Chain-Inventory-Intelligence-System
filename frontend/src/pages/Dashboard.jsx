@@ -1,60 +1,48 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { triggerWebhook, WEBHOOKS } from '../lib/config'
 import toast from 'react-hot-toast'
-import HealthScoreGauge from '../components/dashboard/HealthScoreGauge'
-import KPICards from '../components/dashboard/KPICards'
-import RiskDonutChart from '../components/dashboard/RiskDonutChart'
-import InventoryValueChart from '../components/dashboard/InventoryValueChart'
-import SupplierPerformanceList from '../components/dashboard/SupplierPerformanceList'
-import HealthTrendChart from '../components/dashboard/HealthTrendChart'
-import CriticalProductsList from '../components/dashboard/CriticalProductsList'
-import ActivityFeed from '../components/dashboard/ActivityFeed'
 import {
-  Zap, MessageCircle, Loader2,
+  Zap, MessageCircle, AlertTriangle, ShoppingCart, ShieldAlert, PackageX, CheckCircle2, Loader2
 } from 'lucide-react'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
+import PipelineOverlay from '../components/dashboard/PipelineOverlay'
 
-/* ─── Health Score Formula (fixed) ─── */
-function computeHealthScore(products) {
-  const total = products.length
-  if (total === 0) return 0
-  const oos = products.filter(p => (p.current_stock || 0) === 0).length
-  const high = products.filter(p => p.risk_level === 'HIGH' && (p.current_stock || 0) > 0).length
-  const medium = products.filter(p => p.risk_level === 'MEDIUM').length
-  const low = products.filter(p => p.risk_level === 'LOW').length
-  const score = Math.round(((low * 100) + (medium * 60) + (high * 20) + (oos * 0)) / total)
-  return Math.min(100, Math.max(0, score))
-}
+const PIPELINE_STEPS = [
+  'Initializing orchestration...',
+  'Simulating daily stock depletion...',
+  'Calculating stockout risks...',
+  'AI generating reorder plans...',
+  'Updating dashboard health metrics...'
+]
 
 export default function Dashboard() {
   const [products, setProducts] = useState([])
+  const [alertsCount, setAlertsCount] = useState(0)
+  const [reordersCount, setReordersCount] = useState(0)
   const [suppliers, setSuppliers] = useState([])
-  const [alerts, setAlerts] = useState([])
-  const [suggestions, setSuggestions] = useState([])
   const [snapshots, setSnapshots] = useState([])
-  const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
-  const [runningPipeline, setRunningPipeline] = useState(false)
+  
+  const [pipelineState, setPipelineState] = useState('idle') // 'idle', 'running', 'complete'
+  const [currentStep, setCurrentStep] = useState(0)
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false)
 
   const fetchData = async () => {
     try {
-      const [productsRes, suppliersRes, alertsRes, suggestionsRes, snapshotsRes, txRes] =
-        await Promise.all([
-          supabase.from('Products').select('*'),
-          supabase.from('Suppliers').select('supplier_id, supplier_name, composite_score, supplier_grade'),
-          supabase.from('Stock Alerts').select('*').eq('alert_status', 'Active').order('alert_date', { ascending: false }).limit(5),
-          supabase.from('Reorder Suggestions').select('id').eq('status', 'Pending'),
-          supabase.from('Daily Snapshots').select('*').order('snapshot_date', { ascending: false }).limit(30),
-          supabase.from('Stock Transactions').select('*').order('created_at', { ascending: false }).limit(10),
-        ])
+      const [productsRes, alertsRes, reordersRes, suppliersRes, snapshotsRes] = await Promise.all([
+        supabase.from('Products').select('*'),
+        supabase.from('Stock Alerts').select('id').eq('alert_status', 'Active'),
+        supabase.from('Reorder Suggestions').select('id').eq('status', 'Pending'),
+        supabase.from('Suppliers').select('supplier_id, supplier_name'),
+        supabase.from('Daily Snapshots').select('snapshot_date, health_score').order('snapshot_date', { ascending: true }).limit(30),
+      ])
 
       setProducts(productsRes.data || [])
+      setAlertsCount(alertsRes.data?.length || 0)
+      setReordersCount(reordersRes.data?.length || 0)
       setSuppliers(suppliersRes.data || [])
-      setAlerts(alertsRes.data || [])
-      setSuggestions(suggestionsRes.data || [])
-      setSnapshots((snapshotsRes.data || []).reverse())
-      setTransactions(txRes.data || [])
+      setSnapshots(snapshotsRes.data || [])
     } catch {
       toast.error('Failed to load dashboard data')
     } finally {
@@ -66,120 +54,102 @@ export default function Dashboard() {
     fetchData()
 
     const channels = [
-      supabase.channel('dash-products')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'Products' }, () => fetchData())
-        .subscribe(),
-      supabase.channel('dash-alerts')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'Stock Alerts' }, () => fetchData())
-        .subscribe(),
-      supabase.channel('dash-snapshots')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'Daily Snapshots' }, () => fetchData())
-        .subscribe(),
-      supabase.channel('dash-transactions')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'Stock Transactions' }, () => fetchData())
-        .subscribe(),
+      supabase.channel('dash-products').on('postgres_changes', { event: '*', schema: 'public', table: 'Products' }, () => fetchData()).subscribe(),
+      supabase.channel('dash-alerts').on('postgres_changes', { event: '*', schema: 'public', table: 'Stock Alerts' }, () => fetchData()).subscribe(),
+      supabase.channel('dash-reorders').on('postgres_changes', { event: '*', schema: 'public', table: 'Reorder Suggestions' }, () => fetchData()).subscribe(),
+      supabase.channel('dash-logs').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'System Logs' }, (payload) => {
+        if (payload.new && payload.new.workflow_name === 'WF-08 Daily Orchestrator') {
+          setPipelineState('complete')
+          fetchData()
+        }
+      }).subscribe(),
     ]
 
     return () => channels.forEach(c => supabase.removeChannel(c))
   }, [])
 
-  /* ─── Derived data ─── */
-  const healthScore = computeHealthScore(products)
-  const totalProducts = products.length
-  const oosCount = products.filter(p => (p.current_stock || 0) === 0).length
-  const highRisk = products.filter(p => p.risk_level === 'HIGH' && (p.current_stock || 0) > 0).length
-  const mediumRisk = products.filter(p => p.risk_level === 'MEDIUM').length
-  const lowRisk = products.filter(p => p.risk_level === 'LOW').length
+  // Cycle through fake steps while running
+  useEffect(() => {
+    if (pipelineState === 'running') {
+      const interval = setInterval(() => {
+        setCurrentStep(prev => (prev < PIPELINE_STEPS.length - 1 ? prev + 1 : prev))
+      }, 3500)
+      return () => clearInterval(interval)
+    } else {
+      setCurrentStep(0)
+    }
+  }, [pipelineState])
 
-  // KPI data
-  const kpiData = {
-    products: totalProducts,
-    highRisk: highRisk + oosCount,
-    highRiskSubtitle: `${mediumRisk} medium · ${lowRisk} low`,
-    alerts: alerts.length,
-    reorders: suggestions.length,
+  // Clear 'complete' state after 1.5 seconds per user spec
+  useEffect(() => {
+    if (pipelineState === 'complete') {
+      const t = setTimeout(() => setPipelineState('idle'), 1500)
+      return () => clearTimeout(t)
+    }
+  }, [pipelineState])
+
+  /* --- Derived Data --- */
+  const total = products.length
+  let healthScore = 50
+  if (total > 0) {
+    const oos = products.filter(p => (p.current_stock || 0) === 0).length
+    const high = products.filter(p => p.risk_level === 'HIGH' && (p.current_stock || 0) > 0).length
+    const medium = products.filter(p => p.risk_level === 'MEDIUM').length
+    const low = products.filter(p => p.risk_level === 'LOW').length
+    const score = Math.round(((low * 100) + (medium * 70) + (high * 30) + (oos * 5)) / total)
+    healthScore = Math.min(100, Math.max(0, score))
   }
 
-  // Risk donut data
-  const riskDistribution = [
-    ...(oosCount > 0 ? [{ name: 'Out of Stock', value: oosCount }] : []),
-    ...(highRisk > 0 ? [{ name: 'High Risk', value: highRisk }] : []),
-    ...(mediumRisk > 0 ? [{ name: 'Medium Risk', value: mediumRisk }] : []),
-    ...(lowRisk > 0 ? [{ name: 'Low Risk', value: lowRisk }] : []),
-  ]
+  const highRiskCount = products.filter(p => p.risk_level === 'HIGH' && (p.current_stock || 0) > 0).length
+  const oosCount = products.filter(p => (p.current_stock || 0) === 0).length
 
-  // Inventory value at risk (sorted by ₹ value descending)
-  const inventoryValueData = products
-    .map(p => ({
-      name: (p.product_name || '').length > 16
-        ? p.product_name.slice(0, 14) + '…'
-        : p.product_name || p.product_id,
-      value: Math.round((p.unit_price || 0) * (p.current_stock || 0)),
-      risk: p.risk_level || 'UNKNOWN',
-      stock: p.current_stock || 0,
-      unitPrice: p.unit_price || 0,
-    }))
-    .sort((a, b) => b.value - a.value)
+  // Subtitle format: Friday, 14 March 2026
+  const todayLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
-  // Supplier performance
-  const supplierData = suppliers
-    .map(s => ({
-      name: s.supplier_name,
-      value: s.composite_score || 0,
-      grade: s.supplier_grade,
-    }))
-    .sort((a, b) => b.value - a.value)
+  // Critical products: HIGH or OOS, max 8, sorted by days_to_stockout ASC
+  const criticalProducts = products
+    .filter(p => p.risk_level === 'HIGH' || (p.current_stock || 0) === 0)
+    .sort((a, b) => (a.days_to_stockout ?? 999) - (b.days_to_stockout ?? 999))
+    .slice(0, 8)
 
-  // Chart data for health trend (filter out zero/null scores from broken snapshot rows)
-  const chartData = snapshots
-    .filter(s => s.health_score != null && s.health_score > 0)
-    .map(s => ({
-      date: new Date(s.snapshot_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-      health: s.health_score,
-    }))
+  // Supplier Name Lookup Helper
+  const getSupplierName = (id) => {
+    const s = suppliers.find(s => s.supplier_id === id)
+    return s ? s.supplier_name : 'Unknown'
+  }
 
-  // Critical products (top 5 by days_to_stockout ascending)
-  const criticalProducts = [...products]
-    .sort((a, b) => (a.days_to_stockout || 0) - (b.days_to_stockout || 0))
-    .slice(0, 5)
+  // Chart Data
+  const chartData = useMemo(() => {
+    const todayStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+    const pastData = snapshots
+      .filter(s => s.health_score !== null && s.health_score > 0)
+      .map(s => ({
+        date: new Date(s.snapshot_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+        score: Math.round(s.health_score),
+      }))
+      .filter(d => d.date !== todayStr)
 
-  /* ─── Quick Actions ─── */
+    return [...pastData, { date: todayStr, score: healthScore }]
+  }, [snapshots, healthScore])
+
+  /* --- Handlers --- */
   const handleRunPipeline = async () => {
-    setRunningPipeline(true)
+    setPipelineState('running')
     try {
       await triggerWebhook(WEBHOOKS.runPipeline)
-      toast('Pipeline triggered — processing...', { icon: '⏳', duration: 4000 })
-      // Poll for completion
-      const poll = async (attempt = 1) => {
-        if (attempt > 6) return
-        await new Promise(r => setTimeout(r, 10000))
-        try {
-          const { data } = await supabase
-            .from('System Logs')
-            .select('status, error_message, records_processed')
-            .order('created_at', { ascending: false })
-            .limit(1)
-          if (data?.[0]) {
-            if (data[0].status === 'success') {
-              toast.success(`Pipeline done — ${data[0].records_processed || 0} products processed`)
-              fetchData()
-              return
-            }
-            if (data[0].status === 'error') {
-              toast.error(`Pipeline failed: ${data[0].error_message || 'Unknown error'}`)
-              return
-            }
+      // Safety timeout: force success after 20s if DB event never arrives.
+      setTimeout(() => {
+        setPipelineState((prev) => {
+          if (prev === 'running') {
+            fetchData() 
+            return 'complete'
           }
-          poll(attempt + 1)
-        } catch {
-          poll(attempt + 1)
-        }
-      }
-      poll()
-    } catch (err) {
-      toast.error(`Failed to start pipeline: ${err.message}`)
-    } finally {
-      setRunningPipeline(false)
+          return prev
+        })
+      }, 20000)
+    } catch (e) {
+      toast.error(e.message || 'Failed to start pipeline')
+      setPipelineState('idle')
     }
   }
 
@@ -195,67 +165,233 @@ export default function Dashboard() {
     }
   }
 
-  /* ─── Render ─── */
+  /* --- UI Helpers --- */
+  const getScoreColorClass = (score) => {
+    if (score >= 80) return 'text-success'
+    if (score >= 50) return 'text-warning'
+    return 'text-danger'
+  }
+
+  const getDaysPill = (days) => {
+    if (days == null) return <span className="text-muted text-xs">-</span>
+    if (days <= 1) return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">{days} {days === 1 ? 'day' : 'days'}</span>
+    if (days <= 3) return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-orange-100 text-orange-700">{days} {days === 1 ? 'day' : 'days'}</span>
+    if (days <= 7) return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-yellow-100 text-yellow-800">{days} {days === 1 ? 'day' : 'days'}</span>
+    return <span className="text-muted text-xs font-medium">{days} days</span>
+  }
+
+  const ChartTooltip = ({ active, payload }) => {
+    if (!active || !payload?.[0]) return null
+    const d = payload[0].payload
+    return (
+      <div className="bg-white border border-border rounded-lg px-3 py-2 shadow-lg text-xs">
+        <p className="font-semibold text-text mb-1">{d.date}</p>
+        <p className="text-muted">Score: <span className="font-semibold text-text">{d.score}</span></p>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-5">
-      {/* Page title */}
-      <div>
-        <h1 className="text-2xl font-bold text-text">Dashboard</h1>
-        <p className="text-sm text-muted mt-0.5">Your inventory intelligence at a glance</p>
-      </div>
-
-      {/* Row 1 — Health Gauge + KPI Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <div className="lg:col-span-2">
-          <HealthScoreGauge score={healthScore} totalProducts={totalProducts} loading={loading} />
+    <div className="space-y-6 max-w-7xl mx-auto pb-8 relative">
+      
+      {/* 1. PAGE HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+        <div>
+          <h1 className="text-2xl font-bold text-text">Dashboard</h1>
+          <p className="text-sm text-muted mt-1">{todayLabel}</p>
         </div>
-        <div className="lg:col-span-3">
-          <KPICards data={kpiData} loading={loading} />
-        </div>
-      </div>
-
-      {/* Row 2 — Three Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <RiskDonutChart data={riskDistribution} totalProducts={totalProducts} loading={loading} />
-        <InventoryValueChart data={inventoryValueData} loading={loading} />
-        <SupplierPerformanceList data={supplierData} loading={loading} />
-      </div>
-
-      {/* Row 3 — Health Trend */}
-      <HealthTrendChart data={chartData} currentScore={healthScore} loading={loading} />
-
-      {/* Row 4 — Critical Products + Activity Feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <div className="lg:col-span-3">
-          <CriticalProductsList products={criticalProducts} suppliers={suppliers} loading={loading} />
-        </div>
-        <div className="lg:col-span-2">
-          <ActivityFeed transactions={transactions} loading={loading} />
-        </div>
-      </div>
-
-      {/* Quick Actions — subtle, at the bottom */}
-      <div className="border-t border-border pt-4">
-        <p className="text-xs font-medium text-muted mb-2 uppercase tracking-wider">Quick Actions</p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={handleRunPipeline}
-            disabled={runningPipeline}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted bg-gray-50 border border-border rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 cursor-pointer"
+            disabled={pipelineState !== 'idle'}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-border text-text text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 cursor-pointer"
           >
-            {runningPipeline ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-            {runningPipeline ? 'Running...' : 'Run Pipeline'}
+            {pipelineState === 'running' ? <Loader2 className="w-4 h-4 animate-spin text-accent" /> : <Zap className="w-4 h-4 text-accent" />}
+            {pipelineState === 'running' ? 'Running...' : pipelineState === 'complete' ? 'Done!' : 'Run Pipeline'}
           </button>
           <button
             onClick={handleSendWhatsApp}
             disabled={sendingWhatsApp}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted bg-gray-50 border border-border rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 cursor-pointer"
           >
-            {sendingWhatsApp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageCircle className="w-3.5 h-3.5" />}
-            {sendingWhatsApp ? 'Sending...' : 'Send WhatsApp Report'}
+            {sendingWhatsApp ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
+            Send WhatsApp
           </button>
         </div>
       </div>
+
+      {/* 2. HEALTH SCORE + 4 KPI CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {/* Score Card */}
+        <div className="bg-white rounded-xl border border-border p-5 flex flex-col justify-center items-center text-center shadow-sm">
+          <span className={`text-5xl font-extrabold ${getScoreColorClass(healthScore)}`}>
+            {healthScore}
+          </span>
+          <span className="text-sm font-medium text-muted mt-2 tracking-wide uppercase">Inventory Health</span>
+        </div>
+        
+        {/* KPI 1 */}
+        <div className="bg-white rounded-xl border border-border p-5 flex flex-col justify-between shadow-sm">
+          <div className="flex items-start justify-between">
+            <p className="text-sm font-medium text-muted">Active Alerts</p>
+            <div className="p-2 bg-orange-50 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-warning" />
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-text mt-4">{alertsCount}</p>
+        </div>
+
+        {/* KPI 2 */}
+        <div className="bg-white rounded-xl border border-border p-5 flex flex-col justify-between shadow-sm">
+          <div className="flex items-start justify-between">
+            <p className="text-sm font-medium text-muted">Pending Reorders</p>
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <ShoppingCart className="w-5 h-5 text-accent" />
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-text mt-4">{reordersCount}</p>
+        </div>
+
+        {/* KPI 3 */}
+        <div className="bg-white rounded-xl border border-border p-5 flex flex-col justify-between shadow-sm">
+          <div className="flex items-start justify-between">
+            <p className="text-sm font-medium text-muted">High Risk</p>
+            <div className="p-2 bg-red-50 rounded-lg">
+              <ShieldAlert className="w-5 h-5 text-danger" />
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-text mt-4">{highRiskCount}</p>
+        </div>
+
+        {/* KPI 4 */}
+        <div className="bg-white rounded-xl border border-border p-5 flex flex-col justify-between shadow-sm">
+          <div className="flex items-start justify-between">
+            <p className="text-sm font-medium text-muted">Out of Stock</p>
+            <div className="p-2 bg-gray-100 rounded-lg">
+              <PackageX className="w-5 h-5 text-gray-600" />
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-text mt-4">{oosCount}</p>
+        </div>
+      </div>
+
+      {/* 3. CRITICAL PRODUCTS TABLE */}
+      <div className="bg-white rounded-xl border border-border overflow-hidden shadow-sm">
+        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-danger animate-pulse" />
+          <h2 className="text-base font-semibold text-text">Needs Attention</h2>
+        </div>
+        
+        {criticalProducts.length === 0 ? (
+          <div className="p-8 flex flex-col items-center justify-center text-center">
+            <CheckCircle2 className="w-10 h-10 text-success mb-3" />
+            <p className="text-sm font-medium text-text">All products are well stocked</p>
+            <p className="text-xs text-muted mt-1">No high risk or out of stock items found.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="bg-gray-50/50 text-xs text-muted uppercase tracking-wider border-b border-border">
+                  <th className="font-medium px-5 py-3">Product Name</th>
+                  <th className="font-medium px-5 py-3 text-right">Stock</th>
+                  <th className="font-medium px-5 py-3 text-right">Threshold</th>
+                  <th className="font-medium px-5 py-3 text-center">Days Left</th>
+                  <th className="font-medium px-5 py-3">Risk</th>
+                  <th className="font-medium px-5 py-3">Supplier</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {criticalProducts.map(p => (
+                  <tr key={p.product_id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-5 py-3 font-medium text-text">{p.product_name}</td>
+                    <td className="px-5 py-3 text-right text-text">{p.current_stock ?? 0}</td>
+                    <td className="px-5 py-3 text-right text-muted">{p.reorder_threshold ?? 0}</td>
+                    <td className="px-5 py-3 text-center">{getDaysPill(p.days_to_stockout)}</td>
+                    <td className="px-5 py-3">
+                      {p.risk_level === 'HIGH' && (p.current_stock || 0) > 0 ? (
+                        <span className="text-xs font-semibold text-danger">HIGH</span>
+                      ) : (
+                        <span className="text-xs font-semibold text-gray-500">OOS</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-muted truncate max-w-[150px]" title={getSupplierName(p.preferred_supplier_id)}>
+                      {getSupplierName(p.preferred_supplier_id)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* 4. HEALTH TREND CHART */}
+      <div className="bg-white rounded-xl border border-border shadow-sm p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-semibold text-text">Health Score — Last 30 Days</h2>
+        </div>
+        
+        {chartData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center min-h-[220px] bg-gray-50/50 rounded-lg border border-dashed border-border px-4 py-8 text-center">
+            <AreaChart className="w-8 h-8 text-muted mb-2 opacity-50" />
+            <p className="text-sm font-medium text-muted">Run the pipeline to start tracking health score over time</p>
+          </div>
+        ) : (
+          <div className="w-full h-[220px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#059669" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#059669" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 10, fill: '#64748B' }} 
+                  axisLine={false} 
+                  tickLine={false} 
+                  dy={10} 
+                />
+                <YAxis 
+                  domain={[0, 100]} 
+                  tick={{ fontSize: 10, fill: '#64748B' }} 
+                  axisLine={false} 
+                  tickLine={false} 
+                />
+                <RechartsTooltip content={<ChartTooltip />} />
+                <Area 
+                  type="monotone" 
+                  dataKey="score" 
+                  stroke="#059669" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#scoreGradient)" 
+                  activeDot={{ r: 4, strokeWidth: 0, fill: '#059669' }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      {/* 5. PIPELINE EXECUTION OVERLAY */}
+      <PipelineOverlay 
+        pipelineState={pipelineState} 
+        pipelineResult={{ products: total, alerts: alertsCount, reorders: reordersCount }}
+        onClose={() => setPipelineState('idle')} 
+      />
+
     </div>
   )
 }

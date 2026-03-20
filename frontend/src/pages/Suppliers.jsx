@@ -5,7 +5,7 @@ import EmptyState from '../components/EmptyState'
 import AddSupplierModal from '../components/AddSupplierModal'
 import toast from 'react-hot-toast'
 import {
-  Truck, Plus, Loader2, Pencil, Check, X, Trash2, AlertTriangle,
+  Truck, Plus, Loader2, Pencil, Check, X, Trash2, AlertTriangle, TrendingUp,
 } from 'lucide-react'
 
 export default function Suppliers() {
@@ -154,6 +154,40 @@ export default function Suppliers() {
       </div>
 
       {/* Table */}
+      {!loading && suppliers.length > 0 && (
+        <div className="bg-white rounded-xl border border-border p-5">
+          <h3 className="text-sm font-semibold text-text mb-4 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-green-600" />
+            Supplier Performance
+          </h3>
+          <div className="space-y-3">
+            {suppliers.slice(0, 5).map((supplier) => {
+              const score = supplier.composite_score || 0
+              const barColor = score >= 80 ? '#059669' : score >= 65 ? '#2563EB' : score >= 50 ? '#D97706' : '#DC2626'
+
+              return (
+                <div key={supplier.supplier_id}>
+                  <div className="flex items-center justify-between mb-1.5 gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-text truncate">{supplier.supplier_name}</p>
+                      <p className="text-[10px] text-muted">Grade {supplier.supplier_grade || '—'}</p>
+                    </div>
+                    <span className="text-xs font-bold text-text">{score}</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2.5">
+                    <div
+                      className="h-2.5 rounded-full transition-all duration-700"
+                      style={{ width: `${Math.min(score, 100)}%`, backgroundColor: barColor }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <p className="text-[10px] text-muted mt-4 text-center">Composite score out of 100</p>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl border border-border overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-20">
