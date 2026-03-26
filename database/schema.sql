@@ -27,7 +27,9 @@ CREATE TABLE IF NOT EXISTS "Store Profiles" (
     user_id         UUID        UNIQUE,                                   -- FK to auth.users.id (nullable until linked)
     store_name      TEXT        NOT NULL,                                  -- Display name of the kirana store
     owner_name      TEXT        NOT NULL,                                  -- Store owner's full name
+    phone           TEXT,                                                  -- Owner's phone number
     whatsapp_numbers TEXT,                                                 -- Comma-separated WhatsApp numbers for alerts
+    default_lead_days INTEGER    DEFAULT 3,                                -- Avg supplier delivery time in days
     city            TEXT,                                                  -- City where the store is located
     store_type      TEXT        DEFAULT 'Kirana',                          -- Type: Kirana, Supermarket, Wholesale, etc.
     safety_factor   NUMERIC     DEFAULT 1.2,                              -- Multiplier for reorder quantity buffer (1.0–2.0)
