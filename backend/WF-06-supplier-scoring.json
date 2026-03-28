@@ -122,9 +122,27 @@
     },
     {
       "parameters": {
+        "httpMethod": "POST",
+        "path": "supplier-scoring",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -624,
+        -304
+      ],
+      "id": "webhook-supplier-scoring",
+      "name": "Webhook Trigger",
+      "webhookId": "supplier-scoring-webhook",
+      "notesInFlow": true,
+      "notes": "POST webhook at /supplier-scoring.\nAllows triggering scoring via HTTP POST from WF-08 or external sources."
+    },
+    {
+      "parameters": {
         "width": 540,
         "height": 300,
-        "content": "## WF-06: Supplier Scoring\n\n**Triggers:** Manual execution or sub-workflow call\n\n**Purpose:** Evaluates and ranks suppliers using a multi-criteria Weighted Sum Model to help store owners identify the best suppliers for reordering.\n\n**Scoring Formula (WSM):**\n- Reliability Score: 40% weight\n- Price Score: 35% weight  \n- Delivery Speed: 25% weight (min-max normalized)\n\n**Grade Scale:**\n| Grade | Score Range | Meaning |\n|-------|------------|----------|\n| A | >= 80 | Excellent supplier |\n| B | 65-79 | Good supplier |\n| C | 50-64 | Average supplier |\n| D | < 50 | Below average |"
+        "content": "## WF-06: Supplier Scoring\n\n**Triggers:** Manual execution, sub-workflow call, or POST webhook `/supplier-scoring`\n\n**Purpose:** Evaluates and ranks suppliers using a multi-criteria Weighted Sum Model to help store owners identify the best suppliers for reordering.\n\n**Scoring Formula (WSM):**\n- Reliability Score: 40% weight\n- Price Score: 35% weight  \n- Delivery Speed: 25% weight (min-max normalized)\n\n**Grade Scale:**\n| Grade | Score Range | Meaning |\n|-------|------------|----------|\n| A | >= 80 | Excellent supplier |\n| B | 65-79 | Good supplier |\n| C | 50-64 | Average supplier |\n| D | < 50 | Below average |"
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -171,6 +189,17 @@
       ]
     },
     "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Fetch All Suppliers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
       "main": [
         [
           {

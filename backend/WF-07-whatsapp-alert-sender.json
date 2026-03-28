@@ -75,7 +75,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.twilio.com/2010-04-01/Accounts/REDACTED_TWILIO_ACCOUNT_SID/Messages.json",
+        "url": "https://api.twilio.com/2010-04-01/Accounts/AC861219-44e6-08e4-72ea-6a97c3babb27cb/Messages.json",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "twilioApi",
         "sendBody": true,
@@ -384,7 +384,7 @@
       {
         "parameters": {
           "method": "POST",
-          "url": "https://api.twilio.com/2010-04-01/Accounts/REDACTED_TWILIO_ACCOUNT_SID/Messages.json",
+          "url": "https://api.twilio.com/2010-04-01/Accounts/AC861219-44e6-08e4-72ea-6a97c3babb27cb/Messages.json",
           "authentication": "predefinedCredentialType",
           "nodeCredentialType": "twilioApi",
           "sendBody": true,

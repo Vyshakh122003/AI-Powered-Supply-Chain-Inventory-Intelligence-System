@@ -209,6 +209,39 @@
     },
     {
       "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/supplier-scoring",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2336,
+        224
+      ],
+      "id": "run-wf-06-scoring",
+      "name": "Run WF-06 Scoring",
+      "notesInFlow": true,
+      "notes": "Triggers WF-06 Supplier Scoring via HTTP POST to its webhook.\nRecalculates composite scores and grades for all suppliers."
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { done: true } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2512,
+        224
+      ],
+      "id": "collapse-node-extra",
+      "name": "Collapse nodeExtra",
+      "executeOnce": true,
+      "notesInFlow": true,
+      "notes": "Pass-through node between step executions.\nCollapses output to a single item for the next step."
+    },
+    {
+      "parameters": {
         "workflowId": {
           "__rl": true,
           "value": "ivm5yQJMfSZn0VrNt40RB",
@@ -703,6 +736,28 @@
       ]
     },
     "Collapse node2": {
+      "main": [
+        [
+          {
+            "node": "Run WF-06",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run WF-06": {
+      "main": [
+        [
+          {
+            "node": "collapse-node-extra",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "collapse-node-extra": {
       "main": [
         [
           {
@@ -1569,6 +1624,28 @@
         ]
       },
       "Collapse node2": {
+        "main": [
+          [
+            {
+              "node": "Run WF-06 Scoring",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Run WF-06 Scoring": {
+        "main": [
+          [
+            {
+              "node": "Collapse nodeExtra",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Collapse nodeExtra": {
         "main": [
           [
             {
