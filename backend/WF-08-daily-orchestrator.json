@@ -739,25 +739,25 @@
       "main": [
         [
           {
-            "node": "Run WF-06",
+            "node": "Run WF-06 Scoring",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Run WF-06": {
+    "Run WF-06 Scoring": {
       "main": [
         [
           {
-            "node": "collapse-node-extra",
+            "node": "Collapse nodeExtra",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "collapse-node-extra": {
+    "Collapse nodeExtra": {
       "main": [
         [
           {
