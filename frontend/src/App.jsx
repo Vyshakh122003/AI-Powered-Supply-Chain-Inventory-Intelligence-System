@@ -78,7 +78,7 @@ function App() {
 
             <Route path="/settings" element={<Settings />} />
             <Route path="/quick-update" element={<QuickUpdate />} />
-            <Route path="/deliveries" element={<Deliveries />} />
+            {/* <Route path="/deliveries" element={<Deliveries />} /> */}
             <Route path="/logs" element={<Logs />} />
           </Route>
 

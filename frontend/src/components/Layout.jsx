@@ -23,7 +23,6 @@ const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/products', label: 'Products', icon: Package },
   { to: '/quick-update', label: 'Quick Update', icon: Zap },
-  { to: '/deliveries', label: 'Deliveries', icon: ClipboardList },
   { to: '/alerts', label: 'Alerts', icon: AlertTriangle },
   { to: '/reorder', label: 'Reorder', icon: RotateCcw },
   { to: '/suppliers', label: 'Suppliers', icon: Truck },
