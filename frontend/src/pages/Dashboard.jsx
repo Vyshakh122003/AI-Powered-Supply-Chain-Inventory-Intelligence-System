@@ -6,6 +6,7 @@ import {
   Zap, MessageCircle, AlertTriangle, ShoppingCart, ShieldAlert, PackageX, CheckCircle2, Loader2
 } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
+import RiskBadge from '../components/RiskBadge'
 import PipelineOverlay from '../components/dashboard/PipelineOverlay'
 
 const PIPELINE_STEPS = [
@@ -90,7 +91,7 @@ export default function Dashboard() {
 
   /* --- Derived Data --- */
   const total = products.length
-  let healthScore = 50
+  let healthScore = total > 0 ? 0 : '-'
   if (total > 0) {
     const oos = products.filter(p => (p.current_stock || 0) === 0).length
     const high = products.filter(p => p.risk_level === 'HIGH' && (p.current_stock || 0) > 0).length
@@ -167,6 +168,7 @@ export default function Dashboard() {
 
   /* --- UI Helpers --- */
   const getScoreColorClass = (score) => {
+    if (score === '-') return 'text-muted'
     if (score >= 80) return 'text-success'
     if (score >= 50) return 'text-warning'
     return 'text-danger'
@@ -290,7 +292,13 @@ export default function Dashboard() {
           <h2 className="text-base font-semibold text-text">Needs Attention</h2>
         </div>
         
-        {criticalProducts.length === 0 ? (
+        {total === 0 ? (
+          <div className="p-8 flex flex-col items-center justify-center text-center">
+            <PackageX className="w-10 h-10 text-muted mb-3" />
+            <p className="text-sm font-medium text-text">No products in inventory</p>
+            <p className="text-xs text-muted mt-1">Add your first product to see stock intelligence.</p>
+          </div>
+        ) : criticalProducts.length === 0 ? (
           <div className="p-8 flex flex-col items-center justify-center text-center">
             <CheckCircle2 className="w-10 h-10 text-success mb-3" />
             <p className="text-sm font-medium text-text">All products are well stocked</p>
@@ -316,12 +324,8 @@ export default function Dashboard() {
                     <td className="px-5 py-3 text-right text-text">{p.current_stock ?? 0}</td>
                     <td className="px-5 py-3 text-right text-muted">{p.reorder_threshold ?? 0}</td>
                     <td className="px-5 py-3 text-center">{getDaysPill(p.days_to_stockout)}</td>
-                    <td className="px-5 py-3">
-                      {p.risk_level === 'HIGH' && (p.current_stock || 0) > 0 ? (
-                        <span className="text-xs font-semibold text-danger">HIGH</span>
-                      ) : (
-                        <span className="text-xs font-semibold text-gray-500">OOS</span>
-                      )}
+                    <td className="px-5 py-3 text-center">
+                      <RiskBadge level={p.risk_level} stock={p.current_stock} />
                     </td>
                     <td className="px-5 py-3 text-muted truncate max-w-[150px]" title={getSupplierName(p.preferred_supplier_id)}>
                       {getSupplierName(p.preferred_supplier_id)}

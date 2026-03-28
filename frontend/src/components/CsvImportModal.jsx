@@ -1,15 +1,16 @@
 import { useState, useRef } from 'react'
 import { postWebhook, WEBHOOKS } from '../lib/config'
+import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import {
   Upload, X, FileSpreadsheet, Loader2, CheckCircle2,
   AlertTriangle, Download,
 } from 'lucide-react'
 
-const SAMPLE_CSV = `product_id,product_name,category,current_stock,reorder_threshold,unit_price,avg_daily_sales,unit
-RICE_001,Basmati Rice 5kg,Rice & Grains,25,10,450,3.5,bags
-OIL_001,Sunflower Oil 1L,Cooking Oil,15,8,180,2.0,bottles
-SOAP_001,Lux Soap Bar,Personal Care,40,20,45,5.0,pcs`
+const SAMPLE_CSV = `product_id,product_name,category,current_stock,reorder_threshold,unit_price,avg_daily_sales,unit,preferred_supplier_id
+RICE_001,Basmati Rice 5kg,Rice & Grains,25,10,450,3.5,bags,SUP_GRAINS
+OIL_001,Sunflower Oil 1L,Cooking Oil,15,8,180,2.0,bottles,SUP_SNACKS
+SOAP_001,Lux Soap Bar,Personal Care,40,20,45,5.0,pcs,SUP_DRINKS`
 
 /**
  * Parse a single CSV line respecting quoted fields (RFC 4180).
@@ -130,8 +131,19 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
             unit_price: Number(row.unit_price) || 0,
             avg_daily_sales: Number(row.avg_daily_sales) || 0,
             unit: row.unit || 'pcs',
+            preferred_supplier_id: row.preferred_supplier_id || null,
           }
           await postWebhook(WEBHOOKS.productIngest, body)
+          
+          // Patch preferred_supplier_id directly to Supabase as the n8n workflow
+          // may not handle this field yet.
+          if (row.preferred_supplier_id) {
+            await supabase
+              .from('Products')
+              .update({ preferred_supplier_id: row.preferred_supplier_id })
+              .eq('product_id', row.product_id)
+          }
+
           success++
         } catch (err) {
           failed++
@@ -196,7 +208,7 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
             </p>
             <p>
               Optional columns: category, current_stock, reorder_threshold,
-              unit_price, avg_daily_sales, unit.
+              unit_price, avg_daily_sales, unit, preferred_supplier_id.
             </p>
           </div>
 

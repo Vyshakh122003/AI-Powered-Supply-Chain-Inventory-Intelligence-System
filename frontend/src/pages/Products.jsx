@@ -339,7 +339,7 @@ export default function Products() {
                           {product.days_to_stockout ?? '—'}
                         </td>
                         <td className="text-center px-4 py-3">
-                          <RiskBadge level={product.risk_level} />
+                          <RiskBadge level={product.risk_level} stock={product.current_stock} />
                         </td>
                         <td className="px-4 py-3 text-right">
                           <input
@@ -385,7 +385,7 @@ export default function Products() {
                             : '—'}
                         </td>
                         <td className="text-center px-4 py-3">
-                          <RiskBadge level={product.risk_level} />
+                          <RiskBadge level={product.risk_level} stock={product.current_stock} />
                         </td>
                         <td className="px-4 py-3 text-right font-mono">{formatCurrency(product.unit_price)}</td>
                         <td className="px-4 py-3 text-center">

@@ -1,0 +1,11 @@
+product_id,product_name,category,current_stock,reorder_threshold,unit_price,avg_daily_sales,unit,preferred_supplier_id
+MILK_01,Amul Gold Milk (1L),Dairy,0,10,66,12,Litres,SUP_DAIRY
+CURD_01,Amul Masti Dahi (400g),Dairy,18,15,35,8,Cups,SUP_DAIRY
+RICE_01,Basmati Rice (5kg),Grains,60,20,450,2,Bags,SUP_GRAINS
+WHEAT_01,Aashirvaad Atta (10kg),Grains,22,10,420,3,Bags,SUP_GRAINS
+CHIPS_01,Lay's Classic Family Pack,Snacks,0,15,50,10,Packets,SUP_SNACKS
+BISCUIT_01,Parle-G Gold (250g),Snacks,120,20,25,15,Packets,SUP_SNACKS
+COLD_DRINK_01,Coca Cola (2L),Beverages,15,15,95,5,Bottles,SUP_DRINKS
+TEA_POWDER_01,Tata Tea Gold (500g),Beverages,35,10,320,1,Packets,SUP_DRINKS
+SUGAR_01,Crystal Sugar (1kg),Grains,45,15,45,4,Kg,SUP_GRAINS
+EGG_01,Farm Fresh Eggs (Tray 30),Dairy,40,30,180,6,Trays,SUP_DAIRY

@@ -57,6 +57,8 @@ export function getHealthBg(score) {
  */
 export function getRiskClasses(riskLevel) {
   switch (riskLevel?.toUpperCase()) {
+    case 'OOS':
+      return 'bg-gray-100 text-gray-700'
     case 'HIGH':
       return 'bg-red-100 text-red-700'
     case 'MEDIUM':
