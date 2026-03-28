@@ -36,3 +36,6 @@ nul
 # Handoff document (contains live credentials)
 HANDOFF.md
 HANDOFF (Antigravity).md
+
+# Backend workflow with secrets (Twilio SID)
+backend/WF-07-whatsapp-alert-sender.json
