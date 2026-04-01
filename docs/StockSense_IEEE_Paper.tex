@@ -76,7 +76,7 @@ The StockSense AI system employs a four-layer architecture as illustrated in Fig
 ┌─────────────────────────────────────────────────────────┐
 │  Frontend Layer (React 19, Vite 8, Tailwind CSS v4)    │
 │  Landing → Login → Dashboard → Products → Alerts       │
-│  Reorder → Suppliers → Reports → Settings             │
+│  Reorder → Suppliers → Settings             │
 └────────────────────────────┬────────────────────────────┘
                              │ REST / Webhooks
 ┌────────────────────────────▼────────────────────────────┐
@@ -99,11 +99,11 @@ The StockSense AI system employs a four-layer architecture as illustrated in Fig
 └─────────────────────────────────────────────────────────┘
 \end{verbatim}
 
-The frontend layer is built with React 19.2.4 and Vite 8.0.0, styled with Tailwind CSS v4, and uses React Router 7.13.1 for navigation. The application provides 13 distinct routes including Dashboard, Products, Alerts, Reorder, Suppliers, Reports, and Settings pages.
+The frontend layer is built with React 19.2.4 and Vite 8.0.0, styled with Tailwind CSS v4, and uses React Router 7.13.1 for navigation. The application provides 12 distinct routes including Dashboard, Products, Alerts, Reorder, Suppliers, and Settings pages.
 
 The workflow engine layer utilizes n8n, an open-source workflow automation platform. Eight specialized workflows handle different aspects of the inventory intelligence pipeline. The workflows can be triggered manually, via webhooks, or automatically on a schedule.
 
-The database layer uses Supabase, a PostgreSQL-based backend-as-a-service platform. The database schema comprises seven tables with proper foreign key relationships and indexing for query performance.
+The database layer uses Supabase, a PostgreSQL-based backend-as-a-service platform. The database schema comprises eight tables with proper foreign key relationships and indexing for query performance.
 
 The AI/External services layer integrates Groq's Llama 3.1 8B model for natural language generation of reorder recommendations and Twilio's WhatsApp Business API for alert delivery.
 
@@ -171,7 +171,7 @@ The implementation comprises three major components: the database schema, the wo
 
 \subsection{Database Schema}
 
-The Supabase PostgreSQL database contains seven tables with the following structure:
+The Supabase PostgreSQL database contains eight tables with the following structure:
 
 \begin{table}[htbp]
 \centering
@@ -204,7 +204,7 @@ Eight n8n workflows implement the inventory intelligence pipeline:
 
 \textbf{WF-02: Stockout Date Calculator} computes days\_to\_stockout and estimated\_stockout\_date for all products. It fetches all products, applies the stockout calculation formula, and updates each product record. Edge cases handle zero sales and zero stock scenarios appropriately.
 
-\textbf{WF-03: Inventory Processing and Stock Alerts} identifies products where current\_stock $\leq$ reorder\_threshold and generates Stock Alerts records. It cleans up existing alerts before creating new ones to avoid duplicates.
+\textbf{WF-03: Inventory Processing \& Stock Depletion} identifies products where current\_stock $\leq$ reorder\_threshold and generates Stock Alerts records. It cleans up existing alerts before creating new ones to avoid duplicates.
 
 \textbf{WF-04: Stock Risk Classification} classifies all products into risk tiers (HIGH/MEDIUM/LOW/UNKNOWN) based on the days\_to\_stockout values computed by WF-02.
 
@@ -243,11 +243,9 @@ The React 19 frontend provides 13 routes serving different functions:
 /dashboard & KPI cards, health score gauge, critical products table, trend chart \\
 /products & Product CRUD, inline editing, CSV bulk import \\
 /quick-update & Batch stock level adjustments \\
-/deliveries & Record incoming deliveries \\
 /alerts & Stock alert feed with severity indicators \\
 /reorder & AI-generated reorder suggestions with approve/dismiss \\
 /suppliers & Supplier table with scoring and grade badges \\
-/reports & Charts and analytics visualization \\
 /logs & System log viewer for pipeline debugging \\
 /settings & Store profile, preferences, manual workflow triggers \\
 \bottomrule
@@ -270,8 +268,8 @@ The implemented system has been tested with sample data including six products a
 \textbf{Metric} & \textbf{Value} \\
 \midrule
 Number of Workflows & 8 \\
-Number of Database Tables & 7 \\
-Number of Frontend Routes & 13 \\
+Number of Database Tables & 8 \\
+Number of Frontend Routes & 12 \\
 Pipeline Execution Time (typical) & $\sim$13 seconds \\
 WhatsApp Message Delivery & $< 5$ seconds \\
 System Infrastructure Cost & ₹0 (all free tier) \\
