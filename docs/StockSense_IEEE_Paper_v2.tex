@@ -170,19 +170,67 @@ Eight n8n workflows implement the inventory intelligence pipeline.
 
 \textbf{WF-01: Product and Sales Data Ingestion} exposes a POST webhook at \texttt{/product-sales-ingest} that receives product data from the frontend Add Product modal. The workflow validates and upserts products into the Products table.
 
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{wf01.png}}
+\caption{n8n Pipeline Execution for WF-01: Data Ingestion.}
+\label{fig:wf01}
+\end{figure}
+
 \textbf{WF-02: Stockout Date Calculator} fetches all products, applies the stockout prediction formula from (\ref{eq:stockout_days}), and updates each product record with \texttt{days\_to\_stockout} and \texttt{estimated\_stockout\_date}.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{wf02.png}}
+\caption{n8n Pipeline Execution for WF-02: Stockout Date Calculator.}
+\label{fig:wf02}
+\end{figure}
 
 \textbf{WF-03: Inventory Processing \& Stock Alerts} identifies products where \texttt{current\_stock} $\leq$ \texttt{reorder\_threshold}, clears existing alerts, and generates fresh Stock Alert records.
 
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{wf03.png}}
+\caption{n8n Pipeline Execution for WF-03: Inventory Processing \& Alerts.}
+\label{fig:wf03}
+\end{figure}
+
 \textbf{WF-04: Stock Risk Classification} classifies all products into risk tiers using the formula in (\ref{eq:risk_classification}) based on \texttt{days\_to\_stockout} values from WF-02.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{wf04.png}}
+\caption{n8n Pipeline Execution for WF-04: Risk Classification.}
+\label{fig:wf04}
+\end{figure}
 
 \textbf{WF-05: AI Reorder Intelligence} fetches at-risk products and all suppliers, then invokes Groq Llama 3.1 8B with a structured prompt to generate reorder recommendations. The LLM output is parsed and stored as Reorder Suggestions.
 
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{wf05.png}}
+\caption{n8n Pipeline Execution for WF-05: AI Reorder Intelligence.}
+\label{fig:wf05}
+\end{figure}
+
 \textbf{WF-06: Supplier Scoring} evaluates all suppliers using the WSM formula from (\ref{eq:supplier_scoring}), computes composite scores, and assigns letter grades.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{wf06.png}}
+\caption{n8n Pipeline Execution for WF-06: Supplier Scoring.}
+\label{fig:wf06}
+\end{figure}
 
 \textbf{WF-07: WhatsApp Alert Sender} queries active stock alerts, filters by 24-hour anti-spam cooldown, builds a formatted message, and delivers it via Twilio WhatsApp API.
 
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{wf07.png}}
+\caption{n8n Pipeline Execution for WF-07: WhatsApp Alert Sender.}
+\label{fig:wf07}
+\end{figure}
+
 \textbf{WF-08: Daily Orchestrator} is the master workflow executing at 8:00 AM IST. It simulates daily stock depletion, sequentially executes WF-02 through WF-07 as sub-workflows, computes and saves the daily health snapshot, and logs execution to System Logs.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{wf08.png}}
+\caption{n8n Pipeline Execution for WF-08: Master Daily Orchestrator.}
+\label{fig:wf08}
+\end{figure}
 
 \subsection{LLM Prompt Engineering}
 
@@ -402,7 +450,7 @@ Mohammad Al Khaldy and Youcef Gheraibia, ``Evaluation and Mitigation of the Limi
 Natalie Friedman, Marcus Krug. and S. Joy Mountford, ``Mediating Cognitive Biases in Business Decisions Using LLMs,'' \emph{IEEE Trans. on AI}, 2025. [Online]. Available: \url{https://ieeexplore.ieee.org/document/11050471/}
 
 \bibitem{workflow2025}
-E. Martinez, ``Evaluating Workflow Automation Efficiency Using n8n: A Small-Scale Business Case Study,'' \emph{arXiv preprint arXiv:2602.01311}, Feb. 2025. [Online]. Available: \url{https://arxiv.org/abs/2602.01311}
+Ahmed Raza Amir and Syed Muhammad Atif, ``Evaluating Workflow Automation Efficiency Using n8n: A Small-Scale Business Case Study,'' \emph{arXiv preprint arXiv:2602.01311}, Feb. 2025. [Online]. Available: \url{https://arxiv.org/abs/2602.01311}
 
 \bibitem{msme2019}
 Dinesh Shenoy and Hoshiar Mal, ``A Multi-item Inventory Model for Small Business---A Perspective from India,'' \emph{Int. J. of Inventory Research}, vol.~5, no.~3, pp.~188--209, 2019. [Online]. Available: \url{https://www.inderscienceonline.com/doi/abs/10.1504/IJIR.2019.098856}
@@ -414,7 +462,7 @@ Geetha Manoharan, Vipin Kumar, A Karthik, V Asha, Chinnem Rama Mohan, and Ginni 
 K. Poongothai, Devika. G, Sweety Brisila. D, and Yogesh. S, ``Smart Retail Using Machine Learning for Demand Forecasting and Inventory Optimization,'' \emph{IEEE Trans. on Smart Business}, 2024. [Online]. Available: \url{https://ieeexplore.ieee.org/document/10910874/}
 
 \bibitem{n8n2025}
-J. Doe and A. Smith, ``n8n: An Open-Source Workflow Automation Platform for Enterprise Integration and AI-Driven Orchestration,'' \emph{Int. J. of Computer Applications}, vol.~187, no.~63, Dec.~2025. [Online]. Available: \url{https://www.ijcaonline.org/archives/volume187/number63/}
+Padmanabhan Venkiteela, ``n8n: An Open-Source Workflow Automation Platform for Enterprise Integration and AI-Driven Orchestration,'' \emph{Int. J. of Computer Applications}, vol.~187, no.~63, Dec.~2025. [Online]. Available: \url{https://www.ijcaonline.org/archives/volume187/number63/}
 
 \end{thebibliography}
 
