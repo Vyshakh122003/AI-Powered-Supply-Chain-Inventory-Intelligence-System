@@ -135,6 +135,9 @@ where the numerator is $n_L \cdot 100 + n_M \cdot 70 + n_H \cdot 30 + n_O \cdot 
 
 \section{Implementation}
 
+\subsection{Tools and Technologies}
+The proposed system is developed using a modern, zero-cost technology stack carefully selected for accessibility and performance. The frontend application is built using \textbf{React 19} and \textbf{Vite 8}, with responsive styling implemented via \textbf{Tailwind CSS v4}. The backend architecture is entirely serverless, heavily relying on \textbf{Supabase (PostgreSQL)} for robust, real-time database management and authentication. Complex business logic and orchestration are handled entirely by the \textbf{n8n} workflow automation engine. For AI-driven decision-making, the system integrates the \textbf{Groq API} hosting the Llama~3.1 8B model, ensuring high-speed inference for reorder suggestions. Finally, the \textbf{Twilio API} is utilized for automated WhatsApp alert delivery.
+
 \subsection{Dataset}
 The system implementation and evaluation rely on a synthesized dataset structured to mimic the exact operational characteristics of a typical Indian kirana store. The dataset encompasses an initial catalog of high-turnover fast-moving consumer goods (FMCG), including their respective daily sales velocities, reorder thresholds, and current stock levels. Additionally, baseline vendor profiles are synthesized with reliability and delivery speed metrics to test the multi-criteria supplier scoring model. This controlled dataset ensures that edge cases---such as zero sales velocity or immediate stockout conditions---can be systematically validated across the automated AI pipelines.
 
