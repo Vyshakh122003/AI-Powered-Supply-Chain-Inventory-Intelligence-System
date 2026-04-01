@@ -1512,60 +1512,43 @@ return input.alertIds.map(id => ({
 ### Workflow Diagram
 
 ```mermaid
-graph TD
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "background": "#1e1e1e",
+    "primaryColor": "#2b2b2b",
+    "primaryTextColor": "#ffffff",
+    "primaryBorderColor": "#999999",
+    "lineColor": "#cccccc",
+    "secondaryColor": "#2b2b2b",
+    "tertiaryColor": "#2b2b2b"
+  }
+}}%%
+graph LR
     subgraph Triggers
-        T1[Schedule Trigger<br/>8 AM Daily]
-        T2[Webhook Trigger<br/>POST /run-pipeline]
+        T1([Schedule<br/>8 AM])
+        T2([Manual<br/>Webhook])
     end
 
-    subgraph Stock Simulation
-        FP[Fetch Products]
-        SS[Simulate Stock]
-        US[Update Stock]
-        PT[Prepare Transactions]
-        IT[Insert Transactions]
+    subgraph Simulation
+        T1 --> SS[Simulate<br/>Daily Sales]
+        T2 --> SS
     end
 
-    subgraph Sub-Workflow Chain
-        M[Merge / Collapse]
-        W2[Run WF-02<br/>Stockout Calculator]
-        C1[Collapse]
-        W3[Run WF-03<br/>Stock Alerts]
-        C2[Collapse]
-        W4[Run WF-04<br/>Risk Classification]
-        C3[Collapse]
-        W5[Run WF-05<br/>AI Reorder]
-        C4[Collapse]
-        W7[Run WF-07<br/>WhatsApp Alerts]
+    subgraph Linear Execution Sequence
+        SS --> W2[WF-02:<br/>Stockout Calc]
+        W2 --> W3[WF-03:<br/>Stock Alerts]
+        W3 --> W4[WF-04:<br/>Risk Classes]
+        W4 --> W5[WF-05:<br/>AI Reorder]
+        W5 --> W6[WF-06:<br/>Score Suppliers]
+        W6 --> W7[WF-07:<br/>WhatsApp Alert]
     end
 
     subgraph Finalization
-        CS[Compute Snapshot]
-        SV[Save Snapshot]
-        LR[Log Pipeline Run]
-        SL[Save Log]
+        W7 --> CS[Compute<br/>Health Score]
+        CS --> SV[Save Daily<br/>Snapshot]
+        SV --> SL([Log<br/>Completion])
     end
-
-    T1 --> FP
-    T2 --> FP
-    FP --> SS
-    SS --> US
-    SS --> PT
-    PT --> IT
-    US --> M
-    M --> W2
-    W2 --> C1
-    C1 --> W3
-    W3 --> C2
-    C2 --> W4
-    W4 --> C3
-    C3 --> W5
-    W5 --> C4
-    C4 --> W7
-    W7 --> CS
-    CS --> SV
-    SV --> LR
-    LR --> SL
 ```
 
 ### Overview
