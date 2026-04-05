@@ -8,6 +8,33 @@
 \usepackage{url}
 \usepackage{tabularx}
 \usepackage{tfrupee}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc}
+
+% === TikZ Workflow Styles (IEEE column-width safe) ===
+\tikzset{
+  wf node/.style={
+    rectangle, rounded corners=2pt, draw=black, fill=gray!8,
+    text width=1.3cm, minimum height=0.65cm,
+    text centered, font=\sffamily\scriptsize,
+    inner sep=2pt
+  },
+  wf trigger/.style={
+    wf node, fill=gray!20, font=\sffamily\scriptsize\bfseries
+  },
+  wf decision/.style={
+    diamond, draw=black, fill=gray!8,
+    text width=0.7cm, minimum height=0.5cm,
+    text centered, font=\sffamily\scriptsize,
+    inner sep=1pt, aspect=2.2
+  },
+  wf arrow/.style={
+    -Stealth, thick, draw=black!70
+  },
+  wf label/.style={
+    font=\sffamily\tiny, fill=white, inner sep=1pt
+  }
+}
 
 \hypersetup{
     colorlinks=false,
@@ -174,7 +201,26 @@ Eight n8n workflows implement the inventory intelligence pipeline.
 \textbf{WF-01: Product and Sales Data Ingestion} exposes a POST webhook at \texttt{/product-sales-ingest} that receives product data from the frontend Add Product modal. The workflow validates and upserts products into the Products table.
 
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{wf01.png}}
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[node distance=0.4cm and 0.5cm, align=center]
+  \node (n1) [wf trigger] {Webhook\\Trigger};
+  \node (n2) [wf node, right=of n1] {Edit Fields\\(Clean)};
+  \node (n3) [wf node, right=of n2] {Get Rows\\(Lookup)};
+  \node (n4) [wf decision, right=of n3] {Exists?};
+  \node (n5a) [wf node, above right=0.6cm and 0.7cm of n4] {Update\\Row};
+  \node (n5b) [wf node, below right=0.6cm and 0.7cm of n4] {Create\\Row};
+  \node (n6) [wf node, right=3.2cm of n4] {Respond to\\Webhook};
+
+  \draw [wf arrow] (n1) -- (n2);
+  \draw [wf arrow] (n2) -- (n3);
+  \draw [wf arrow] (n3) -- (n4);
+  \draw [wf arrow] (n4) |- node[wf label, pos=0.25, above] {Yes} (n5a);
+  \draw [wf arrow] (n4) |- node[wf label, pos=0.25, below] {No} (n5b);
+  \draw [wf arrow] (n5a) -| (n6);
+  \draw [wf arrow] (n5b) -| (n6);
+\end{tikzpicture}%
+}
 \caption{n8n Pipeline Execution for WF-01: Data Ingestion.}
 \label{fig:wf01}
 \end{figure}
@@ -182,7 +228,19 @@ Eight n8n workflows implement the inventory intelligence pipeline.
 \textbf{WF-02: Stockout Date Calculator} fetches all products, applies the stockout prediction formula from (\ref{eq:stockout_days}), and updates each product record with \texttt{days\_to\_stockout} and \texttt{estimated\_stockout\_date}.
 
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{wf02.png}}
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[node distance=0.4cm and 0.6cm, align=center]
+  \node (n1) [wf trigger] {Trigger};
+  \node (n2) [wf node, right=of n1] {Fetch All\\Products};
+  \node (n3) [wf node, right=of n2] {Calculate\\Stockout Dates};
+  \node (n4) [wf node, right=of n3] {Update\\Products};
+
+  \draw [wf arrow] (n1) -- (n2);
+  \draw [wf arrow] (n2) -- (n3);
+  \draw [wf arrow] (n3) -- (n4);
+\end{tikzpicture}%
+}
 \caption{n8n Pipeline Execution for WF-02: Stockout Date Calculator.}
 \label{fig:wf02}
 \end{figure}
@@ -190,51 +248,163 @@ Eight n8n workflows implement the inventory intelligence pipeline.
 \textbf{WF-03: Inventory Processing \& Stock Alerts} identifies products where \texttt{current\_stock} $\leq$ \texttt{reorder\_threshold}, clears existing alerts, and generates fresh Stock Alert records.
 
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{wf03.png}}
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[node distance=0.4cm and 0.5cm, align=center]
+  \node (n1) [wf trigger] {Trigger};
+  \node (n2) [wf node, right=of n1] {Fetch All\\Products};
+  \node (n3) [wf node, right=of n2] {Compute\\\& Filter};
+  \node (n4) [wf node, right=of n3] {Delete Old\\Alerts};
+  \node (n5) [wf node, right=of n4] {Restore\\Data};
+  \node (n6) [wf node, right=of n5] {Create New\\Alerts};
+
+  \draw [wf arrow] (n1) -- (n2);
+  \draw [wf arrow] (n2) -- (n3);
+  \draw [wf arrow] (n3) -- (n4);
+  \draw [wf arrow] (n4) -- (n5);
+  \draw [wf arrow] (n5) -- (n6);
+\end{tikzpicture}%
+}
 \caption{n8n Pipeline Execution for WF-03: Inventory Processing \& Alerts.}
 \label{fig:wf03}
 \end{figure}
 
+\newpage
 \textbf{WF-04: Stock Risk Classification} classifies all products into risk tiers using the formula in (\ref{eq:risk_classification}) based on \texttt{days\_to\_stockout} values from WF-02.
 
-\begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{wf04.png}}
+\begin{figure}[h!]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[node distance=0.4cm and 0.6cm, align=center]
+  \node (n1) [wf trigger] {Trigger};
+  \node (n2) [wf node, right=of n1] {Fetch All\\Products};
+  \node (n3) [wf node, right=of n2] {Classify\\Risk Tiers};
+  \node (n4) [wf node, right=of n3] {Update\\Products};
+
+  \draw [wf arrow] (n1) -- (n2);
+  \draw [wf arrow] (n2) -- (n3);
+  \draw [wf arrow] (n3) -- (n4);
+\end{tikzpicture}%
+}
 \caption{n8n Pipeline Execution for WF-04: Risk Classification.}
 \label{fig:wf04}
 \end{figure}
 
 \textbf{WF-05: AI Reorder Intelligence} fetches at-risk products and all suppliers, then invokes Groq Llama 3.1 8B with a structured prompt to generate reorder recommendations. The LLM output is parsed and stored as Reorder Suggestions.
 
-\begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{wf05.png}}
+\begin{figure}[h!]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[node distance=0.4cm and 0.45cm, align=center]
+  % Row 1: Trigger -> parallel fetch -> merge -> prompt -> groq -> parse
+  \node (n1) [wf trigger] {Trigger};
+  \node (n2a) [wf node, above right=0.4cm and 0.5cm of n1] {Fetch At-Risk\\Products};
+  \node (n2b) [wf node, below right=0.4cm and 0.5cm of n1] {Fetch All\\Suppliers};
+  \node (n3) [wf node, below right=0.4cm and 0.5cm of n2a] {Merge};
+  \node (n4) [wf node, right=of n3] {Build AI\\Prompt};
+  \node (n5) [wf node, right=of n4] {Groq API\\Call};
+  \node (n6) [wf node, right=of n5] {Parse AI\\Response};
+  % Row 2: delete -> restore -> create
+  \node (n7) [wf node, below=0.7cm of n6] {Delete Old\\Suggestions};
+  \node (n8) [wf node, left=of n7] {Restore\\Data};
+  \node (n9) [wf node, left=of n8] {Insert New\\Suggestions};
+
+  \draw [wf arrow] (n1) |- (n2a);
+  \draw [wf arrow] (n1) |- (n2b);
+  \draw [wf arrow] (n2a) -| (n3);
+  \draw [wf arrow] (n2b) -| (n3);
+  \draw [wf arrow] (n3) -- (n4);
+  \draw [wf arrow] (n4) -- (n5);
+  \draw [wf arrow] (n5) -- (n6);
+  \draw [wf arrow] (n6) -- (n7);
+  \draw [wf arrow] (n7) -- (n8);
+  \draw [wf arrow] (n8) -- (n9);
+\end{tikzpicture}%
+}
 \caption{n8n Pipeline Execution for WF-05: AI Reorder Intelligence.}
 \label{fig:wf05}
 \end{figure}
 
 \textbf{WF-06: Supplier Scoring} evaluates all suppliers using the WSM formula from (\ref{eq:supplier_scoring}), computes composite scores, and assigns letter grades.
 
-\begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{wf06.png}}
+\begin{figure}[h!]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[node distance=0.4cm and 0.6cm, align=center]
+  \node (n1) [wf trigger] {Trigger};
+  \node (n2) [wf node, right=of n1] {Fetch All\\Suppliers};
+  \node (n3) [wf node, right=of n2] {Calculate\\WSM Scores};
+  \node (n4) [wf node, right=of n3] {Update\\Suppliers};
+
+  \draw [wf arrow] (n1) -- (n2);
+  \draw [wf arrow] (n2) -- (n3);
+  \draw [wf arrow] (n3) -- (n4);
+\end{tikzpicture}%
+}
 \caption{n8n Pipeline Execution for WF-06: Supplier Scoring.}
 \label{fig:wf06}
 \end{figure}
 
 \textbf{WF-07: WhatsApp Alert Sender} queries active stock alerts, filters by 24-hour anti-spam cooldown, builds a formatted message, and delivers it via Twilio WhatsApp API.
 
-\begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{wf07.png}}
+\begin{figure}[h!]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[node distance=0.4cm and 0.5cm, align=center]
+  \node (n1) [wf trigger] {Trigger};
+  \node (n2) [wf node, right=of n1] {Fetch Active\\Alerts};
+  \node (n3) [wf node, right=of n2] {Build\\Message};
+  \node (n4) [wf node, right=of n3] {Send via\\Twilio};
+  \node (n5) [wf node, right=of n4] {Update\\Timestamps};
+
+  \draw [wf arrow] (n1) -- (n2);
+  \draw [wf arrow] (n2) -- (n3);
+  \draw [wf arrow] (n3) -- (n4);
+  \draw [wf arrow] (n4) -- (n5);
+\end{tikzpicture}%
+}
 \caption{n8n Pipeline Execution for WF-07: WhatsApp Alert Sender.}
 \label{fig:wf07}
 \end{figure}
 
 \textbf{WF-08: Daily Orchestrator} is the master workflow executing at 8:00 AM IST. It simulates daily stock depletion, sequentially executes WF-02 through WF-07 as sub-workflows, computes and saves the daily health snapshot, and logs execution to System Logs.
 
-\begin{figure}[htbp]
-\centerline{\includegraphics[width=\columnwidth]{wf08.png}}
+\begin{figure}[h!]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[node distance=0.35cm and 0.4cm, align=center]
+  % Row 1: Triggers -> Simulate -> WF-02 -> WF-03 -> WF-04
+  \node (trig) [wf trigger] {Schedule /\\Webhook};
+  \node (sim) [wf node, right=of trig] {Simulate\\Daily Sales};
+  \node (w2) [wf node, right=of sim] {WF-02:\\Stockout};
+  \node (w3) [wf node, right=of w2] {WF-03:\\Alerts};
+  \node (w4) [wf node, right=of w3] {WF-04:\\Risk};
+  % Row 2: WF-05 -> WF-06 -> WF-07 -> Snapshot -> Log
+  \node (w5) [wf node, below=0.6cm of w4] {WF-05:\\AI Reorder};
+  \node (w6) [wf node, left=of w5] {WF-06:\\Scoring};
+  \node (w7) [wf node, left=of w6] {WF-07:\\WhatsApp};
+  \node (score) [wf node, left=of w7] {Health\\Score};
+  \node (snap) [wf node, left=of score] {Save\\Snapshot};
+  % Row 3
+  \node (log) [wf node, below=0.6cm of snap] {Log\\Completion};
+
+  \draw [wf arrow] (trig) -- (sim);
+  \draw [wf arrow] (sim) -- (w2);
+  \draw [wf arrow] (w2) -- (w3);
+  \draw [wf arrow] (w3) -- (w4);
+  \draw [wf arrow] (w4) -- (w5);
+  \draw [wf arrow] (w5) -- (w6);
+  \draw [wf arrow] (w6) -- (w7);
+  \draw [wf arrow] (w7) -- (score);
+  \draw [wf arrow] (score) -- (snap);
+  \draw [wf arrow] (snap) -- (log);
+\end{tikzpicture}%
+}
 \caption{n8n Pipeline Execution for WF-08: Master Daily Orchestrator.}
 \label{fig:wf08}
 \end{figure}
 
+\newpage
 \subsection{LLM Prompt Engineering}
 
 WF-05 constructs a structured prompt submitted to the 
