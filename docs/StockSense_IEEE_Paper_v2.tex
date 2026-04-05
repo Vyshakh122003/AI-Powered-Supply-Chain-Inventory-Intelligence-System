@@ -55,7 +55,7 @@
 \maketitle
 
 \begin{abstract}
-Small retail stores in India, particularly kirana shops, face significant challenges in inventory management due to manual processes, lack of real-time stock visibility, and limited access to expensive enterprise software. This paper presents StockSense AI, an intelligent inventory management and supplier decision support system built entirely on free-tier cloud services. The system employs a four-layer architecture comprising a React frontend, Supabase PostgreSQL database, n8n workflow automation engine, and Groq Llama 3.1 8B large language model for AI-powered decision making. The proposed system automates the complete inventory intelligence pipeline including stockout prediction, risk classification, AI-driven reorder suggestions, supplier scoring using Weighted Sum Model, and WhatsApp alert delivery via Twilio. The daily orchestration workflow executes automatically at 8:00 AM IST, processing all products sequentially through eight specialized workflows. The entire system operates at zero infrastructure cost, making it accessible to small retailers with limited technical resources. Results demonstrate effective inventory health monitoring, timely stock alerts, and actionable AI recommendations delivered directly to store owners via WhatsApp.
+Small retail stores in India, particularly kirana shops, face significant challenges in inventory management due to manual processes, lack of real-time stock visibility, and limited access to expensive enterprise software. This paper presents StockSense AI, an intelligent inventory management and supplier decision support system built primarily on free-tier and low-cost cloud services. The system employs a four-layer architecture comprising a React frontend, Supabase PostgreSQL database, n8n workflow automation engine, and Groq Llama 3.1 8B large language model for AI-powered decision making. The proposed system automates the complete inventory intelligence pipeline including stockout prediction, risk classification, AI-driven reorder suggestions, supplier scoring using Weighted Sum Model, and WhatsApp alert delivery via Twilio. The daily orchestration workflow executes automatically at 8:00 AM IST, processing all products sequentially through eight specialized workflows. The prototype operates at near-zero infrastructure cost using free-tier services, with estimated production deployment costs under Rs.~500 per month, making it significantly more accessible than existing enterprise solutions. Results demonstrate effective inventory health monitoring, timely stock alerts, and actionable AI recommendations delivered directly to store owners via WhatsApp.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -67,11 +67,11 @@ Inventory Management, Supply Chain Intelligence, Workflow Automation, n8n, Large
 
 The problem is particularly acute in the Indian context due to several factors: fragmented supplier networks, inconsistent delivery timelines, seasonal demand variations, and the absence of affordable technological solutions designed for small-scale retail operations. Existing enterprise resource planning systems are prohibitively expensive and complex for single-store operators. Cloud-based point-of-sale systems exist but typically lack intelligent decision support capabilities such as AI-powered reorder recommendations and supplier scoring.
 
-This paper presents StockSense AI, an end-to-end inventory intelligence system specifically designed for small Indian retail stores. The system addresses the following objectives: (1) real-time inventory tracking with automated stockout prediction, (2) AI-generated reorder suggestions using large language models, (3) supplier scoring and ranking using multi-criteria decision analysis, (4) automated WhatsApp alerts for critical stock situations, and (5) a zero-cost technology stack accessible to small retailers without infrastructure investment.
+This paper presents StockSense AI, an end-to-end inventory intelligence system specifically designed for small Indian retail stores. The system addresses the following objectives: (1) real-time inventory tracking with automated stockout prediction, (2) AI-generated reorder suggestions using large language models, (3) supplier scoring and ranking using multi-criteria decision analysis, (4) automated WhatsApp alerts for critical stock situations, and (5) a low-cost technology stack accessible to small retailers with minimal infrastructure investment.
 
-The key contributions of this work include: (1) a complete inventory management pipeline from data ingestion to alert delivery using free-tier cloud services, (2) integration of Groq Llama 3.1 8B for generating contextual reorder recommendations, (3) a Weighted Sum Model (WSM) based supplier scoring system with reliability, price, and delivery metrics, (4) WhatsApp-first alert delivery via Twilio for high-acceptance notification channels in India, and (5) an automated daily orchestration workflow that runs the entire intelligence pipeline without manual intervention.
+The key contributions of this work include: (1) a complete inventory management pipeline from data ingestion to alert delivery using predominantly free-tier cloud services, (2) integration of Groq Llama 3.1 8B for generating contextual reorder recommendations, (3) a Weighted Sum Model (WSM) based supplier scoring system with reliability, price, and delivery metrics, (4) WhatsApp-first alert delivery via Twilio for high-acceptance notification channels in India, and (5) an automated daily orchestration workflow that runs the entire intelligence pipeline without manual intervention.
 
-The remainder of this paper is organized as follows: Section II discusses related work in inventory management systems, demand forecasting, and LLM applications. Section III details the proposed system architecture and mathematical models. Section IV presents the implementation details including workflow descriptions and database schema. Section V discusses results and system performance. Section VI concludes with directions for future work.
+The remainder of this paper is organized as follows: Section II discusses related work in inventory management systems and AI applications. Section III details the motivation and specific problem identification for the Indian retail context. Section IV details the proposed system architecture and mathematical models. Section V presents the implementation details including workflow descriptions and database schema. Section VI discusses results and system performance. Section VII concludes with directions for future work.
 
 \section{Related Work}
 
@@ -91,9 +91,27 @@ In the Indian retail context specifically, research on MSME inventory models dem
 
 Recent advancements also highlight the integration of IoT devices \cite{iot2024} and smart retail machine learning models \cite{smartretail2024} to automate physical stock counting and demand forecasting. However, these hardware-centric solutions often demand significant capital investments, rendering them impractical for kirana stores. Conversely, open-source workflow automation platforms like n8n are increasingly recognized for enterprise integration and AI orchestration \cite{n8n2025}, offering a software-centric approach that drastically reduces deployment costs for small businesses.
 
-The proposed system builds upon these research foundations while addressing the specific constraints of small Indian retail stores through a zero-cost, WhatsApp-first, AI-enhanced solution architecture.
+The proposed system builds upon these research foundations while addressing the specific constraints of small Indian retail stores through a low-cost, WhatsApp-first, AI-enhanced solution architecture.
+
+\section{Motivation and Problem Specification}
+
+While academic literature explores sophisticated inventory models, a significant gap exists between high-end enterprise solutions and the operational reality of small-scale Indian retailers.
+
+\subsection{Socio-Economic Motivation}
+Kirana stores are the cornerstone of the Indian economy, yet they remain largely underserved by modern technology. The primary motivation for StockSense AI is to empower these small business owners who lack the capital for expensive ERP subscriptions. The cost of a single stockout (lost customer) or overstock (expired goods) can significantly impact the thin margins of a neighborhood shop.
+
+\subsection{Gap Analysis and Technical Advantage}
+A comparative analysis reveals two major gaps in existing systems:
+\begin{enumerate}
+    \item \textbf{Financial Barrier}: Most "smart" systems require hardware (RFID) or monthly SaaS fees (Rs. 500--5,000). StockSense operates at under Rs.~500/month by orchestrating free-tier and low-cost cloud services, compared to Rs.~4,000+ for enterprise alternatives.
+    \item \textbf{Intelligent Support}: Basic POS systems track what \textit{was} sold, but do not predict what \textit{will} be needed. The integration of 8B-parameter LLMs provides reasoning-based reorder logic that was previously only available to large-scale retail chains.
+\end{enumerate}
+
+\subsection{Problem Statement}
+The objective of this research is to design and implement a minimal-infrastructure, automated intelligence pipeline that transforms raw inventory data into actionable reorder recommendations and delivers them via WhatsApp, thereby reducing manual error and stockout risks in small retail environments.
 
 \section{Proposed System}
+
 
 \subsection{System Architecture}
 
@@ -236,7 +254,7 @@ where the numerator is $n_L \cdot 100 + n_M \cdot 70 + n_H \cdot 30 + n_O \cdot 
 \section{Implementation}
 
 \subsection{Tools and Technologies}
-The proposed system is developed using a modern, zero-cost technology stack carefully selected for accessibility and performance. The frontend application is built using \textbf{React 19} and \textbf{Vite 8}, with responsive styling implemented via \textbf{Tailwind CSS v4}. The backend architecture is entirely serverless, heavily relying on \textbf{Supabase (PostgreSQL)} for robust, real-time database management and authentication. Complex business logic and orchestration are handled entirely by the \textbf{n8n} workflow automation engine. For AI-driven decision-making, the system integrates the \textbf{Groq API} hosting the Llama~3.1 8B model, ensuring high-speed inference for reorder suggestions. Finally, the \textbf{Twilio API} is utilized for automated WhatsApp alert delivery.
+The proposed system is developed using a modern, low-cost technology stack carefully selected for accessibility and performance. The frontend application is built using \textbf{React 19} and \textbf{Vite 8}, with responsive styling implemented via \textbf{Tailwind CSS v4}. The backend architecture combines serverless database services with a self-hosted workflow engine, relying on \textbf{Supabase (PostgreSQL)} for robust, real-time database management and authentication. Complex business logic and orchestration are handled entirely by the \textbf{n8n} workflow automation engine. For AI-driven decision-making, the system integrates the \textbf{Groq API} hosting the Llama~3.1 8B model, ensuring high-speed inference for reorder suggestions. Finally, the \textbf{Twilio API} is utilized for automated WhatsApp alert delivery.
 
 \subsection{Dataset}
 The system implementation and evaluation rely on a synthesized dataset structured to mimic the exact operational characteristics of a typical Indian kirana store. The dataset encompasses an initial catalog of high-turnover fast-moving consumer goods (FMCG), including their respective daily sales velocities, reorder thresholds, and current stock levels. Additionally, baseline vendor profiles are synthesized with reliability and delivery speed metrics to test the multi-criteria supplier scoring model. This controlled dataset ensures that edge cases---such as zero sales velocity or immediate stockout conditions---can be systematically validated across the automated AI pipelines.
@@ -253,7 +271,7 @@ The Supabase PostgreSQL database contains eight tables as described in Table~\re
 \toprule
 \textbf{Table} & \textbf{Purpose} \\
 \midrule
-Store Profiles & Multi-tenant store configuration \\
+Store Profiles & Multi-tenancy-ready store configuration \\
 Products & Inventory items with stock, pricing, risk \\
 Suppliers & Vendor directory with scoring and grades \\
 Stock Alerts & Low stock alerts (stock $\leq$ threshold) \\
@@ -265,7 +283,7 @@ System Logs & Workflow execution logs \\
 \end{tabular}
 \end{table}
 
-All tables use UUID primary keys generated via \texttt{gen\_random\_uuid()}. The Products, Suppliers, Stock Alerts, and Reorder Suggestions tables include \texttt{store\_id} foreign keys for multi-tenancy support. Indexes are created on frequently queried columns including \texttt{product\_id}, \texttt{risk\_level}, \texttt{alert\_status}, and \texttt{snapshot\_date}. Supabase Realtime subscriptions are enabled on Products, Stock Alerts, Reorder Suggestions, Daily Snapshots, and Suppliers tables for live frontend updates.
+All tables use UUID primary keys generated via \texttt{gen\_random\_uuid()}. The Products, Suppliers, Stock Alerts, and Reorder Suggestions tables include \texttt{store\_id} foreign keys for multi-tenancy-ready schema design. Indexes are created on frequently queried columns including \texttt{product\_id}, \texttt{risk\_level}, \texttt{alert\_status}, and \texttt{snapshot\_date}. Supabase Realtime subscriptions are enabled on Products, Stock Alerts, Reorder Suggestions, Daily Snapshots, and Suppliers tables for live frontend updates.
 
 \subsection{Workflow Pipeline}
 
@@ -537,7 +555,8 @@ The React 19 frontend provides 12 routes as described in Table~\ref{tab:routes}.
 
 The Dashboard implements a real-time pipeline overlay: when the user triggers WF-08, an animated modal cycles through realistic step messages while a Supabase Realtime subscription on System Logs listens for the pipeline completion insert. The moment n8n finishes, the overlay closes and the dashboard refreshes automatically without polling.
 
-\section{Results and Discussion}
+\section{Results and Performance}
+
 
 The implemented system has been tested with sample data including six products and three suppliers. Key performance characteristics are summarized in Table~\ref{tab:perf}.
 
@@ -554,7 +573,7 @@ Number of Database Tables & 8 \\
 Number of Frontend Routes & 12 \\
 Pipeline Execution Time & $\sim$13 seconds \\
 WhatsApp Message Delivery & $<$5 seconds \\
-Infrastructure Cost & Rs.\ 0 (all free tier) \\
+Infrastructure Cost & Rs.\ 0 (prototype); $<$Rs.\ 500/mo (production) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -563,7 +582,7 @@ Table IV presents a comparative analysis of StockSense AI
 against existing inventory management solutions available 
 to small Indian retailers. The comparison highlights the 
 unique positioning of the proposed system at the 
-intersection of AI capability and zero-cost deployment.
+intersection of AI capability and low-cost deployment.
 
 \begin{table}[htbp]
 \centering
@@ -578,9 +597,9 @@ AI Reorder Suggestions & Yes & No & Limited & No \\
 Stockout Prediction & Automated & Manual & Basic & No \\
 Supplier Scoring & WSM-based & No & Basic & No \\
 WhatsApp Alerts & Automated & No & No & No \\
-Monthly Cost & Rs. 0 & Rs. 0--599 & Rs. 4,000+ & Rs. 0 \\
+Monthly Cost & Rs. 0--500 & Rs. 0--599 & Rs. 4,000+ & Rs. 0 \\
 Setup Complexity & Low & Medium & High & Low \\
-Demand Forecasting & Rule-based & No & Basic & No \\
+Stockout Prediction & Rule-based & No & Basic & No \\
 Real-time Dashboard & Yes & Limited & Yes & No \\
 \bottomrule
 \end{tabularx}
@@ -616,9 +635,9 @@ signalling critical intervention. The non-zero floor
 for complete stockout (score 5 rather than 0) avoids 
 false division-by-zero rendering in the dashboard gauge.
 
-The complete system operates on free-tier services: Supabase (free tier PostgreSQL), n8n (self-hosted), Groq (free tier LLM), and Twilio (sandbox WhatsApp). This zero-cost architecture makes the system uniquely accessible to small retailers.
+The prototype operates on free-tier and sandbox services: Supabase (free tier PostgreSQL with 500~MB storage), Groq (free tier LLM with rate-limited inference), and n8n (self-hosted locally). Twilio WhatsApp is validated in sandbox mode during development. For production deployment, n8n requires cloud hosting (approximately Rs.~300--500/month on platforms such as Railway or Render), and the Twilio WhatsApp Business API incurs nominal per-message charges. Even with these costs, the total monthly expenditure for a single store remains under Rs.~500---an order of magnitude lower than enterprise alternatives such as Zoho Inventory.
 
-The automated daily pipeline successfully orchestrates all sub-workflows in sequence, processing all products and generating alerts without manual intervention. The 8:00 AM IST schedule ensures store owners receive their daily intelligence digest at the start of business hours.
+The automated daily pipeline successfully orchestrates all sub-workflows in sequence, processing all products and generating alerts without manual intervention. The 8:00 AM IST schedule, configured via n8n's built-in cron trigger, delivers the daily intelligence digest at the start of business hours provided the workflow engine is actively hosted.
 
 The WhatsApp integration provides a high-acceptance notification channel, particularly relevant for Indian retailers who prefer WhatsApp over email or SMS. The 24-hour anti-spam cooldown prevents notification fatigue while ensuring critical alerts are delivered promptly.
 
@@ -628,11 +647,13 @@ AI-generated reorder suggestions using Groq Llama 3.1 8B provide contextual reco
 
 \section{Conclusion}
 
-This paper presented StockSense AI, an intelligent inventory management and supplier decision support system for small Indian retail stores. The system demonstrates that sophisticated inventory intelligence is achievable using free-tier cloud services, making it accessible to retailers historically excluded from technology-enabled optimization.
 
-Key achievements include: (1) a fully automated pipeline from stock tracking to WhatsApp alerts, (2) AI-powered reorder recommendations using Groq Llama 3.1 8B, (3) multi-criteria supplier scoring using Weighted Sum Model, (4) zero infrastructure cost through free-tier service utilization, and (5) WhatsApp-first notification for high acceptance in the Indian market.
+This paper presented StockSense AI, an intelligent inventory management and supplier decision support system for small Indian retail stores. The system demonstrates that sophisticated inventory intelligence is achievable using predominantly free-tier cloud services, making it accessible to retailers historically excluded from technology-enabled optimization.
+
+Key achievements include: (1) a fully automated pipeline from stock tracking to WhatsApp alerts, (2) AI-powered reorder recommendations using Groq Llama 3.1 8B, (3) multi-criteria supplier scoring using Weighted Sum Model, (4) minimal infrastructure cost (under Rs.~500/month) through predominantly free-tier service utilization, and (5) WhatsApp-first notification for high acceptance in the Indian market.
 
 \section{Future Scope}
+
 \label{sec:future}
 
 The current implementation establishes a functional 
