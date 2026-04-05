@@ -112,67 +112,67 @@ Each layer communicates through well-defined interfaces: the frontend communicat
 ]
 
 % ====== LAYER 1: React 19 Frontend SPA ======
-\draw[black, rounded corners=3pt, fill=gray!2] (0,0) rectangle (10.6,-3.4);
-\node[font=\sffamily\scriptsize\bfseries] at (5.3,-0.25) {React 19 Frontend SPA};
+\draw[black, rounded corners=3pt, fill=gray!2] (0,0) rectangle (11.6,-3.4);
+\node[font=\sffamily\scriptsize\bfseries] at (5.8,-0.25) {React 19 Frontend SPA};
 
 % -- Core Modules --
-\draw[black!60, rounded corners=2pt, dash pattern=on 4pt off 4pt] (0.15,-0.5) rectangle (3.3,-3.1);
-\node[hd, text width=2.9cm] at (1.725,-0.85) {Core Modules};
-\node[md, text width=1.3cm] at (0.9,-1.45) {Dashboard};
-\node[md, text width=1.3cm] at (2.55,-1.45) {AI Reorder};
-\node[md, text width=1.8cm] at (1.725,-2.2) {Supplier\\Analytics};
+\draw[black!60, rounded corners=2pt, dash pattern=on 4pt off 4pt] (0.15,-0.5) rectangle (3.5,-3.1);
+\node[hd, text width=3.1cm] at (1.825,-0.85) {Core Modules};
+\node[md, text width=1.4cm] at (1.0,-1.45) {Dashboard};
+\node[md, text width=1.4cm] at (2.65,-1.45) {AI Reorder};
+\node[md, text width=2.0cm] at (1.825,-2.2) {Supplier\\Analytics};
 
 % -- Inventory Ops --
-\draw[black!60, rounded corners=2pt, dash pattern=on 4pt off 4pt] (3.6,-0.5) rectangle (7.1,-3.1);
-\node[hd, text width=3.2cm] at (5.35,-0.85) {Inventory Ops};
-\node[md, text width=1.5cm] at (4.45,-1.45) {Products\\CRUD};
-\node[md, text width=1.5cm] at (6.25,-1.45) {CSV Bulk\\Import};
-\node[md, text width=1.5cm] at (4.45,-2.2) {Deliveries};
-\node[md, text width=1.5cm] at (6.25,-2.2) {Quick\\Update};
+\draw[black!60, rounded corners=2pt, dash pattern=on 4pt off 4pt] (3.8,-0.5) rectangle (7.7,-3.1);
+\node[hd, text width=3.6cm] at (5.75,-0.85) {Inventory Ops};
+\node[md, text width=1.7cm] at (4.8,-1.45) {Products\\CRUD};
+\node[md, text width=1.7cm] at (6.7,-1.45) {CSV Bulk\\Import};
+\node[md, text width=1.7cm] at (4.8,-2.2) {Deliveries};
+\node[md, text width=1.7cm] at (6.7,-2.2) {Quick\\Update};
 
 % -- Support & Auth --
-\draw[black!60, rounded corners=2pt, dash pattern=on 4pt off 4pt] (7.4,-0.5) rectangle (10.45,-3.1);
-\node[hd, text width=2.8cm] at (8.925,-0.85) {Support \& Auth};
-\node[md, text width=1.3cm] at (8.125,-1.45) {3-step\\Onboarding};
-\node[md, text width=1.3cm] at (9.725,-1.45) {Login/\\Signup};
-\node[md, text width=1.3cm] at (8.125,-2.2) {Alerts};
-\node[md, text width=1.3cm] at (9.725,-2.2) {System Logs};
+\draw[black!60, rounded corners=2pt, dash pattern=on 4pt off 4pt] (8.0,-0.5) rectangle (11.45,-3.1);
+\node[hd, text width=3.1cm] at (9.725,-0.85) {Support \& Auth};
+\node[md, text width=1.5cm] at (8.85,-1.45) {3-step\\Onboarding};
+\node[md, text width=1.5cm] at (10.6,-1.45) {Login/\\Signup};
+\node[md, text width=1.5cm] at (8.85,-2.2) {Alerts};
+\node[md, text width=1.5cm] at (10.6,-2.2) {System Logs};
 
 % ====== LAYER 2: Network & Security Bridge ======
-\draw[black, rounded corners=3pt, fill=gray!20] (0,-3.7) rectangle (10.6,-4.9);
-\node[font=\sffamily\scriptsize\bfseries] at (5.3,-3.95) {Network \& Security Bridge};
-\node[md, text width=2.4cm] at (2.8,-4.45) {Vite Proxy Server (:5173)};
-\draw[wf arrow] (4.2,-4.45) -- (6.3,-4.45);
-\node[md, text width=2.8cm] at (7.7,-4.45) {ngrok Secure Tunnel (HTTPS)};
+\draw[black, rounded corners=3pt, fill=gray!20] (0,-3.7) rectangle (11.6,-4.9);
+\node[font=\sffamily\scriptsize\bfseries] at (5.8,-3.95) {Network \& Security Bridge};
+\node[md, text width=2.6cm] at (3.2,-4.45) {Vite Proxy Server (:5173)};
+\draw[wf arrow] (5.0,-4.45) -- (7.5,-4.45);
+\node[md, text width=3.2cm] at (9.3,-4.45) {ngrok Secure Tunnel (HTTPS)};
 
 % ====== LAYER 3: n8n AI Workflow Engine ======
-\draw[black, rounded corners=3pt, fill=gray!2] (0,-5.2) rectangle (10.6,-7.7);
-\node[font=\sffamily\scriptsize\bfseries] at (5.3,-5.45) {n8n AI Workflow Engine};
+\draw[black, rounded corners=3pt, fill=gray!2] (0,-5.2) rectangle (11.6,-7.7);
+\node[font=\sffamily\scriptsize\bfseries] at (5.8,-5.45) {n8n AI Workflow Engine};
 
 % WF-08 Orchestrator sub-box
-\draw[black!60, rounded corners=2pt, dash pattern=on 4pt off 4pt] (0.15,-5.7) rectangle (8.8,-7.45);
-\node[hd, text width=8.3cm] at (4.475,-6.05) {WF-08: Master Daily Orchestrator};
-\node[md, text width=0.95cm] at (0.75,-6.7) {WF-01\\(Ingest)};
-\node[md, text width=1.05cm] at (1.95,-6.7) {WF-02\\(Calc)};
-\node[md, text width=1.05cm] at (3.15,-6.7) {WF-03\\(Alerts)};
-\node[md, text width=0.95cm] at (4.35,-6.7) {WF-04\\(Risk)};
-\node[md, text width=1.15cm] at (5.6,-6.7) {WF-05\\(AI Sugg.)};
-\node[md, text width=1.15cm] at (6.9,-6.7) {WF-06\\(Scoring)};
-\node[md, text width=1.3cm] at (8.25,-6.7) {WF-07\\(WhatsApp)};
+\draw[black!60, rounded corners=2pt, dash pattern=on 4pt off 4pt] (0.15,-5.7) rectangle (9.6,-7.45);
+\node[hd, text width=9.2cm] at (4.875,-6.05) {WF-08: Master Daily Orchestrator};
+\node[md, text width=1.05cm] at (0.8,-6.7) {WF-01\\(Ingest)};
+\node[md, text width=1.15cm] at (2.05,-6.7) {WF-02\\(Calc)};
+\node[md, text width=1.15cm] at (3.35,-6.7) {WF-03\\(Alerts)};
+\node[md, text width=1.05cm] at (4.65,-6.7) {WF-04\\(Risk)};
+\node[md, text width=1.3cm] at (6.0,-6.7) {WF-05\\(AI Sugg.)};
+\node[md, text width=1.3cm] at (7.45,-6.7) {WF-06\\(Scoring)};
+\node[md, text width=1.3cm] at (8.85,-6.7) {WF-07\\(WhatsApp)};
 
 % External APIs box
 \node[rectangle, draw=black, rounded corners=2pt, fill=white,
-  font=\sffamily\tiny, text width=1.4cm, text centered, inner sep=3pt,
-  minimum height=1.0cm] (api) at (9.7,-6.55)
+  font=\sffamily\tiny, text width=1.6cm, text centered, inner sep=3pt,
+  minimum height=1.0cm] (api) at (10.7,-6.55)
   {\textbf{External APIs:}\\Groq Llama 3.1 \&\\Twilio WhatsApp};
-\draw[wf arrow, black!60] (8.8,-6.55) -- (api.west);
+\draw[wf arrow, black!60] (9.6,-6.55) -- (api.west);
 
 % ====== LAYER 4: Supabase Cloud Infrastructure ======
-\draw[black, rounded corners=3pt, fill=gray!2] (0,-8.0) rectangle (10.6,-9.45);
-\node[font=\sffamily\scriptsize\bfseries] at (5.3,-8.2) {Supabase Cloud Infrastructure};
-\node[md, text width=2.2cm] at (1.85,-8.8) {PostgreSQL\\(8 Table Schema)};
-\node[md, text width=2.5cm] at (5.3,-8.8) {Supabase Auth\\Service};
-\node[md, text width=2.8cm] at (9.05,-8.8) {Realtime WebSockets\\(Live Updates)};
+\draw[black, rounded corners=3pt, fill=gray!2] (0,-8.0) rectangle (11.6,-9.45);
+\node[font=\sffamily\scriptsize\bfseries] at (5.8,-8.2) {Supabase Cloud Infrastructure};
+\node[md, text width=2.4cm] at (2.0,-8.8) {PostgreSQL\\(8 Table Schema)};
+\node[md, text width=2.8cm] at (5.8,-8.8) {Supabase Auth\\Service};
+\node[md, text width=3.3cm] at (9.7,-8.8) {Realtime WebSockets\\(Live Updates)};
 
 \end{tikzpicture}%
 }
