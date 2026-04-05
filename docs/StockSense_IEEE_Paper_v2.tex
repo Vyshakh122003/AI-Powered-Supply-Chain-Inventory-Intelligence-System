@@ -9,6 +9,7 @@
 \usepackage{tabularx}
 \usepackage{tfrupee}
 \usepackage{tikz}
+\usepackage{float}
 \usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc}
 
 % === TikZ Workflow Styles (IEEE column-width safe) ===
@@ -112,14 +113,13 @@ The objective of this research is to design and implement a minimal-infrastructu
 
 \section{Proposed System}
 
-
 \subsection{System Architecture}
 
 The StockSense AI system employs a four-layer architecture. The \textbf{Frontend Layer} is built with React 19, Vite 8, and Tailwind CSS v4, providing the user interface for all store management functions. The \textbf{Workflow Engine Layer} uses n8n automation to implement all business logic through eight specialized workflows triggered via webhooks or schedule. The \textbf{Database Layer} uses Supabase PostgreSQL for persistent storage, with real-time change subscriptions enabling live frontend updates. The \textbf{AI/External Services Layer} integrates the Groq Llama 3.1 8B model for reorder recommendation generation and the Twilio WhatsApp API for alert delivery.
 
 Each layer communicates through well-defined interfaces: the frontend communicates with n8n via REST webhooks and directly with Supabase via the JavaScript client library. The workflow engine communicates with Supabase via HTTP REST and with external AI/messaging services via their respective APIs.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[align=center,
@@ -289,10 +289,10 @@ All tables use UUID primary keys generated via \texttt{gen\_random\_uuid()}. The
 
 Eight n8n workflows implement the inventory intelligence pipeline.
 
-\textbf{WF-01: Product and Sales Data Ingestion} exposes a POST webhook at \texttt{/product-sales-ingest} that receives product data from the frontend Add Product modal. The workflow validates and upserts products into the Products table.
-
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
+\textbf{WF-01: Data Ingestion Pipeline}\\
+\vspace{0.1cm}
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=0.4cm and 0.5cm, align=center]
   \node (n1) [wf trigger] {Webhook\\Trigger};
@@ -312,14 +312,10 @@ Eight n8n workflows implement the inventory intelligence pipeline.
   \draw [wf arrow] (n5b) -| (n6);
 \end{tikzpicture}%
 }
-\caption{n8n Pipeline Execution for WF-01: Data Ingestion.}
-\label{fig:wf01}
-\end{figure}
 
-\textbf{WF-02: Stockout Date Calculator} fetches all products, applies the stockout prediction formula from (\ref{eq:stockout_days}), and updates each product record with \texttt{days\_to\_stockout} and \texttt{estimated\_stockout\_date}.
-
-\begin{figure}[htbp]
-\centering
+\vspace{0.4cm}
+\textbf{WF-02: Stockout Date Calculator Pipeline}\\
+\vspace{0.1cm}
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=0.4cm and 0.6cm, align=center]
   \node (n1) [wf trigger] {Trigger};
@@ -332,14 +328,18 @@ Eight n8n workflows implement the inventory intelligence pipeline.
   \draw [wf arrow] (n3) -- (n4);
 \end{tikzpicture}%
 }
-\caption{n8n Pipeline Execution for WF-02: Stockout Date Calculator.}
-\label{fig:wf02}
+\caption{n8n Execution logic for Data Ingestion (top) and Stockout Prediction (bottom).}
+\label{fig:wf01_02}
 \end{figure}
 
-\textbf{WF-03: Inventory Processing \& Stock Alerts} identifies products where \texttt{current\_stock} $\leq$ \texttt{reorder\_threshold}, clears existing alerts, and generates fresh Stock Alert records.
+\textbf{WF-01: Product and Sales Data Ingestion} exposes a POST webhook at \texttt{/product-sales-ingest} that receives product data from the frontend Add Product modal. The workflow validates and upserts products into the Products table.
 
-\begin{figure}[htbp]
+\textbf{WF-02: Stockout Date Calculator} fetches all products, applies the stockout prediction formula from (\ref{eq:stockout_days}), and updates each product record with \texttt{days\_to\_stockout} and \texttt{estimated\_stockout\_date}.
+
+\begin{figure}[H]
 \centering
+\textbf{WF-03: Inventory Processing \& Alerts Pipeline}\\
+\vspace{0.1cm}
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=0.4cm and 0.5cm, align=center]
   \node (n1) [wf trigger] {Trigger};
@@ -356,15 +356,10 @@ Eight n8n workflows implement the inventory intelligence pipeline.
   \draw [wf arrow] (n5) -- (n6);
 \end{tikzpicture}%
 }
-\caption{n8n Pipeline Execution for WF-03: Inventory Processing \& Alerts.}
-\label{fig:wf03}
-\end{figure}
 
-\newpage
-\textbf{WF-04: Stock Risk Classification} classifies all products into risk tiers using the formula in (\ref{eq:risk_classification}) based on \texttt{days\_to\_stockout} values from WF-02.
-
-\begin{figure}[h!]
-\centering
+\vspace{0.4cm}
+\textbf{WF-04: Risk Classification Pipeline}\\
+\vspace{0.1cm}
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=0.4cm and 0.6cm, align=center]
   \node (n1) [wf trigger] {Trigger};
@@ -377,14 +372,18 @@ Eight n8n workflows implement the inventory intelligence pipeline.
   \draw [wf arrow] (n3) -- (n4);
 \end{tikzpicture}%
 }
-\caption{n8n Pipeline Execution for WF-04: Risk Classification.}
-\label{fig:wf04}
+\caption{n8n Execution logic for Alerts (top) and Risk Classification (bottom).}
+\label{fig:wf03_04}
 \end{figure}
 
-\textbf{WF-05: AI Reorder Intelligence} fetches at-risk products and all suppliers, then invokes Groq Llama 3.1 8B with a structured prompt to generate reorder recommendations. The LLM output is parsed and stored as Reorder Suggestions.
+\textbf{WF-03: Inventory Processing \& Stock Alerts} identifies products where \texttt{current\_stock} $\leq$ \texttt{reorder\_threshold}, clears existing alerts, and generates fresh Stock Alert records.
 
-\begin{figure}[h!]
+\textbf{WF-04: Stock Risk Classification} classifies all products into risk tiers using the formula in (\ref{eq:risk_classification}) based on \texttt{days\_to\_stockout} values from WF-02.
+
+\begin{figure}[H]
 \centering
+\textbf{WF-05: AI Reorder Intelligence Pipeline}\\
+\vspace{0.1cm}
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=0.4cm and 0.45cm, align=center]
   % Row 1: Trigger -> parallel fetch -> merge -> prompt -> groq -> parse
@@ -412,14 +411,10 @@ Eight n8n workflows implement the inventory intelligence pipeline.
   \draw [wf arrow] (n8) -- (n9);
 \end{tikzpicture}%
 }
-\caption{n8n Pipeline Execution for WF-05: AI Reorder Intelligence.}
-\label{fig:wf05}
-\end{figure}
 
-\textbf{WF-06: Supplier Scoring} evaluates all suppliers using the WSM formula from (\ref{eq:supplier_scoring}), computes composite scores, and assigns letter grades.
-
-\begin{figure}[h!]
-\centering
+\vspace{0.4cm}
+\textbf{WF-06: Supplier Scoring Pipeline}\\
+\vspace{0.1cm}
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=0.4cm and 0.6cm, align=center]
   \node (n1) [wf trigger] {Trigger};
@@ -432,14 +427,18 @@ Eight n8n workflows implement the inventory intelligence pipeline.
   \draw [wf arrow] (n3) -- (n4);
 \end{tikzpicture}%
 }
-\caption{n8n Pipeline Execution for WF-06: Supplier Scoring.}
-\label{fig:wf06}
+\caption{n8n Execution logic for AI Reorders (top) and Supplier Scoring (bottom).}
+\label{fig:wf05_06}
 \end{figure}
 
-\textbf{WF-07: WhatsApp Alert Sender} queries active stock alerts, filters by 24-hour anti-spam cooldown, builds a formatted message, and delivers it via Twilio WhatsApp API.
+\textbf{WF-05: AI Reorder Intelligence} fetches at-risk products and all suppliers, then invokes Groq Llama 3.1 8B with a structured prompt to generate reorder recommendations. The LLM output is parsed and stored as Reorder Suggestions.
 
-\begin{figure}[h!]
+\textbf{WF-06: Supplier Scoring} evaluates all suppliers using the WSM formula from (\ref{eq:supplier_scoring}), computes composite scores, and assigns letter grades.
+
+\begin{figure}[H]
 \centering
+\textbf{WF-07: WhatsApp Alert Pipeline}\\
+\vspace{0.1cm}
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=0.4cm and 0.5cm, align=center]
   \node (n1) [wf trigger] {Trigger};
@@ -454,14 +453,10 @@ Eight n8n workflows implement the inventory intelligence pipeline.
   \draw [wf arrow] (n4) -- (n5);
 \end{tikzpicture}%
 }
-\caption{n8n Pipeline Execution for WF-07: WhatsApp Alert Sender.}
-\label{fig:wf07}
-\end{figure}
 
-\textbf{WF-08: Daily Orchestrator} is the master workflow executing at 8:00 AM IST. It simulates daily stock depletion, sequentially executes WF-02 through WF-07 as sub-workflows, computes and saves the daily health snapshot, and logs execution to System Logs.
-
-\begin{figure}[h!]
-\centering
+\vspace{0.4cm}
+\textbf{WF-08: Master Orchestrator Pipeline}\\
+\vspace{0.1cm}
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=0.35cm and 0.4cm, align=center]
   % Row 1: Triggers -> Simulate -> WF-02 -> WF-03 -> WF-04
@@ -491,9 +486,13 @@ Eight n8n workflows implement the inventory intelligence pipeline.
   \draw [wf arrow] (snap) -- (log);
 \end{tikzpicture}%
 }
-\caption{n8n Pipeline Execution for WF-08: Master Daily Orchestrator.}
-\label{fig:wf08}
+\caption{n8n Execution logic for WhatsApp Alerts (top) and Master Orchestration (bottom).}
+\label{fig:wf07_08}
 \end{figure}
+
+\textbf{WF-07: WhatsApp Alert Sender} queries active stock alerts, filters by 24-hour anti-spam cooldown, builds a formatted message, and delivers it via Twilio WhatsApp API.
+
+\textbf{WF-08: Daily Orchestrator} is the master workflow executing at 8:00 AM IST. It simulates daily stock depletion, sequentially executes WF-02 through WF-07 as sub-workflows, computes and saves the daily health snapshot, and logs execution to System Logs.
 
 \newpage
 \subsection{LLM Prompt Engineering}
@@ -599,7 +598,7 @@ Supplier Scoring & WSM-based & No & Basic & No \\
 WhatsApp Alerts & Automated & No & No & No \\
 Monthly Cost & Rs. 0--500 & Rs. 0--599 & Rs. 4,000+ & Rs. 0 \\
 Setup Complexity & Low & Medium & High & Low \\
-Stockout Prediction & Rule-based & No & Basic & No \\
+Prediction Method & Rule-based & No & Basic & No \\
 Real-time Dashboard & Yes & Limited & Yes & No \\
 \bottomrule
 \end{tabularx}
