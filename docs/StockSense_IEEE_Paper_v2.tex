@@ -36,11 +36,6 @@
   }
 }
 
-% === Colors for architecture diagram ===
-\definecolor{modgreen}{RGB}{42,141,130}
-\definecolor{hdrnavy}{RGB}{61,79,111}
-\definecolor{barteal}{RGB}{31,92,84}
-
 \hypersetup{
     colorlinks=false,
     pdfborder={0 0 0},
@@ -110,25 +105,25 @@ Each layer communicates through well-defined interfaces: the frontend communicat
 \centering
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[align=center,
-  md/.style={rectangle, rounded corners=2pt, fill=modgreen, text=white,
+  md/.style={rectangle, rounded corners=2pt, draw=black, fill=white,
     font=\sffamily\tiny, minimum height=0.5cm, text centered, inner sep=2pt},
-  hd/.style={rectangle, rounded corners=1pt, fill=hdrnavy, text=white,
-    font=\sffamily\tiny\bfseries, minimum height=0.3cm, text centered, inner sep=2pt},
+  hd/.style={rectangle, rounded corners=1pt, draw=black, fill=gray!15, 
+    font=\sffamily\tiny\bfseries, minimum height=0.35cm, text centered, inner sep=2pt},
 ]
 
 % ====== LAYER 1: React 19 Frontend SPA ======
-\draw[gray!50, rounded corners=3pt, fill=gray!4] (0,0) rectangle (10.5,-3.1);
+\draw[black, rounded corners=3pt, fill=gray!2] (0,0) rectangle (10.5,-3.1);
 \node[font=\sffamily\scriptsize\bfseries] at (5.25,-0.25) {React 19 Frontend SPA};
 
 % -- Core Modules --
-\draw[gray!35, rounded corners=2pt] (0.15,-0.55) rectangle (3.25,-2.85);
+\draw[black!60, rounded corners=2pt, dash pattern=on 2pt off 1pt] (0.15,-0.55) rectangle (3.25,-2.85);
 \node[hd, text width=2.8cm] at (1.7,-0.8) {Core Modules};
 \node[md, text width=1.25cm] at (0.9,-1.35) {Dashboard};
 \node[md, text width=1.25cm] at (2.5,-1.35) {AI Reorder};
 \node[md, text width=1.8cm] at (1.7,-2.05) {Supplier\\Analytics};
 
 % -- Inventory Ops --
-\draw[gray!35, rounded corners=2pt] (3.5,-0.55) rectangle (7.0,-2.85);
+\draw[black!60, rounded corners=2pt, dash pattern=on 2pt off 1pt] (3.5,-0.55) rectangle (7.0,-2.85);
 \node[hd, text width=3.2cm] at (5.25,-0.8) {Inventory Ops};
 \node[md, text width=1.45cm] at (4.35,-1.35) {Products\\CRUD};
 \node[md, text width=1.45cm] at (6.15,-1.35) {CSV Bulk\\Import};
@@ -136,7 +131,7 @@ Each layer communicates through well-defined interfaces: the frontend communicat
 \node[md, text width=1.45cm] at (6.15,-2.05) {Quick\\Update};
 
 % -- Support & Auth --
-\draw[gray!35, rounded corners=2pt] (7.25,-0.55) rectangle (10.35,-2.85);
+\draw[black!60, rounded corners=2pt, dash pattern=on 2pt off 1pt] (7.25,-0.55) rectangle (10.35,-2.85);
 \node[hd, text width=2.8cm] at (8.8,-0.8) {Support \& Auth};
 \node[md, text width=1.25cm] at (8.05,-1.35) {3-step\\Onboarding};
 \node[md, text width=1.25cm] at (9.55,-1.35) {Login/\\Signup};
@@ -144,18 +139,18 @@ Each layer communicates through well-defined interfaces: the frontend communicat
 \node[md, text width=1.25cm] at (9.55,-2.05) {System Logs};
 
 % ====== LAYER 2: Network & Security Bridge ======
-\fill[barteal, rounded corners=3pt] (0,-3.4) rectangle (10.5,-4.6);
-\node[font=\sffamily\scriptsize\bfseries, text=white] at (5.25,-3.65) {Network \& Security Bridge};
-\node[md, text width=2.4cm, fill=modgreen!85!black] at (2.8,-4.15) {Vite Proxy Server (:5173)};
-\draw[-Stealth, thick, white] (4.2,-4.15) -- (6.3,-4.15);
-\node[md, text width=2.8cm, fill=modgreen!85!black] at (7.7,-4.15) {ngrok Secure Tunnel (HTTPS)};
+\draw[black, rounded corners=3pt, fill=gray!20] (0,-3.4) rectangle (10.5,-4.6);
+\node[font=\sffamily\scriptsize\bfseries] at (5.25,-3.65) {Network \& Security Bridge};
+\node[md, text width=2.4cm] at (2.8,-4.15) {Vite Proxy Server (:5173)};
+\draw[wf arrow] (4.2,-4.15) -- (6.3,-4.15);
+\node[md, text width=2.8cm] at (7.7,-4.15) {ngrok Secure Tunnel (HTTPS)};
 
 % ====== LAYER 3: n8n AI Workflow Engine ======
-\draw[gray!50, rounded corners=3pt, fill=gray!4] (0,-4.9) rectangle (10.5,-7.15);
+\draw[black, rounded corners=3pt, fill=gray!2] (0,-4.9) rectangle (10.5,-7.15);
 \node[font=\sffamily\scriptsize\bfseries] at (5.25,-5.15) {n8n AI Workflow Engine};
 
 % WF-08 Orchestrator sub-box
-\draw[gray!35, rounded corners=2pt] (0.15,-5.4) rectangle (8.7,-6.9);
+\draw[black!60, rounded corners=2pt, dash pattern=on 2pt off 1pt] (0.15,-5.4) rectangle (8.7,-6.9);
 \node[hd, text width=8.2cm] at (4.425,-5.6) {WF-08: Master Daily Orchestrator};
 \node[md, text width=0.95cm] at (0.7,-6.2) {WF-01\\(Ingest)};
 \node[md, text width=0.95cm] at (1.85,-6.2) {WF-02\\(Calc)};
@@ -166,14 +161,14 @@ Each layer communicates through well-defined interfaces: the frontend communicat
 \node[md, text width=1.3cm] at (7.9,-6.2) {WF-07\\(WhatsApp)};
 
 % External APIs box
-\node[rectangle, draw=gray!50, rounded corners=2pt, fill=white,
+\node[rectangle, draw=black, rounded corners=2pt, fill=white,
   font=\sffamily\tiny, text width=1.4cm, text centered, inner sep=3pt,
   minimum height=1.0cm] (api) at (9.65,-6.15)
   {\textbf{External APIs:}\\Groq Llama 3.1 \&\\Twilio WhatsApp};
-\draw[-Stealth, thick, gray!60] (8.7,-6.15) -- (api.west);
+\draw[wf arrow, black!60] (8.7,-6.15) -- (api.west);
 
 % ====== LAYER 4: Supabase Cloud Infrastructure ======
-\draw[gray!50, rounded corners=3pt, fill=gray!4] (0,-7.45) rectangle (10.5,-8.9);
+\draw[black, rounded corners=3pt, fill=gray!2] (0,-7.45) rectangle (10.5,-8.9);
 \node[font=\sffamily\scriptsize\bfseries] at (5.25,-7.65) {Supabase Cloud Infrastructure};
 \node[md, text width=2.2cm] at (1.8,-8.25) {PostgreSQL\\(8 Table Schema)};
 \node[md, text width=2.5cm] at (5.25,-8.25) {Supabase Auth\\Service};
