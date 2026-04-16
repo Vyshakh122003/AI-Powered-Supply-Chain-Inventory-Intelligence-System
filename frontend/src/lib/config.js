@@ -1,13 +1,13 @@
 // ── n8n integration config ──────────────────────────────────────────
-// In dev, Vite proxies /webhook/* and /api/v1/* to n8n via ngrok.
-// Use empty base so requests stay same-origin → no CORS issues.
-const N8N_BASE = import.meta.env.DEV ? '' : import.meta.env.VITE_N8N_BASE_URL
+// Dev:  Vite proxies /webhook/* to local n8n (same-origin, no CORS).
+// Prod: Vercel serverless functions at /api/* proxy to Railway n8n
+//       (same-origin to browser, server-to-server to n8n — no CORS).
+const isDev = import.meta.env.DEV
 
-// Webhook endpoints for workflows that have webhook triggers
 export const WEBHOOKS = {
-  productIngest: `${N8N_BASE}/webhook/product-sales-ingest`,
-  sendWhatsApp:  `${N8N_BASE}/webhook/send-whatsapp`,
-  runPipeline:   `${N8N_BASE}/webhook/run-pipeline`,
+  productIngest: isDev ? '/webhook/product-sales-ingest' : '/api/product-ingest',
+  sendWhatsApp:  isDev ? '/webhook/send-whatsapp'        : '/api/send-whatsapp',
+  runPipeline:   isDev ? '/webhook/run-pipeline'          : '/api/run-pipeline',
 }
 
 // ── helpers ─────────────────────────────────────────────────────────
