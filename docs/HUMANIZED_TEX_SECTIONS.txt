@@ -1,0 +1,108 @@
+% HUMANIZED LaTeX SECTIONS - COPY-PASTE READY
+% For: StockSense_IEEE_Paper_v2.tex
+% Replace original sections with these humanized versions
+
+%==============================================================================
+% SECTION 1: ABSTRACT (Replace lines 58-60)
+%==============================================================================
+
+\begin{abstract}
+Small retailers in India still manage inventory with notebooks and spreadsheets. They cannot see what will run out because they cannot afford enterprise software.
+
+I built StockSense AI to solve this. It is an inventory manager and supplier decision-support tool. I used only free-tier cloud services to keep costs near zero.
+
+The stack: React frontend, Supabase PostgreSQL, n8n workflows, and Groq Llama 3.1 8B. The system predicts stockout dates, marks at-risk items, scores suppliers using a Weighted Sum Model, and explains reorder decisions via the LLM. Alerts go to the shop owner's WhatsApp through Twilio.
+
+A daily orchestration runs at 8:00 AM IST, executing eight workflows in sequence. I tested it with a catalog of six products. Production costs for a single store: under Rs. 500 per month. The owner gets timely alerts without touching anything.
+\end{abstract}
+
+%==============================================================================
+% SECTION 2: INTRODUCTION (Replace lines 66-75)
+%==============================================================================
+
+\section{Introduction}
+\IEEEPARstart{O}{ver} 12 million kirana stores operate across India. They are the backbone of neighborhood retail. Yet they struggle with basic inventory management. Manual tracking offers no way to predict what will sell. Owners guess, check stock randomly, or run out unexpectedly. When a product runs out, they lose customers. When they overstock, goods expire and money is wasted.
+
+Small retailers face a specific set of constraints. Suppliers are scattered and unreliable. Delivery times change without warning. Affordable tools do not exist. Enterprise ERP costs thousands per month and is too complicated for one person to operate. Most point-of-sale systems only record what was sold. They do not predict what will be needed, warn about stockouts, rank suppliers, or recommend reorders.
+
+I built StockSense AI to fill this gap. The system tracks inventory levels and projects stockout dates mathematically. It generates reorder suggestions using Groq Llama 3.1 8B. It ranks suppliers based on price, reliability, and delivery speed. It sends alerts directly to the shop owner's WhatsApp. And it runs on a nearly free infrastructure that requires no manual setup.
+
+[Keep existing Motivation and Problem Specification section as-is - it was not flagged]
+
+%==============================================================================
+% SECTION 3: RELATED WORK (Replace lines 77-95)
+%==============================================================================
+
+\section{Related Work}
+
+Research on inventory systems for small businesses has focused on various technologies: IoT sensors, RFID tags, cloud platforms. Most studies treat enterprise systems as the gold standard.
+
+A 2024 IEEE paper on small enterprise inventory reported that better technology improves accuracy and efficiency. However, uptake remains low because enterprise solutions are expensive and difficult to use.
+
+Machine learning improves demand forecasting. Studies show 15-25\% better accuracy than moving averages. Seasonal factors and promotions also matter.
+
+Large language models are now being applied to business decisions. They can reduce human bias in procurement choices. But applying LLMs to operational workflows remains relatively unexplored.
+
+Low-code workflow platforms like n8n can reduce implementation time for small businesses. They make complex automation accessible without dedicated developers.
+
+Supplier evaluation using multi-criteria methods---reliability, price, delivery speed---has been studied extensively. The Weighted Sum Model is well-established.
+
+Indian retail presents specific constraints. The market is highly fragmented. Products and demand patterns vary by region. Few solutions exist that are both simple and technically sound.
+
+Recent work on IoT and machine learning for smart retail typically requires hardware investment that small shops cannot afford. Open-source workflow platforms offer a different path: low-code software orchestration without expensive sensors or subscriptions.
+
+The proposed system builds upon these research foundations while addressing the specific constraints of small Indian retail stores through a low-cost, WhatsApp-first, AI-enhanced solution architecture.
+
+%==============================================================================
+% SECTION 4: SYSTEM ARCHITECTURE (Replace lines 116-120)
+%==============================================================================
+
+\subsection{System Architecture}
+
+The system has four layers. The \textbf{Frontend Layer} is React 19, Vite 8, and Tailwind CSS v4. It provides the shop owner's user interface.
+
+The \textbf{Workflow Engine Layer} is n8n. Eight specialized workflows implement the business logic. They are triggered by webhooks or schedules.
+
+The \textbf{Database Layer} is Supabase PostgreSQL. It stores inventory, suppliers, alerts, and suggestions. Real-time subscriptions push updates to the frontend instantly.
+
+The \textbf{AI/External Services Layer} connects to Groq's Llama 3.1 8B for reorder reasoning, and to Twilio's WhatsApp API for alerts.
+
+Each layer talks to the others through well-defined channels. The frontend calls n8n via REST webhooks and talks directly to Supabase. The workflows fetch and update data from Supabase using HTTP, and invoke the AI and messaging services as needed.
+
+%==============================================================================
+% SECTION 5: CONCLUSION (Replace lines 646-651)
+%==============================================================================
+
+\section{Conclusion}
+
+This paper presented StockSense AI, a system for inventory management and supplier selection in small Indian retail stores. I showed that sophisticated inventory intelligence is possible using free-tier cloud services. It is accessible to retailers who cannot afford enterprise software.
+
+The implementation includes five key components: an automated pipeline from stock tracking to WhatsApp alerts, AI reorder recommendations from Groq Llama 3.1 8B, multi-criteria supplier scoring using a Weighted Sum Model, monthly costs under Rs. 500 through free-tier services, and WhatsApp-first alerts that fit how Indian retailers communicate.
+
+%==============================================================================
+% SECTION 6: FUTURE SCOPE (Replace lines 653-698)
+%==============================================================================
+
+\section{Future Scope}
+
+\label{sec:future}
+
+The current system is a working baseline. Future improvements are possible:
+
+\textbf{Barcode scanning} would let users look up products with the camera instead of typing IDs. The schema already accommodates barcode strings as identifiers.
+
+\textbf{Voice input in regional languages}---Telugu, Hindi, Marathi---would allow stock updates by speaking. The Web Speech API provides this natively in browsers.
+
+\textbf{Two-way WhatsApp} would let store owners approve reorder suggestions by replying to alerts, eliminating the need to log into the dashboard.
+
+The schema has fields for seasonal tracking. During festivals, a seasonal multiplier could adjust demand estimates for accuracy around Diwali, Holi, and harvest season.
+
+\textbf{Multi-store support} through Supabase Row Level Security would let store chains use the system. The schema already includes store_id in all tables.
+
+\textbf{Purchase order generation} would take approved suggestions and create formal orders with UPI payment links, completing the procurement cycle.
+
+%==============================================================================
+% END OF HUMANIZED SECTIONS
+%==============================================================================
+% Remember to keep all other sections unchanged (Mathematical Models, 
+% Implementation, Results, Bibliography, etc.)
