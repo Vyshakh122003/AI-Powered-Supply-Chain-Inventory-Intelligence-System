@@ -44,7 +44,7 @@
 
 \begin{document}
 
-\title{Building StockSense AI: Low-Cost Inventory Intelligence for Small Indian Retail Stores}
+\title{StockSense AI: Intelligent Inventory for India's Small Retailers}
 
 \author{Vyshakh Vijayan%
 \thanks{Vyshakh Vijayan is with the Department of Computer Science and Business Systems, VIT-AP University, Amaravati, Andhra Pradesh, India. Email: vijayan.22bcb7055@vitapstudent.ac.in}%
@@ -56,13 +56,13 @@
 \maketitle
 
 \begin{abstract}
-Small retailers in India still manage inventory with notebooks and spreadsheets. They cannot see what will run out because they cannot afford enterprise software.
+Most small retailers in India still use notebooks and spreadsheets to track inventory. They have no way to predict what will sell or when items will run out. And they cannot afford the expensive enterprise software that large stores use.
 
-I built StockSense AI to solve this. It is an inventory manager and supplier decision-support tool. I used only free-tier cloud services to keep costs near zero.
+I solved this by building StockSense AI. It is an inventory manager and supplier decision-support tool. The entire system runs on free and low-cost cloud services.
 
-The stack: React frontend, Supabase PostgreSQL, n8n workflows, and Groq Llama 3.1 8B. The system predicts stockout dates, marks at-risk items, scores suppliers using a Weighted Sum Model, and explains reorder decisions via the LLM. Alerts go to the shop owner's WhatsApp through Twilio.
+Here is what it does: predicts stockout dates, flags at-risk items, scores suppliers using a Weighted Sum Model, and explains reorder decisions using an LLM. Alerts go directly to the shop owner's WhatsApp via Twilio.
 
-A daily orchestration runs at 8:00 AM IST, executing eight workflows in sequence. I tested it with a catalog of six products. Production costs for a single store: under Rs. 500 per month. The owner gets timely alerts without touching anything.
+I ran a daily orchestration that executes eight workflows in sequence. I tested it with six products. The monthly cost for a single store is under Rs. 500. The owner gets timely alerts without any extra effort.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -70,7 +70,7 @@ Inventory Management, Supply Chain Intelligence, Workflow Automation, n8n, Large
 \end{IEEEkeywords}
 
 \section{Introduction}
-\IEEEPARstart{O}{ver} 12 million kirana stores operate across India. They are the backbone of neighborhood retail. Yet they struggle with basic inventory management. Manual tracking offers no way to predict what will sell. Owners guess, check stock randomly, or run out unexpectedly. When a product runs out, they lose customers. When they overstock, goods expire and money is wasted.
+\IEEEPARstart{T}{here} are 12 million kirana stores scattered across India. They form the backbone of neighborhood retail. But most of them struggle with the basics: managing inventory. Manual tracking cannot predict what will sell. Store owners guess. They check stock at random. They run out unexpectedly. When a product runs out, they lose customers. When they overstock, items expire and money is wasted.
 
 Small retailers face a specific set of constraints. Suppliers are scattered and unreliable. Delivery times change without warning. Affordable tools do not exist. Enterprise ERP costs thousands per month and is too complicated for one person to operate. Most point-of-sale systems only record what was sold. They do not predict what will be needed, warn about stockouts, rank suppliers, or recommend reorders.
 
