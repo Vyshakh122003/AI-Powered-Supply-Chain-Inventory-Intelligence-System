@@ -289,10 +289,10 @@ All tables use UUID primary keys generated via \texttt{gen\_random\_uuid()}. The
 
 Eight n8n workflows implement the inventory intelligence pipeline.
 
+\textbf{WF-01: Product and Sales Data Ingestion} exposes a POST webhook at \texttt{/product-sales-ingest} that receives product data from the frontend Add Product modal. The workflow validates and upserts products into the Products table.
+
 \begin{figure}[H]
 \centering
-\textbf{WF-01: Data Ingestion Pipeline}\\
-\vspace{0.1cm}
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=0.4cm and 0.5cm, align=center]
   \node (n1) [wf trigger] {Webhook\\Trigger};
@@ -312,10 +312,14 @@ Eight n8n workflows implement the inventory intelligence pipeline.
   \draw [wf arrow] (n5b) -| (n6);
 \end{tikzpicture}%
 }
+\caption{WF-01: Data Ingestion Pipeline.}
+\label{fig:wf01}
+\end{figure}
 
-\vspace{0.4cm}
-\textbf{WF-02: Stockout Date Calculator Pipeline}\\
-\vspace{0.1cm}
+\textbf{WF-02: Stockout Date Calculator} fetches all products, applies the stockout prediction formula from (\ref{eq:stockout_days}), and updates each product record with \texttt{days\_to\_stockout} and \texttt{estimated\_stockout\_date}.
+
+\begin{figure}[H]
+\centering
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=0.4cm and 0.6cm, align=center]
   \node (n1) [wf trigger] {Trigger};
@@ -328,18 +332,14 @@ Eight n8n workflows implement the inventory intelligence pipeline.
   \draw [wf arrow] (n3) -- (n4);
 \end{tikzpicture}%
 }
-\caption{n8n Execution logic for Data Ingestion (top) and Stockout Prediction (bottom).}
-\label{fig:wf01_02}
+\caption{WF-02: Stockout Prediction Pipeline.}
+\label{fig:wf02}
 \end{figure}
 
-\textbf{WF-01: Product and Sales Data Ingestion} exposes a POST webhook at \texttt{/product-sales-ingest} that receives product data from the frontend Add Product modal. The workflow validates and upserts products into the Products table.
-
-\textbf{WF-02: Stockout Date Calculator} fetches all products, applies the stockout prediction formula from (\ref{eq:stockout_days}), and updates each product record with \texttt{days\_to\_stockout} and \texttt{estimated\_stockout\_date}.
+\textbf{WF-03: Inventory Processing \& Stock Alerts} identifies products where \texttt{current\_stock} $\leq$ \texttt{reorder\_threshold}, clears existing alerts, and generates fresh Stock Alert records.
 
 \begin{figure}[H]
 \centering
-\textbf{WF-03: Inventory Processing \& Alerts Pipeline}\\
-\vspace{0.1cm}
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=0.4cm and 0.5cm, align=center]
   \node (n1) [wf trigger] {Trigger};
@@ -356,10 +356,14 @@ Eight n8n workflows implement the inventory intelligence pipeline.
   \draw [wf arrow] (n5) -- (n6);
 \end{tikzpicture}%
 }
+\caption{WF-03: Inventory Processing \& Alerts Pipeline.}
+\label{fig:wf03}
+\end{figure}
 
-\vspace{0.4cm}
-\textbf{WF-04: Risk Classification Pipeline}\\
-\vspace{0.1cm}
+\textbf{WF-04: Stock Risk Classification} classifies all products into risk tiers using the formula in (\ref{eq:risk_classification}) based on \texttt{days\_to\_stockout} values from WF-02.
+
+\begin{figure}[H]
+\centering
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=0.4cm and 0.6cm, align=center]
   \node (n1) [wf trigger] {Trigger};
@@ -372,18 +376,14 @@ Eight n8n workflows implement the inventory intelligence pipeline.
   \draw [wf arrow] (n3) -- (n4);
 \end{tikzpicture}%
 }
-\caption{n8n Execution logic for Alerts (top) and Risk Classification (bottom).}
-\label{fig:wf03_04}
+\caption{WF-04: Risk Classification Pipeline.}
+\label{fig:wf04}
 \end{figure}
 
-\textbf{WF-03: Inventory Processing \& Stock Alerts} identifies products where \texttt{current\_stock} $\leq$ \texttt{reorder\_threshold}, clears existing alerts, and generates fresh Stock Alert records.
-
-\textbf{WF-04: Stock Risk Classification} classifies all products into risk tiers using the formula in (\ref{eq:risk_classification}) based on \texttt{days\_to\_stockout} values from WF-02.
+\textbf{WF-05: AI Reorder Intelligence} fetches at-risk products and all suppliers, then invokes Groq Llama 3.1 8B with a structured prompt to generate reorder recommendations. The LLM output is parsed and stored as Reorder Suggestions.
 
 \begin{figure}[H]
 \centering
-\textbf{WF-05: AI Reorder Intelligence Pipeline}\\
-\vspace{0.1cm}
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=0.4cm and 0.45cm, align=center]
   % Row 1: Trigger -> parallel fetch -> merge -> prompt -> groq -> parse
@@ -411,10 +411,14 @@ Eight n8n workflows implement the inventory intelligence pipeline.
   \draw [wf arrow] (n8) -- (n9);
 \end{tikzpicture}%
 }
+\caption{WF-05: AI Reorder Intelligence Pipeline.}
+\label{fig:wf05}
+\end{figure}
 
-\vspace{0.4cm}
-\textbf{WF-06: Supplier Scoring Pipeline}\\
-\vspace{0.1cm}
+\textbf{WF-06: Supplier Scoring} evaluates all suppliers using the WSM formula from (\ref{eq:supplier_scoring}), computes composite scores, and assigns letter grades.
+
+\begin{figure}[H]
+\centering
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=0.4cm and 0.6cm, align=center]
   \node (n1) [wf trigger] {Trigger};
@@ -427,18 +431,14 @@ Eight n8n workflows implement the inventory intelligence pipeline.
   \draw [wf arrow] (n3) -- (n4);
 \end{tikzpicture}%
 }
-\caption{n8n Execution logic for AI Reorders (top) and Supplier Scoring (bottom).}
-\label{fig:wf05_06}
+\caption{WF-06: Supplier Scoring Pipeline.}
+\label{fig:wf06}
 \end{figure}
 
-\textbf{WF-05: AI Reorder Intelligence} fetches at-risk products and all suppliers, then invokes Groq Llama 3.1 8B with a structured prompt to generate reorder recommendations. The LLM output is parsed and stored as Reorder Suggestions.
-
-\textbf{WF-06: Supplier Scoring} evaluates all suppliers using the WSM formula from (\ref{eq:supplier_scoring}), computes composite scores, and assigns letter grades.
+\textbf{WF-07: WhatsApp Alert Sender} queries active stock alerts, filters by 24-hour anti-spam cooldown, builds a formatted message, and delivers it via Twilio WhatsApp API.
 
 \begin{figure}[H]
 \centering
-\textbf{WF-07: WhatsApp Alert Pipeline}\\
-\vspace{0.1cm}
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=0.4cm and 0.5cm, align=center]
   \node (n1) [wf trigger] {Trigger};
@@ -453,10 +453,14 @@ Eight n8n workflows implement the inventory intelligence pipeline.
   \draw [wf arrow] (n4) -- (n5);
 \end{tikzpicture}%
 }
+\caption{WF-07: WhatsApp Alert Pipeline.}
+\label{fig:wf07}
+\end{figure}
 
-\vspace{0.4cm}
-\textbf{WF-08: Master Orchestrator Pipeline}\\
-\vspace{0.1cm}
+\textbf{WF-08: Daily Orchestrator} is the master workflow executing at 8:00 AM IST. It simulates daily stock depletion, sequentially executes WF-02 through WF-07 as sub-workflows, computes and saves the daily health snapshot, and logs execution to System Logs.
+
+\begin{figure}[H]
+\centering
 \resizebox{\columnwidth}{!}{%
 \begin{tikzpicture}[node distance=0.35cm and 0.4cm, align=center]
   % Row 1: Triggers -> Simulate -> WF-02 -> WF-03 -> WF-04
@@ -486,13 +490,9 @@ Eight n8n workflows implement the inventory intelligence pipeline.
   \draw [wf arrow] (snap) -- (log);
 \end{tikzpicture}%
 }
-\caption{n8n Execution logic for WhatsApp Alerts (top) and Master Orchestration (bottom).}
-\label{fig:wf07_08}
+\caption{WF-08: Master Daily Orchestrator Pipeline.}
+\label{fig:wf08}
 \end{figure}
-
-\textbf{WF-07: WhatsApp Alert Sender} queries active stock alerts, filters by 24-hour anti-spam cooldown, builds a formatted message, and delivers it via Twilio WhatsApp API.
-
-\textbf{WF-08: Daily Orchestrator} is the master workflow executing at 8:00 AM IST. It simulates daily stock depletion, sequentially executes WF-02 through WF-07 as sub-workflows, computes and saves the daily health snapshot, and logs execution to System Logs.
 
 \subsection{LLM Prompt Engineering}
 
