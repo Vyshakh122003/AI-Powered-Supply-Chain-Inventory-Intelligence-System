@@ -74,34 +74,32 @@ Inventory Management, Supply Chain Intelligence, Workflow Automation, n8n, Large
 
 Small retailers face a specific set of constraints. Suppliers are scattered and unreliable. Delivery times change without warning. Affordable tools do not exist. Enterprise ERP costs thousands per month and is too complicated for one person to operate. Most point-of-sale systems only record what was sold. They do not predict what will be needed, warn about stockouts, rank suppliers, or recommend reorders.
 
-I built StockSense AI to fill this gap. The system tracks inventory levels and projects stockout dates mathematically. It generates reorder suggestions using Groq Llama 3.1 8B. It ranks suppliers based on price, reliability, and delivery speed. It sends alerts directly to the shop owner's WhatsApp. And it runs on a nearly free infrastructure that requires no manual setup.
+I built StockSense AI to fill this gap. The system tracks inventory levels and projects stockout dates using daily sales velocity. It generates reorder suggestions using Groq Llama 3.1 8B. It ranks suppliers based on price, reliability, and delivery speed. It sends alerts directly to the shop owner's WhatsApp. And it runs on a nearly free infrastructure that requires no manual setup.
 
 \section{Related Work}
 
-Research on inventory systems for small businesses has focused on various technologies: IoT sensors, RFID tags, cloud platforms. Most studies treat enterprise systems as the gold standard.
+Research on inventory systems for small businesses has focused on various technologies: IoT sensors, RFID tags, cloud platforms. Most studies treat enterprise systems as the gold standard. However, uptake of these systems remains low in the small-business segment because enterprise solutions are expensive and difficult to use.
 
-A 2024 IEEE paper on small enterprise inventory reported that better technology improves accuracy and efficiency. However, uptake remains low because enterprise solutions are expensive and difficult to use.
+Within the realm of demand forecasting, machine learning approaches have emerged as a key capability. Research demonstrates that machine learning methods can achieve significantly better accuracy than simple baseline approaches such as moving averages. Seasonal factors and promotions also impact demand and must be incorporated for reliable forecasts. This forms a solid technical foundation, yet most implementations require skilled data engineers and infrastructure.
 
-Machine learning improves demand forecasting. Studies show 15-25\% better accuracy than moving averages. Seasonal factors and promotions also matter.
+To address deployment complexity, recent research has explored large language models for business decision support. Large language models are now being applied to procurement and inventory decisions, as they can reduce human bias in reorder selections. However, applying LLMs to real-time operational workflows remains relatively unexplored, particularly in resource-constrained settings.
 
-Large language models are now being applied to business decisions. They can reduce human bias in procurement choices. But applying LLMs to operational workflows remains relatively unexplored.
+Parallel to AI advances, the infrastructure layer has been democratized through low-code platforms. Low-code workflow platforms like n8n can dramatically reduce implementation time for small businesses, making complex automation accessible without requiring dedicated backend developers. This technological shift opens possibilities for businesses without substantial IT budgets.
 
-Low-code workflow platforms like n8n can reduce implementation time for small businesses. They make complex automation accessible without dedicated developers.
+On the supplier management side, multi-criteria evaluation methods have long been established in operations research. Supplier evaluation using methods such as the Weighted Sum Model---considering reliability, price, and delivery speed---has been studied extensively and is well-established in academic literature.
 
-Supplier evaluation using multi-criteria methods---reliability, price, delivery speed---has been studied extensively. The Weighted Sum Model is well-established.
+However, these individual components (demand forecasting, LLMs, workflow automation, supplier scoring) are rarely integrated into a coherent system designed specifically for resource-constrained retail environments. Indian retail presents unique constraints: the market is highly fragmented, products and demand patterns vary significantly by region, and few off-the-shelf solutions balance technical sophistication with operational simplicity and affordability.
 
-Indian retail presents specific constraints. The market is highly fragmented. Products and demand patterns vary by region. Few solutions exist that are both simple and technically sound.
+Much published work on smart retail emphasizes IoT sensors and hardware-centric solutions, which require significant upfront capital investment---barcode readers, RFID equipment, network infrastructure---that small shops cannot afford. In contrast, software-only orchestration through low-code platforms offers an alternative architectural path: achieving intelligent automation without expensive sensors or dedicated infrastructure investments.
 
-Recent work on IoT and machine learning for smart retail typically requires hardware investment that small shops cannot afford. Open-source workflow platforms offer a different path: low-code software orchestration without expensive sensors or subscriptions.
-
-The proposed system builds upon these research foundations while addressing the specific constraints of small Indian retail stores through a low-cost, WhatsApp-first, AI-enhanced solution architecture.
+The proposed system builds upon these established research foundations while directly addressing the integration and affordability gap through a low-cost, WhatsApp-first, AI-enhanced solution architecture tailored to small Indian retailers.
 
 \section{Motivation and Problem Specification}
 
 While academic literature explores sophisticated inventory models, a significant gap exists between high-end enterprise solutions and the operational reality of small-scale Indian retailers.
 
 \subsection{Socio-Economic Motivation}
-Kirana stores are the cornerstone of the Indian economy, yet they remain largely underserved by modern technology. The primary motivation for StockSense AI is to empower these small business owners who lack the capital for expensive ERP subscriptions. The cost of a single stockout (lost customer) or overstock (expired goods) can significantly impact the thin margins of a neighborhood shop.
+Kirana stores serve over 50 percent of India's retail market and are essential to neighborhood commerce. Yet they face significant technology access challenges, particularly given their limited capital budgets and lack of technical staff. The primary objective of StockSense AI is to enable small business owners to access inventory intelligence without requiring expensive ERP subscriptions. The financial impact of a single stockout (lost customer) or overstock (expired goods) can significantly impact the thin operating margins of a neighborhood shop.
 
 \subsection{Gap Analysis and Technical Advantage}
 A comparative analysis reveals two major gaps in existing systems:
@@ -117,15 +115,17 @@ The objective of this research is to design and implement a minimal-infrastructu
 
 \subsection{System Architecture}
 
-The system has four layers. The \textbf{Frontend Layer} is React 19, Vite 8, and Tailwind CSS v4. It provides the shop owner's user interface.
+The system is organized in four layers, each with distinct responsibilities and communicating through well-defined REST interfaces. This layered design ensures modularity, scalability, and ease of testing.
 
-The \textbf{Workflow Engine Layer} is n8n. Eight specialized workflows implement the business logic. They are triggered by webhooks or schedules.
+The \textbf{Frontend Layer} is a React 19 Single Page Application (SPA), built with Vite 8 and styled using Tailwind CSS v4. It provides the shop owner with three primary interfaces: a real-time inventory dashboard displaying current stock levels and health scores, an AI reorder recommendations module for reviewing and confirming system-generated suggestions, and a supplier analytics interface for monitoring supplier performance and cost trends. The frontend communicates with the workflow engine via REST webhooks and interacts directly with Supabase for authentication and real-time data subscriptions.
 
-The \textbf{Database Layer} is Supabase PostgreSQL. It stores inventory, suppliers, alerts, and suggestions. Real-time subscriptions push updates to the frontend instantly.
+The \textbf{Workflow Engine Layer} is implemented in n8n, an open-source workflow automation platform. Eight specialized workflows orchestrate the entire business logic pipeline. The workflows are structured as follows: \textit{WF-01} (Data Ingestion) normalizes incoming inventory updates and delivery records into the database. \textit{WF-02} (Stockout Calculation) applies the stockout prediction model to compute days-to-stockout for each product. \textit{WF-03} (Alert Filtering) identifies products that have crossed predefined risk thresholds. \textit{WF-04} (Risk Scoring) classifies products into HIGH, MEDIUM, LOW, or UNKNOWN risk categories. \textit{WF-05} (AI Suggestions) invokes the Groq API to generate natural-language reorder recommendations. \textit{WF-06} (Supplier Scoring) computes composite supplier scores using the Weighted Sum Model. \textit{WF-07} (WhatsApp Delivery) formats alerts and sends them to the shop owner via Twilio's WhatsApp Business API. Finally, \textit{WF-08} (Master Orchestrator) is a daily scheduled trigger (8:00 AM IST) that executes workflows WF-01 through WF-07 in strict sequential order, ensuring data consistency across all downstream operations.
 
-The \textbf{AI/External Services Layer} connects to Groq's Llama 3.1 8B for reorder reasoning, and to Twilio's WhatsApp API for alerts.
+The \textbf{Database Layer} uses Supabase, a managed PostgreSQL service offering real-time database subscriptions via WebSocket. The schema comprises eight relational tables: \textit{Products}, \textit{InventoryTransactions}, \textit{Suppliers}, \textit{StockAlerts}, \textit{ReorderSuggestions}, \textit{SupplierScores}, \textit{DeliveryHistory}, and \textit{SystemLogs}. All tables include a \textit{store\_id} foreign key to support future multi-store expansion. Real-time subscriptions push inventory and alert updates to the frontend the moment they are recorded, eliminating stale data and ensuring the dashboard reflects the current system state.
 
-Each layer talks to the others through well-defined channels. The frontend calls n8n via REST webhooks and talks directly to Supabase. The workflows fetch and update data from Supabase using HTTP, and invoke the AI and messaging services as needed.
+The \textbf{AI/External Services Layer} integrates Groq's hosted Llama 3.1 8B model for reorder reasoning and Twilio's WhatsApp Business API for alert delivery. Workflows WF-05 passes structured product data, current stock levels, and supplier availability to Groq via REST, receiving natural-language rationales for reorder suggestions. These explanations help shop owners understand the reasoning behind each recommendation, building trust in the system. Workflow WF-07 formats alerts with product names, stockout dates, and suggested order quantities, then delivers them via WhatsApp, ensuring the shop owner receives critical notifications in their preferred communication channel.
+
+Communication between layers occurs exclusively through HTTP REST interfaces and standard database drivers. This architecture decouples components, allowing independent testing and future replacement of any layer without affecting others.
 
 \begin{figure}[H]
 \centering
@@ -205,6 +205,16 @@ Each layer talks to the others through well-defined channels. The frontend calls
 \caption{StockSense AI System Architecture and Workflow Pipeline.}
 \label{fig:workflow}
 \end{figure}
+
+\subsection{Terminology Definitions}
+
+To avoid ambiguity, we define two central concepts in the system:
+
+\textbf{Stock Alert:} A Stock Alert is triggered automatically when a product's current inventory level falls to or below its configured reorder threshold. For example, if rice is configured with a reorder threshold of 20 units and current stock drops to 20 or fewer units, a Stock Alert is generated. This is a deterministic, threshold-based trigger with no AI involvement.
+
+\textbf{Reorder Suggestion:} A Reorder Suggestion is an AI-generated recommendation for the shop owner, created after a Stock Alert is triggered. The Groq Llama 3.1 8B model receives product details, current stock levels, supplier information, and recent sales history, then outputs natural language reasoning explaining why and how much to reorder. The suggestion includes specific supplier recommendations ranked by the Weighted Sum Model and includes context such as estimated delivery times and cost implications.
+
+In the workflows: WF-03 generates Stock Alerts; WF-05 generates Reorder Suggestions based on those alerts.
 
 \subsection{Mathematical Models}
 
@@ -653,9 +663,15 @@ AI-generated reorder suggestions using Groq Llama 3.1 8B provide contextual reco
 
 \section{Conclusion}
 
-This paper presented StockSense AI, a system for inventory management and supplier selection in small Indian retail stores. I showed that sophisticated inventory intelligence is possible using free-tier cloud services. It is accessible to retailers who cannot afford enterprise software.
+This paper presented StockSense AI, a system for inventory management and supplier selection in small Indian retail stores. I demonstrated that sophisticated inventory intelligence is possible using entirely free-tier and low-cost cloud services, making advanced supply chain tools accessible to retailers who cannot afford enterprise software costing Rs.~4,000 or more per month.
 
-The implementation includes five key components: an automated pipeline from stock tracking to WhatsApp alerts, AI reorder recommendations from Groq Llama 3.1 8B, multi-criteria supplier scoring using a Weighted Sum Model, monthly costs under Rs. 500 through free-tier services, and WhatsApp-first alerts that fit how Indian retailers communicate.
+The system successfully integrates five key technical components: automated stockout prediction using daily sales velocity, AI-driven reorder recommendations via Groq Llama 3.1 8B, multi-criteria supplier scoring using a Weighted Sum Model, real-time WhatsApp alerts via Twilio, and fully orchestrated workflows in n8n. All of this operates at under Rs.~500 per month---an order of magnitude lower than traditional enterprise alternatives.
+
+From an implementation perspective, the choice of low-code orchestration over traditional backend development proved particularly valuable. Rather than building custom microservices, n8n allowed rapid prototyping and deployment of complex business logic without requiring a dedicated development team. This design pattern is directly applicable to other small-business automation challenges where time-to-market and cost efficiency are critical.
+
+However, the system has clear limitations that merit discussion. First, stockout prediction relies on historical daily sales velocity and assumes demand patterns remain relatively stable. Sudden seasonal spikes or regional disruptions would not be captured without additional contextual inputs. Second, the Weighted Sum Model for supplier scoring is deterministic and does not learn from historical performance feedback. Over time, the weights could be adjusted based on actual delivery outcomes, creating an adaptive feedback loop. Third, the current implementation assumes a single store; scaling to multiple stores would require implementing row-level security and potentially partitioned data schemas in PostgreSQL.
+
+The success of this project suggests that the gap between what is theoretically optimal in supply chain management and what is practically deployed in small businesses is not primarily a technological one---it is an economic one. When tools become affordable and operationally simple, adoption becomes feasible. Future work should explore how similar low-cost integration patterns could serve other aspects of small retail operations: demand forecasting with external market data, dynamic pricing based on competitor analysis, or predictive maintenance for point-of-sale systems.
 
 \section{Future Scope}
 
