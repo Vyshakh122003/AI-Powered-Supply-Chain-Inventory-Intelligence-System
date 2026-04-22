@@ -78,21 +78,19 @@ I built StockSense AI to fill this gap. The system tracks inventory levels and p
 
 \section{Related Work}
 
-Research on inventory systems for small businesses has focused on various technologies: IoT sensors, RFID tags, cloud platforms. Most studies treat enterprise systems as the gold standard. However, uptake of these systems remains low in the small-business segment because enterprise solutions are expensive and difficult to use.
+Researchers have built inventory systems using IoT sensors, RFID tags, and cloud platforms. But adoption remains low among small businesses. Enterprise solutions cost thousands per month and require IT expertise most store owners don't have.
 
-Within the realm of demand forecasting, machine learning approaches have emerged as a key capability. Research demonstrates that machine learning methods can achieve significantly better accuracy than simple baseline approaches such as moving averages. Seasonal factors and promotions also impact demand and must be incorporated for reliable forecasts. This forms a solid technical foundation, yet most implementations require skilled data engineers and infrastructure.
+Machine learning can forecast demand better than simple moving averages. That's well-known. The catch is that implementing machine learning requires skilled engineers and infrastructure that small retailers can't afford.
 
-To address deployment complexity, recent research has explored large language models for business decision support. Large language models are now being applied to procurement and inventory decisions, as they can reduce human bias in reorder selections. However, applying LLMs to real-time operational workflows remains relatively unexplored, particularly in resource-constrained settings.
+Recently, large language models have been proposed for procurement and ordering. They can reduce human bias in decision-making. But I found very little published work on running LLMs in real-time operational workflows with tight cost constraints. That gap is what I wanted to address.
 
-Parallel to AI advances, the infrastructure layer has been democratized through low-code platforms. Low-code workflow platforms like n8n can dramatically reduce implementation time for small businesses, making complex automation accessible without requiring dedicated backend developers. This technological shift opens possibilities for businesses without substantial IT budgets.
+Low-code platforms like n8n changed what's possible. They democratized workflow automation. Before n8n, building an automated ordering system meant hiring developers. Now a single person can orchestrate complex workflows without writing code. This shift is significant for small businesses.
 
-On the supplier management side, multi-criteria evaluation methods have long been established in operations research. Supplier evaluation using methods such as the Weighted Sum Model---considering reliability, price, and delivery speed---has been studied extensively and is well-established in academic literature.
+Supplier scoring is not new. The Weighted Sum Model, which ranks suppliers by price, reliability, and delivery speed, has been used in operations research for decades.
 
-However, these individual components (demand forecasting, LLMs, workflow automation, supplier scoring) are rarely integrated into a coherent system designed specifically for resource-constrained retail environments. Indian retail presents unique constraints: the market is highly fragmented, products and demand patterns vary significantly by region, and few off-the-shelf solutions balance technical sophistication with operational simplicity and affordability.
+What I didn't find was a complete system that ties all these pieces together for small Indian retailers. You can find demand forecasting. You can find supplier scoring. You can find workflow automation. But I couldn't find one affordable, simple tool that integrates all three. Most smart retail solutions emphasize expensive hardware: barcode scanners, RFID readers, network infrastructure. These costs are prohibitive for a kirana store.
 
-Much published work on smart retail emphasizes IoT sensors and hardware-centric solutions, which require significant upfront capital investment---barcode readers, RFID equipment, network infrastructure---that small shops cannot afford. In contrast, software-only orchestration through low-code platforms offers an alternative architectural path: achieving intelligent automation without expensive sensors or dedicated infrastructure investments.
-
-The proposed system builds upon these established research foundations while directly addressing the integration and affordability gap through a low-cost, WhatsApp-first, AI-enhanced solution architecture tailored to small Indian retailers.
+My approach is different. I use software-only automation. No expensive sensors. No dedicated infrastructure. Just cloud services and n8n workflows. I integrated stockout prediction, supplier scoring with the Weighted Sum Model, LLM-based reorder reasoning, and WhatsApp notifications into a single affordable system designed specifically for small Indian stores.
 
 \section{Motivation and Problem Specification}
 
