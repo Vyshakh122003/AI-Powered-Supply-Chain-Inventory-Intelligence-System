@@ -44,7 +44,7 @@
 
 \begin{document}
 
-\title{StockSense AI: An Intelligent Inventory Management and Supplier Decision Support System for Small Retail Stores}
+\title{Building StockSense AI: Low-Cost Inventory Intelligence for Small Indian Retail Stores}
 
 \author{Vyshakh Vijayan%
 \thanks{Vyshakh Vijayan is with the Department of Computer Science and Business Systems, VIT-AP University, Amaravati, Andhra Pradesh, India. Email: vijayan.22bcb7055@vitapstudent.ac.in}%
@@ -113,17 +113,28 @@ The objective of this research is to design and implement a minimal-infrastructu
 
 \subsection{System Architecture}
 
-The system is organized in four layers, each with distinct responsibilities and communicating through well-defined REST interfaces. This layered design ensures modularity, scalability, and ease of testing.
+The system has four layers. Each layer has its own job and talks to the others through REST APIs. This design keeps things modular, scalable, and easy to test.
 
-The \textbf{Frontend Layer} is a React 19 Single Page Application (SPA), built with Vite 8 and styled using Tailwind CSS v4. It provides the shop owner with three primary interfaces: a real-time inventory dashboard displaying current stock levels and health scores, an AI reorder recommendations module for reviewing and confirming system-generated suggestions, and a supplier analytics interface for monitoring supplier performance and cost trends. The frontend communicates with the workflow engine via REST webhooks and interacts directly with Supabase for authentication and real-time data subscriptions.
+The \textbf{Frontend Layer} is a React 19 Single Page Application (SPA), built with Vite 8 and Tailwind CSS v4. The shop owner gets three interfaces: an inventory dashboard showing stock levels and health scores, an AI reorder module for reviewing suggestions, and a supplier analytics page. The frontend talks to the workflow engine via REST webhooks. It connects to Supabase for authentication and real-time updates.
 
-The \textbf{Workflow Engine Layer} is implemented in n8n, an open-source workflow automation platform. Eight specialized workflows orchestrate the entire business logic pipeline. The workflows are structured as follows: \textit{WF-01} (Data Ingestion) normalizes incoming inventory updates and delivery records into the database. \textit{WF-02} (Stockout Calculation) applies the stockout prediction model to compute days-to-stockout for each product. \textit{WF-03} (Alert Filtering) identifies products that have crossed predefined risk thresholds. \textit{WF-04} (Risk Scoring) classifies products into HIGH, MEDIUM, LOW, or UNKNOWN risk categories. \textit{WF-05} (AI Suggestions) invokes the Groq API to generate natural-language reorder recommendations. \textit{WF-06} (Supplier Scoring) computes composite supplier scores using the Weighted Sum Model. \textit{WF-07} (WhatsApp Delivery) formats alerts and sends them to the shop owner via Twilio's WhatsApp Business API. Finally, \textit{WF-08} (Master Orchestrator) is a daily scheduled trigger (8:00 AM IST) that executes workflows WF-01 through WF-07 in strict sequential order, ensuring data consistency across all downstream operations.
+The \textbf{Workflow Engine Layer} runs in n8n, an open-source automation platform. Eight workflows handle the entire business logic. Here's what each one does:
 
-The \textbf{Database Layer} uses Supabase, a managed PostgreSQL service offering real-time database subscriptions via WebSocket. The schema comprises eight relational tables: \textit{Products}, \textit{InventoryTransactions}, \textit{Suppliers}, \textit{StockAlerts}, \textit{ReorderSuggestions}, \textit{SupplierScores}, \textit{DeliveryHistory}, and \textit{SystemLogs}. All tables include a \textit{store\_id} foreign key to support future multi-store expansion. Real-time subscriptions push inventory and alert updates to the frontend the moment they are recorded, eliminating stale data and ensuring the dashboard reflects the current system state.
+\begin{itemize}
+\item \textit{WF-01} (Data Ingestion): Normalizes inventory updates and delivery records into the database.
+\item \textit{WF-02} (Stockout Calculation): Computes days-to-stockout for each product.
+\item \textit{WF-03} (Alert Filtering): Identifies products below reorder threshold.
+\item \textit{WF-04} (Risk Scoring): Classifies products as HIGH, MEDIUM, LOW, or UNKNOWN.
+\item \textit{WF-05} (AI Suggestions): Calls Groq API to generate reorder recommendations.
+\item \textit{WF-06} (Supplier Scoring): Computes supplier scores using Weighted Sum Model.
+\item \textit{WF-07} (WhatsApp Delivery): Sends alerts to the shop owner via Twilio.
+\item \textit{WF-08} (Master Orchestrator): Runs daily at 8:00 AM IST, executes WF-01 through WF-07 in order.
+\end{itemize}
 
-The \textbf{AI/External Services Layer} integrates Groq's hosted Llama 3.1 8B model for reorder reasoning and Twilio's WhatsApp Business API for alert delivery. Workflows WF-05 passes structured product data, current stock levels, and supplier availability to Groq via REST, receiving natural-language rationales for reorder suggestions. These explanations help shop owners understand the reasoning behind each recommendation, building trust in the system. Workflow WF-07 formats alerts with product names, stockout dates, and suggested order quantities, then delivers them via WhatsApp, ensuring the shop owner receives critical notifications in their preferred communication channel.
+The \textbf{Database Layer} uses Supabase (managed PostgreSQL) with real-time subscriptions via WebSocket. The schema has eight tables: Products, InventoryTransactions, Suppliers, StockAlerts, ReorderSuggestions, SupplierScores, DeliveryHistory, and SystemLogs. Every table includes a store\_id field for future multi-store support. When inventory or alerts change, real-time subscriptions push updates to the dashboard instantly. No stale data.
 
-Communication between layers occurs exclusively through HTTP REST interfaces and standard database drivers. This architecture decouples components, allowing independent testing and future replacement of any layer without affecting others.
+The \textbf{AI/External Services Layer} integrates two external APIs. Groq's Llama 3.1 8B model generates reorder reasoning. Twilio's WhatsApp Business API sends alerts. In WF-05, I pass product data, stock levels, and supplier info to Groq. It returns a natural-language explanation of why to reorder. This helps shop owners understand the system's logic. In WF-07, alerts are formatted and sent via WhatsApp. The owner gets critical notifications instantly on their phone.
+
+All layers talk to each other via HTTP REST and standard database drivers. This loose coupling lets me test each layer independently. If I need to swap out Supabase for PostgreSQL, I can do it without touching the workflows. Same with n8n—I can replace it with another platform later.
 
 \begin{figure}[H]
 \centering
@@ -273,7 +284,7 @@ where the numerator is $n_L \cdot 100 + n_M \cdot 70 + n_H \cdot 30 + n_O \cdot 
 The proposed system is developed using a modern, low-cost technology stack carefully selected for accessibility and performance. The frontend application is built using \textbf{React 19} and \textbf{Vite 8}, with responsive styling implemented via \textbf{Tailwind CSS v4}. The backend architecture combines serverless database services with a self-hosted workflow engine, relying on \textbf{Supabase (PostgreSQL)} for robust, real-time database management and authentication. Complex business logic and orchestration are handled entirely by the \textbf{n8n} workflow automation engine. For AI-driven decision-making, the system integrates the \textbf{Groq API} hosting the Llama~3.1 8B model, ensuring high-speed inference for reorder suggestions. Finally, the \textbf{Twilio API} is utilized for automated WhatsApp alert delivery.
 
 \subsection{Dataset}
-The system implementation and evaluation rely on a synthesized dataset structured to mimic the exact operational characteristics of a typical Indian kirana store. The dataset encompasses an initial catalog of high-turnover fast-moving consumer goods (FMCG), including their respective daily sales velocities, reorder thresholds, and current stock levels. Additionally, baseline vendor profiles are synthesized with reliability and delivery speed metrics to test the multi-criteria supplier scoring model. This controlled dataset ensures that edge cases---such as zero sales velocity or immediate stockout conditions---can be systematically validated across the automated AI pipelines.
+I tested the system with a synthesized dataset that mimics a real kirana store. The dataset includes a catalog of six fast-moving consumer goods (FMCG) items with daily sales velocities, reorder thresholds, and current stock levels. I also created five supplier profiles with reliability and delivery speed metrics to test the supplier scoring model. This setup lets me validate edge cases systematically: zero sales days, stockouts, and delivery delays.
 
 \subsection{Database Schema}
 
