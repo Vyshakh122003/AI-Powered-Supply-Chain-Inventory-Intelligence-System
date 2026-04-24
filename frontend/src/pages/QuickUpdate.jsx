@@ -17,11 +17,17 @@ export default function QuickUpdate() {
   const [saved, setSaved] = useState({}) // { product_id: true } for success flash
 
   const fetchProducts = useCallback(async () => {
+    if (!storeProfile?.id) {
+      setProducts([])
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const { data, error } = await supabase
         .from('Products')
         .select('product_id, product_name, category, current_stock, unit, risk_level')
+        .eq('store_id', storeProfile.id)
         .order('product_name', { ascending: true })
       if (error) throw error
       setProducts(data || [])
@@ -30,7 +36,7 @@ export default function QuickUpdate() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [storeProfile])
 
   useEffect(() => {
     fetchProducts()
@@ -86,7 +92,7 @@ export default function QuickUpdate() {
         const quantityChange = newQty - product.current_stock
 
         try {
-          // Direct update to Products table
+          // Direct update to Products table (store-scoped)
           const { error: updateError } = await supabase
             .from('Products')
             .update({
@@ -94,6 +100,7 @@ export default function QuickUpdate() {
               last_manual_update: new Date().toISOString()
             })
             .eq('product_id', productId)
+            .eq('store_id', storeProfile.id)
           
           if (updateError) throw updateError
 
@@ -105,7 +112,7 @@ export default function QuickUpdate() {
             quantity_change: quantityChange,
             new_stock_level: newQty,
             notes: 'Quick Update',
-            store_id: storeProfile?.id || null,
+            store_id: storeProfile.id,
           }).then(({ error }) => { if (error) console.warn('Could not log transaction:', error.message) })
 
           successCount++

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatCurrency, formatDate } from '../lib/helpers'
+import { useAuth } from '../contexts/AuthContext'
 import EmptyState from '../components/EmptyState'
 import toast from 'react-hot-toast'
 import {
@@ -8,6 +9,7 @@ import {
 } from 'lucide-react'
 
 export default function Reorder() {
+  const { storeProfile } = useAuth()
   const [suggestions, setSuggestions] = useState([])
   const [products, setProducts] = useState({})
   const [suppliers, setSuppliers] = useState({})
@@ -16,21 +18,29 @@ export default function Reorder() {
   const [actionId, setActionId] = useState(null)
 
   const fetchData = async () => {
+    if (!storeProfile?.id) {
+      setSuggestions([])
+      setProducts({})
+      setSuppliers({})
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
-      // Fetch suggestions
+      // Fetch suggestions scoped to this store
       const { data: suggestionsData, error } = await supabase
         .from('Reorder Suggestions')
         .select('*')
+        .eq('store_id', storeProfile.id)
         .eq('status', filter)
         .order('suggestion_date', { ascending: false })
 
       if (error) throw error
 
-      // Fetch products and suppliers in parallel for lookups
+      // Fetch products and suppliers in parallel for lookups (store-scoped)
       const [productsRes, suppliersRes] = await Promise.all([
-        supabase.from('Products').select('product_id, product_name, unit_price'),
-        supabase.from('Suppliers').select('supplier_id, supplier_name, phone_number'),
+        supabase.from('Products').select('product_id, product_name, unit_price').eq('store_id', storeProfile.id),
+        supabase.from('Suppliers').select('supplier_id, supplier_name, phone_number').eq('store_id', storeProfile.id),
       ])
 
       // Build lookup maps
@@ -56,7 +66,7 @@ export default function Reorder() {
 
   useEffect(() => {
     fetchData()
-  }, [filter])
+  }, [filter, storeProfile])
 
   // Realtime subscription
   useEffect(() => {
@@ -70,12 +80,14 @@ export default function Reorder() {
   }, [filter])
 
   const handleApprove = async (id) => {
+    if (!storeProfile?.id) return
     setActionId(id)
     try {
       const { error } = await supabase
         .from('Reorder Suggestions')
         .update({ status: 'Approved', approved_at: new Date().toISOString() })
         .eq('id', id)
+        .eq('store_id', storeProfile.id)
       if (error) throw error
       toast.success('Suggestion approved')
       fetchData()
@@ -87,12 +99,14 @@ export default function Reorder() {
   }
 
   const handleDismiss = async (id) => {
+    if (!storeProfile?.id) return
     setActionId(id)
     try {
       const { error } = await supabase
         .from('Reorder Suggestions')
         .update({ status: 'Dismissed' })
         .eq('id', id)
+        .eq('store_id', storeProfile.id)
       if (error) throw error
       toast.success('Suggestion dismissed')
       fetchData()

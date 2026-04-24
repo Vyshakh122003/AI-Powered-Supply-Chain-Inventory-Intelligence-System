@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import {
   FileText, Loader2, RefreshCw, Search,
@@ -17,6 +18,7 @@ const LEVEL_CONFIG = {
 }
 
 export default function Logs() {
+  const { storeProfile } = useAuth()
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -25,11 +27,18 @@ export default function Logs() {
   const [totalCount, setTotalCount] = useState(0)
 
   const fetchLogs = useCallback(async () => {
+    if (!storeProfile?.id) {
+      setLogs([])
+      setTotalCount(0)
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       let query = supabase
         .from('System Logs')
         .select('*', { count: 'exact' })
+        .eq('store_id', storeProfile.id)
         .order('created_at', { ascending: false })
 
       if (search) {
@@ -52,7 +61,7 @@ export default function Logs() {
     } finally {
       setLoading(false)
     }
-  }, [search, levelFilter, page])
+  }, [search, levelFilter, page, storeProfile])
 
   useEffect(() => {
     fetchLogs()
