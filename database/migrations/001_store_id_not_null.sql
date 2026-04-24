@@ -14,13 +14,15 @@
 -- Step 1: Delete orphaned rows with NULL store_id (rows that can never belong to a tenant)
 -- In production, you may want to backfill these instead of deleting.
 
-DELETE FROM "Products" WHERE store_id IS NULL;
-DELETE FROM "Suppliers" WHERE store_id IS NULL;
-DELETE FROM "Stock Alerts" WHERE store_id IS NULL;
+-- Children first (they hold FK references to Products / Suppliers)
 DELETE FROM "Reorder Suggestions" WHERE store_id IS NULL;
+DELETE FROM "Stock Alerts" WHERE store_id IS NULL;
 DELETE FROM "Stock Transactions" WHERE store_id IS NULL;
 DELETE FROM "Daily Snapshots" WHERE store_id IS NULL;
 DELETE FROM "System Logs" WHERE store_id IS NULL;
+-- Parents last
+DELETE FROM "Products" WHERE store_id IS NULL;
+DELETE FROM "Suppliers" WHERE store_id IS NULL;
 
 -- Step 2: Add NOT NULL constraint to store_id on all tenant-scoped tables
 
