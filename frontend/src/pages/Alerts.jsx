@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatDate } from '../lib/helpers'
+import { useAuth } from '../contexts/AuthContext'
 import EmptyState from '../components/EmptyState'
 import toast from 'react-hot-toast'
 import {
@@ -8,6 +9,7 @@ import {
 } from 'lucide-react'
 
 export default function Alerts() {
+  const { storeProfile } = useAuth()
   const [alerts, setAlerts] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('Active')
@@ -15,11 +17,17 @@ export default function Alerts() {
   const [dismissingId, setDismissingId] = useState(null)
 
   const fetchAlerts = async () => {
+    if (!storeProfile?.id) {
+      setAlerts([])
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const { data, error } = await supabase
         .from('Stock Alerts')
         .select('*')
+        .eq('store_id', storeProfile.id)
         .eq('alert_status', filter)
         .order('alert_date', { ascending: false })
 
@@ -32,11 +40,14 @@ export default function Alerts() {
     }
   }
 
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     fetchAlerts()
-  }, [filter])
+  }, [filter, storeProfile])
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   // Realtime subscription
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     const channel = supabase
       .channel('alerts-changes')
@@ -46,14 +57,17 @@ export default function Alerts() {
       .subscribe()
     return () => supabase.removeChannel(channel)
   }, [filter])
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const handleDismiss = async (id) => {
+    if (!storeProfile?.id) return
     setDismissingId(id)
     try {
       const { error } = await supabase
         .from('Stock Alerts')
         .update({ alert_status: 'Dismissed' })
         .eq('id', id)
+        .eq('store_id', storeProfile.id)
       if (error) throw error
       toast.success('Alert dismissed')
       fetchAlerts()
@@ -65,11 +79,13 @@ export default function Alerts() {
   }
 
   const handleDismissAll = async () => {
+    if (!storeProfile?.id) return
     setDismissingAll(true)
     try {
       const { error } = await supabase
         .from('Stock Alerts')
         .update({ alert_status: 'Dismissed' })
+        .eq('store_id', storeProfile.id)
         .eq('alert_status', 'Active')
       if (error) throw error
       toast.success('All alerts dismissed')

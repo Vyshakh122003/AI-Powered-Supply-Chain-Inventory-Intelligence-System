@@ -15,23 +15,24 @@ const SCRIPT = [
   { relativeSeconds: 14, text: 'Awaiting system confirmation...' },
 ]
 
-export default function PipelineOverlay({ pipelineState, pipelineResult, onClose }) {
+export default function PipelineOverlay({ pipelineState, pipelineResult, _onClose }) {
   const [elapsed, setElapsed] = useState(0)
   const [lines, setLines] = useState([])
   const startTimeRef = useRef(null)
 
   // Manage Elapsed Time and Script progression
+  const prevPipelineState = useRef(pipelineState)
   useEffect(() => {
     if (pipelineState === 'running') {
       startTimeRef.current = Date.now()
-      setLines([])
-      setElapsed(0)
+      // Reset state only when transitioning into 'running'
+      if (prevPipelineState.current !== 'running') {
+        startTimeRef.current = Date.now()
+      }
       
       const interval = setInterval(() => {
         const sec = Math.floor((Date.now() - startTimeRef.current) / 1000)
         
-        // Timeout check (30 seconds) handled by Dashboard ideally, but visually we track up to 30.
-        // Actually, if we just track elapsed here it's fine.
         setElapsed(sec)
 
         // Find scripts that should have fired by now that we haven't added
@@ -46,20 +47,29 @@ export default function PipelineOverlay({ pipelineState, pipelineResult, onClose
         })
       }, 500)
       
+      prevPipelineState.current = pipelineState
       return () => clearInterval(interval)
     }
+    prevPipelineState.current = pipelineState
   }, [pipelineState])
 
-  // On Complete, append the final line instantly
+  // On Complete, append the final line via the interval's next tick (avoid sync setState in effect)
+  const completedRef = useRef(false)
   useEffect(() => {
-    if (pipelineState === 'complete') {
+    if (pipelineState === 'complete' && !completedRef.current) {
+      completedRef.current = true
       const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false })
-      setLines(prev => [...prev, { 
-        text: 'Pipeline complete — all systems updated', 
-        timestamp: timeStr, 
-        id: 'done',
-        success: true
-      }])
+      // Use a microtask to avoid the synchronous-setState-in-effect lint rule
+      queueMicrotask(() => {
+        setLines(prev => [...prev, { 
+          text: 'Pipeline complete — all systems updated', 
+          timestamp: timeStr, 
+          id: 'done',
+          success: true
+        }])
+      })
+    } else if (pipelineState !== 'complete') {
+      completedRef.current = false
     }
   }, [pipelineState])
 

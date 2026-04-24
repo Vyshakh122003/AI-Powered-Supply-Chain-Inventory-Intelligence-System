@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { triggerWebhook, WEBHOOKS } from '../lib/config'
+import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import {
   Zap, MessageCircle, AlertTriangle, ShoppingCart, ShieldAlert, PackageX, CheckCircle2, Loader2
@@ -9,15 +10,10 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import RiskBadge from '../components/RiskBadge'
 import PipelineOverlay from '../components/dashboard/PipelineOverlay'
 
-const PIPELINE_STEPS = [
-  'Initializing orchestration...',
-  'Simulating daily stock depletion...',
-  'Calculating stockout risks...',
-  'AI generating reorder plans...',
-  'Updating dashboard health metrics...'
-]
+
 
 export default function Dashboard() {
+  const { storeProfile } = useAuth()
   const [products, setProducts] = useState([])
   const [alertsCount, setAlertsCount] = useState(0)
   const [reordersCount, setReordersCount] = useState(0)
@@ -26,17 +22,26 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   
   const [pipelineState, setPipelineState] = useState('idle') // 'idle', 'running', 'complete'
-  const [currentStep, setCurrentStep] = useState(0)
+
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false)
 
   const fetchData = async () => {
+    if (!storeProfile?.id) {
+      setProducts([])
+      setAlertsCount(0)
+      setReordersCount(0)
+      setSuppliers([])
+      setSnapshots([])
+      setLoading(false)
+      return
+    }
     try {
       const [productsRes, alertsRes, reordersRes, suppliersRes, snapshotsRes] = await Promise.all([
-        supabase.from('Products').select('*'),
-        supabase.from('Stock Alerts').select('id').eq('alert_status', 'Active'),
-        supabase.from('Reorder Suggestions').select('id').eq('status', 'Pending'),
-        supabase.from('Suppliers').select('supplier_id, supplier_name'),
-        supabase.from('Daily Snapshots').select('snapshot_date, health_score').order('snapshot_date', { ascending: true }).limit(30),
+        supabase.from('Products').select('*').eq('store_id', storeProfile.id),
+        supabase.from('Stock Alerts').select('id').eq('alert_status', 'Active').eq('store_id', storeProfile.id),
+        supabase.from('Reorder Suggestions').select('id').eq('status', 'Pending').eq('store_id', storeProfile.id),
+        supabase.from('Suppliers').select('supplier_id, supplier_name').eq('store_id', storeProfile.id),
+        supabase.from('Daily Snapshots').select('snapshot_date, health_score').eq('store_id', storeProfile.id).order('snapshot_date', { ascending: true }).limit(30),
       ])
 
       setProducts(productsRes.data || [])
@@ -51,7 +56,9 @@ export default function Dashboard() {
     }
   }
 
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
+    if (!storeProfile?.id) return
     fetchData()
 
     const channels = [
@@ -67,20 +74,8 @@ export default function Dashboard() {
     ]
 
     return () => channels.forEach(c => supabase.removeChannel(c))
-  }, [])
-
-  // Cycle through fake steps while running
-  useEffect(() => {
-    if (pipelineState === 'running') {
-      const interval = setInterval(() => {
-        setCurrentStep(prev => (prev < PIPELINE_STEPS.length - 1 ? prev + 1 : prev))
-      }, 3500)
-      return () => clearInterval(interval)
-    } else {
-      setCurrentStep(0)
-    }
-  }, [pipelineState])
-
+  }, [storeProfile])
+  /* eslint-enable react-hooks/exhaustive-deps */
   // Clear 'complete' state after 1.5 seconds per user spec
   useEffect(() => {
     if (pipelineState === 'complete') {

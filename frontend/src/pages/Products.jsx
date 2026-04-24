@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { WEBHOOKS, postWebhook } from '../lib/config'
 import { formatCurrency } from '../lib/helpers'
+import { useAuth } from '../contexts/AuthContext'
 import RiskBadge from '../components/RiskBadge'
 import EmptyState from '../components/EmptyState'
 import AddProductModal from '../components/AddProductModal'
@@ -16,6 +17,7 @@ import {
 const PAGE_SIZE = 20
 
 export default function Products() {
+  const { storeProfile } = useAuth()
   const location = useLocation()
   const initialParams = new URLSearchParams(location.search)
   const initialRisk = (() => {
@@ -38,11 +40,18 @@ export default function Products() {
   const [editData, setEditData] = useState({})
 
   const fetchProducts = async () => {
+    if (!storeProfile?.id) {
+      setProducts([])
+      setTotalCount(0)
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       let query = supabase
         .from('Products')
         .select('*', { count: 'exact' })
+        .eq('store_id', storeProfile.id)
         .order('days_to_stockout', { ascending: true, nullsFirst: false })
 
       if (search) {
@@ -77,9 +86,11 @@ export default function Products() {
   const [categories, setCategories] = useState([])
   const [suppliers, setSuppliers] = useState([])
   useEffect(() => {
+    if (!storeProfile?.id) return
     supabase
       .from('Products')
       .select('category')
+      .eq('store_id', storeProfile.id)
       .then(({ data }) => {
         const cats = [...new Set((data || []).map(d => d.category).filter(Boolean))]
         setCategories(cats.sort())
@@ -89,13 +100,16 @@ export default function Products() {
     supabase
       .from('Suppliers')
       .select('supplier_id, supplier_name')
+      .eq('store_id', storeProfile.id)
       .order('supplier_name')
       .then(({ data }) => setSuppliers(data || []))
-  }, [])
+  }, [storeProfile])
 
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     fetchProducts()
-  }, [search, riskFilter, outOfStockOnly, categoryFilter, page])
+  }, [search, riskFilter, outOfStockOnly, categoryFilter, page, storeProfile])
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -118,6 +132,7 @@ export default function Products() {
   }, [search, riskFilter, outOfStockOnly, categoryFilter])
 
   // Realtime subscription
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     const channel = supabase
       .channel('products-changes')
@@ -127,6 +142,7 @@ export default function Products() {
       .subscribe()
     return () => supabase.removeChannel(channel)
   }, [search, riskFilter, outOfStockOnly, categoryFilter, page])
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE)
 
@@ -163,7 +179,7 @@ export default function Products() {
         await new Promise(r => setTimeout(r, 1000))
         await supabase.from('Products').update({
           preferred_supplier_id: editData.preferred_supplier_id || null
-        }).eq('product_id', productId)
+        }).eq('product_id', productId).eq('store_id', storeProfile.id)
       }
 
       toast.success('Product updated')
@@ -183,6 +199,7 @@ export default function Products() {
     if (!window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) return
     try {
       const { error } = await supabase.from('Products').delete().eq('product_id', productId)
+        .eq('store_id', storeProfile.id)
       if (error) throw error
       toast.success('Product deleted')
       fetchProducts()

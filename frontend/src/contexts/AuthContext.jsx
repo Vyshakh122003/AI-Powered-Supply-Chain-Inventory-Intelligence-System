@@ -12,16 +12,64 @@ export function AuthProvider({ children }) {
   // Fetch store profile for the current user
   const fetchStoreProfile = async (userId) => {
     try {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('Store Profiles')
         .select('*')
-        .eq('id', userId)
+        .eq('user_id', userId)
         .maybeSingle()
-      if (!error && data) {
-        setStoreProfile(data)
+
+      if (error) throw error
+
+      // Backward compatibility: older rows used id = user_id without user_id populated
+      if (!data) {
+        const legacy = await supabase
+          .from('Store Profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle()
+
+        if (!legacy.error && legacy.data) {
+          data = legacy.data
+        }
       }
+
+      // If no profile exists (eg. email confirmation flow), create a minimal one
+      if (!data) {
+        const { error: insertError } = await supabase
+          .from('Store Profiles')
+          .insert({
+            id: userId,
+            user_id: userId,
+            store_name: 'My Store',
+            owner_name: '',
+            phone: null,
+            whatsapp_numbers: '',
+            safety_factor: 1.5,
+            default_lead_days: 3,
+            timezone: 'Asia/Kolkata',
+            onboarding_completed: false,
+          })
+
+        // Ignore duplicate-race errors; refetch below
+        if (insertError && !String(insertError.message || '').toLowerCase().includes('duplicate')) {
+          throw insertError
+        }
+
+        const retry = await supabase
+          .from('Store Profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle()
+
+        if (!retry.error && retry.data) {
+          data = retry.data
+        }
+      }
+
+      setStoreProfile(data || null)
     } catch {
       // Profile may not exist yet
+      setStoreProfile(null)
     }
   }
 
@@ -62,21 +110,20 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
 
-    // Create store profile
-    if (data.user) {
-      const storeId = `store_${data.user.id.slice(0, 8)}`
+    // Create store profile only when session exists (email-confirmation flows have no session here)
+    if (data.user && data.session) {
       const { error: profileError } = await supabase
         .from('Store Profiles')
         .insert({
           id: data.user.id,
-          store_id: storeId,
+          user_id: data.user.id,
           store_name: storeName,
-          owner_name: '',
-          phone: '',
-          email: email,
-          whatsapp_numbers: [],
+          owner_name: storeName,
+          phone: null,
+          whatsapp_numbers: '',
           safety_factor: 1.5,
           default_lead_days: 3,
+          timezone: 'Asia/Kolkata',
           onboarding_completed: false,
         })
       if (profileError) console.error('Error creating store profile:', profileError)
@@ -113,6 +160,7 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext)
   if (!context) {

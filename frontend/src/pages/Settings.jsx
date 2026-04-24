@@ -55,8 +55,9 @@ export default function Settings() {
 
   // Cleanup cooldown timers
   useEffect(() => {
+    const timers = cooldownTimers.current
     return () => {
-      Object.values(cooldownTimers.current).forEach(timer => clearInterval(timer))
+      Object.values(timers).forEach(timer => clearInterval(timer))
     }
   }, [])
 
@@ -87,7 +88,7 @@ export default function Settings() {
           alert_time: form.alert_time || '08:00',
           timezone: form.timezone || 'Asia/Kolkata',
         })
-        .eq('id', user.id)
+        .eq('user_id', user.id)
 
       if (error) throw error
       toast.success('Profile saved')

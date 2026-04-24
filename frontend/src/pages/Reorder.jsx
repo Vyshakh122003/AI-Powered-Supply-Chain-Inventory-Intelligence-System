@@ -64,11 +64,14 @@ export default function Reorder() {
     }
   }
 
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     fetchData()
   }, [filter, storeProfile])
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   // Realtime subscription
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     const channel = supabase
       .channel('reorder-changes')
@@ -78,6 +81,7 @@ export default function Reorder() {
       .subscribe()
     return () => supabase.removeChannel(channel)
   }, [filter])
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const handleApprove = async (id) => {
     if (!storeProfile?.id) return
