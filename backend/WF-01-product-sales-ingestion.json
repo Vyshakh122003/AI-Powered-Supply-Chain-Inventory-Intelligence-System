@@ -77,6 +77,10 @@
             {
               "fieldId": "product_id",
               "fieldValue": "={{$node[\"Edit Fields (Data Cleaning)\"].json.product_id}}"
+            },
+            {
+              "fieldId": "store_id",
+              "fieldValue": "={{$node[\"Edit Fields (Data Cleaning)\"].json.store_id}}"
             }
           ]
         }
@@ -291,6 +295,12 @@
               "name": "unit_price",
               "value": "={{$json.body.unit_price}}",
               "type": "number"
+            },
+            {
+              "id": "store-id-field-001",
+              "name": "store_id",
+              "value": "={{$json.body.store_id}}",
+              "type": "string"
             }
           ]
         },

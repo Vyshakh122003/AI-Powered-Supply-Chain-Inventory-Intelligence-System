@@ -138,7 +138,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\nconst context = $('Build AI Prompt').first().json;\n\nif (context.skip) {\n  return [{ json: { message: context.message, saved: 0 } }];\n}\n\nconst atRisk    = context.atRisk;\nconst suppliers = context.suppliers;\n\n// Build a map of product_name ? product_id for fixing AI response\nconst nameToId = {};\natRisk.forEach(p => {\n  nameToId[p.product_name.toLowerCase()] = p.product_id;\n});\n\nlet suggestions = [];\ntry {\n  const content = response.choices[0].message.content;\n  const cleaned = content.trim()\n    .replace(/^```json\\n?/, '')\n    .replace(/^```\\n?/, '')\n    .replace(/\\n?```$/, '');\n  suggestions = JSON.parse(cleaned);\n} catch(e) {\n  console.log('AI parse failed, using fallback:', e.message);\n  suggestions = atRisk.map(p => {\n    const cat = (p.category || '').toLowerCase();\n    const best = suppliers\n      .filter(s => s.supplies_categories && s.supplies_categories.toLowerCase().includes(cat))\n      .sort((a,b) => (b.composite_score||0) - (a.composite_score||0))[0]\n      || suppliers[0];\n    return {\n      product_id: p.product_id,\n      supplier_id: best.supplier_id,\n      suggested_quantity: Math.ceil((p.avg_daily_sales || 1) * 30),\n      reason: `Stock critically low (${p.days_to_stockout} days remaining). Ordering 30-day supply.`\n    };\n  });\n}\n\nconst now = new Date().toISOString();\n\nreturn suggestions.map(s => {\n  // Fix: if AI returned product_name instead of product_id, convert it\n  let pid = s.product_id;\n  if (pid && !pid.includes('_')) {\n    const fixed = nameToId[pid.toLowerCase()];\n    if (fixed) pid = fixed;\n  }\n\n  return {\n    json: {\n      product_id:         pid,\n      supplier_id:        s.supplier_id,\n      suggested_quantity: s.suggested_quantity,\n      reason:             s.reason,\n      status:             'Pending',\n      ai_generated:       true,\n      suggestion_date:    now\n    }\n  };\n});"
+        "jsCode": "const response = $input.first().json;\nconst context = $('Build AI Prompt').first().json;\n\nif (context.skip) {\n  return [{ json: { message: context.message, saved: 0 } }];\n}\n\nconst atRisk    = context.atRisk;\nconst suppliers = context.suppliers;\n\n// Build a map of product_name ? product_id for fixing AI response\nconst nameToId = {};\natRisk.forEach(p => {\n  nameToId[p.product_name.toLowerCase()] = p.product_id;\n});\n\nlet suggestions = [];\ntry {\n  const content = response.choices[0].message.content;\n  const cleaned = content.trim()\n    .replace(/^```json\\n?/, '')\n    .replace(/^```\\n?/, '')\n    .replace(/\\n?```$/, '');\n  suggestions = JSON.parse(cleaned);\n} catch(e) {\n  console.log('AI parse failed, using fallback:', e.message);\n  suggestions = atRisk.map(p => {\n    const cat = (p.category || '').toLowerCase();\n    const best = suppliers\n      .filter(s => s.supplies_categories && s.supplies_categories.toLowerCase().includes(cat))\n      .sort((a,b) => (b.composite_score||0) - (a.composite_score||0))[0]\n      || suppliers[0];\n    return {\n      product_id: p.product_id,\n      supplier_id: best.supplier_id,\n      suggested_quantity: Math.ceil((p.avg_daily_sales || 1) * 30),\n      reason: `Stock critically low (${p.days_to_stockout} days remaining). Ordering 30-day supply.`\n    };\n  });\n}\n\nconst now = new Date().toISOString();\n\nreturn suggestions.map(s => {\n  // Fix: if AI returned product_name instead of product_id, convert it\n  let pid = s.product_id;\n  if (pid && !pid.includes('_')) {\n    const fixed = nameToId[pid.toLowerCase()];\n    if (fixed) pid = fixed;\n  }\n\n  return {\n    json: {\n      product_id:         pid,\n      supplier_id:        s.supplier_id,\n      suggested_quantity: s.suggested_quantity,\n      reason:             s.reason,\n      status:             'Pending',\n      ai_generated:       true,\n      suggestion_date:    now,\n      store_id:           atRisk[0]?.store_id || null\n    }\n  };\n});"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -183,6 +183,10 @@
             {
               "fieldId": "suggestion_date",
               "fieldValue": "={{ $json.suggestion_date }}"
+            },
+            {
+              "fieldId": "store_id",
+              "fieldValue": "={{ $json.store_id }}"
             }
           ]
         }
@@ -222,7 +226,7 @@
     {
       "parameters": {
         "method": "DELETE",
-        "url": "https://xixdkapttirdedoivskx.supabase.co/rest/v1/Reorder%20Suggestions?id=neq.00000000-0000-0000-0000-000000000000",
+        "url": "=https://xixdkapttirdedoivskx.supabase.co/rest/v1/Reorder%20Suggestions?store_id=eq.{{ $('Code in JavaScript').first().json.store_id }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [

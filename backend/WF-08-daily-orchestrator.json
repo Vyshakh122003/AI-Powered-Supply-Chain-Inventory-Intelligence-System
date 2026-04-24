@@ -53,7 +53,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nconst now = new Date();\nconst cutoff = new Date(now - 24 * 60 * 60 * 1000);\n\nreturn items\n  .map(item => {\n    const p = item.json;\n    const lastUpdate = p.last_manual_update ? new Date(p.last_manual_update) : null;\n    if (lastUpdate && lastUpdate > cutoff) return null;\n    const sales = parseFloat(p.avg_daily_sales) || 0;\n    const stock = parseInt(p.current_stock) || 0;\n    const new_stock = Math.max(0, stock - sales);\n    return {\n      json: {\n        product_id: p.product_id,\n        product_name: p.product_name,\n        current_stock: Math.round(new_stock),\n        quantity_change: -Math.min(sales, stock)\n      }\n    };\n  })\n  .filter(Boolean);"
+        "jsCode": "const items = $input.all();\nconst now = new Date();\nconst cutoff = new Date(now - 24 * 60 * 60 * 1000);\n\nreturn items\n  .map(item => {\n    const p = item.json;\n    const lastUpdate = p.last_manual_update ? new Date(p.last_manual_update) : null;\n    if (lastUpdate && lastUpdate > cutoff) return null;\n    const sales = parseFloat(p.avg_daily_sales) || 0;\n    const stock = parseInt(p.current_stock) || 0;\n    const new_stock = Math.max(0, stock - sales);\n    return {\n      json: {\n        product_id: p.product_id,\n        product_name: p.product_name,\n        current_stock: Math.round(new_stock),\n        quantity_change: -Math.min(sales, stock),\n        store_id: p.store_id\n      }\n    };\n  })\n  .filter(Boolean);"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -107,7 +107,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { triggered_at: new Date().toISOString() } }];"
+        "jsCode": "let store_id = null;\ntry { store_id = $('Webhook Trigger').first().json.body.store_id; } catch(e) {}\nif (!store_id) try { store_id = $('Fetch Products').first().json.store_id; } catch(e) {}\nreturn [{ json: { triggered_at: new Date().toISOString(), store_id } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -226,7 +226,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { done: true } }];"
+        "jsCode": "return [{ json: { done: true, store_id: $('Merge').first().json.store_id } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -286,7 +286,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { done: true } }];"
+        "jsCode": "return [{ json: { done: true, store_id: $('Merge').first().json.store_id } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -302,7 +302,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { done: true } }];"
+        "jsCode": "return [{ json: { done: true, store_id: $('Merge').first().json.store_id } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -318,7 +318,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { done: true } }];"
+        "jsCode": "return [{ json: { done: true, store_id: $('Merge').first().json.store_id } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -334,7 +334,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { done: true } }];"
+        "jsCode": "return [{ json: { done: true, store_id: $('Merge').first().json.store_id } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -350,7 +350,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Prepare Stock Transaction records from simulated stock changes\nconst items = $input.all();\nconst now = new Date().toISOString();\n\nreturn items.map(item => {\n  const p = item.json;\n  // Only log if there was actually a change\n  if (p.quantity_change === 0) return null;\n  return {\n    json: {\n      product_id: p.product_id,\n      product_name: p.product_name,\n      transaction_type: 'sale',\n      quantity_change: Math.round(p.quantity_change),\n      new_stock_level: p.current_stock,\n      notes: 'Daily pipeline simulated sales deduction'\n    }\n  };\n}).filter(Boolean);"
+        "jsCode": "// Prepare Stock Transaction records from simulated stock changes\nconst items = $input.all();\nconst now = new Date().toISOString();\n\nreturn items.map(item => {\n  const p = item.json;\n  // Only log if there was actually a change\n  if (p.quantity_change === 0) return null;\n  return {\n    json: {\n      product_id: p.product_id,\n      product_name: p.product_name,\n      transaction_type: 'sale',\n      quantity_change: Math.round(p.quantity_change),\n      new_stock_level: p.current_stock,\n      notes: 'Daily pipeline simulated sales deduction',\n      store_id: p.store_id\n    }\n  };\n}).filter(Boolean);"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -391,6 +391,10 @@
             {
               "fieldId": "notes",
               "fieldValue": "={{ $json.notes }}"
+            },
+            {
+              "fieldId": "store_id",
+              "fieldValue": "={{ $json.store_id }}"
             }
           ]
         }
@@ -414,7 +418,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Compute Daily Snapshot after entire pipeline completes\n// We need to fetch fresh product data and alert/suggestion counts\n// Since we're at the end of the pipeline, we reference earlier nodes\n\nconst products = $('Fetch Products').all().map(i => i.json);\nconst total = products.length;\n\n// Count by risk level (these were updated by WF-04 in the pipeline)\n// But since executeWorkflow doesn't return updated products, use what we have\n// and apply the stock changes from Simulate Stock\nconst simulated = $('Simulate Stock').all().map(i => i.json);\n\nlet oos = 0, high = 0, medium = 0, low = 0;\n\n// Use the simulated stock to estimate risk\nsimulated.forEach(s => {\n  if (s.current_stock === 0) oos++;\n  // Approximate risk from the original products data\n  const orig = products.find(p => p.product_id === s.product_id);\n  if (orig) {\n    const risk = orig.risk_level || 'UNKNOWN';\n    if (risk === 'HIGH') high++;\n    else if (risk === 'MEDIUM') medium++;\n    else if (risk === 'LOW') low++;\n  }\n});\n\n// Health score formula\nconst score = total > 0 ? Math.round(((low * 100) + (medium * 70) + (high * 30) + (oos * 5)) / total) : 50;\nconst health = Math.min(100, Math.max(0, score));\n\nconst today = new Date().toISOString().split('T')[0];\n\nreturn [{\n  json: {\n    snapshot_date: today,\n    health_score: health,\n    total_products: total,\n    oos_count: oos,\n    high_count: high,\n    medium_count: medium,\n    low_count: low,\n    alerts_active: 0,\n    suggestions_pending: 0\n  }\n}];"
+        "jsCode": "// Compute Daily Snapshot after entire pipeline completes\n// We need to fetch fresh product data and alert/suggestion counts\n// Since we're at the end of the pipeline, we reference earlier nodes\n\nconst products = $('Fetch Products').all().map(i => i.json);\nconst total = products.length;\n\n// Count by risk level (these were updated by WF-04 in the pipeline)\n// But since executeWorkflow doesn't return updated products, use what we have\n// and apply the stock changes from Simulate Stock\nconst simulated = $('Simulate Stock').all().map(i => i.json);\n\nlet oos = 0, high = 0, medium = 0, low = 0;\n\n// Use the simulated stock to estimate risk\nsimulated.forEach(s => {\n  if (s.current_stock === 0) oos++;\n  // Approximate risk from the original products data\n  const orig = products.find(p => p.product_id === s.product_id);\n  if (orig) {\n    const risk = orig.risk_level || 'UNKNOWN';\n    if (risk === 'HIGH') high++;\n    else if (risk === 'MEDIUM') medium++;\n    else if (risk === 'LOW') low++;\n  }\n});\n\n// Health score formula\nconst score = total > 0 ? Math.round(((low * 100) + (medium * 70) + (high * 30) + (oos * 5)) / total) : 50;\nconst health = Math.min(100, Math.max(0, score));\n\nconst today = new Date().toISOString().split('T')[0];\n\nreturn [{\n  json: {\n    snapshot_date: today,\n    health_score: health,\n    total_products: total,\n    oos_count: oos,\n    high_count: high,\n    medium_count: medium,\n    low_count: low,\n    alerts_active: 0,\n    suggestions_pending: 0,\n    store_id: $('Merge').first().json.store_id\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -467,6 +471,10 @@
             {
               "fieldId": "suggestions_pending",
               "fieldValue": "={{ $json.suggestions_pending }}"
+            },
+            {
+              "fieldId": "store_id",
+              "fieldValue": "={{ $json.store_id }}"
             }
           ]
         }
@@ -490,7 +498,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Log the pipeline run to System Logs\nconst products = $('Fetch Products').all().length;\nconst now = new Date().toISOString();\n\nreturn [{\n  json: {\n    workflow_name: 'WF-08 Daily Orchestrator',\n    status: 'success',\n    records_processed: products,\n    ran_at: now\n  }\n}];"
+        "jsCode": "// Log the pipeline run to System Logs\nconst products = $('Fetch Products').all().length;\nconst now = new Date().toISOString();\n\nreturn [{\n  json: {\n    workflow_name: 'WF-08 Daily Orchestrator',\n    status: 'success',\n    records_processed: products,\n    ran_at: now,\n    store_id: $('Merge').first().json.store_id\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -523,6 +531,10 @@
             {
               "fieldId": "ran_at",
               "fieldValue": "={{ $json.ran_at }}"
+            },
+            {
+              "fieldId": "store_id",
+              "fieldValue": "={{ $json.store_id }}"
             }
           ]
         }
