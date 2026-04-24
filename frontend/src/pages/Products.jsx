@@ -170,6 +170,7 @@ export default function Products() {
         unit_price: Number(editData.unit_price),
         avg_daily_sales: Number(editData.avg_daily_sales),
         preferred_supplier_id: editData.preferred_supplier_id || null,
+        store_id: storeProfile.id,
       }
       await postWebhook(WEBHOOKS.productIngest, body)
 

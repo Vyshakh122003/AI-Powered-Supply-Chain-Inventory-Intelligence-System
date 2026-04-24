@@ -150,6 +150,7 @@ export default function Deliveries() {
             category: product.category,
             current_stock: newStock,
             unit: product.unit,
+            store_id: storeProfile.id,
           }).catch((err) => console.warn('Webhook fire-and-forget failed (non-critical):', err.message))
 
           successCount++

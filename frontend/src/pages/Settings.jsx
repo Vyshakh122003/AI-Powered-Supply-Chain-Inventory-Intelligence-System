@@ -8,9 +8,9 @@ import {
   MessageCircle, Zap, MapPin, Clock, Store,
 } from 'lucide-react'
 
-const workflowButtons = [
-  { key: 'runWF08', label: 'Run Full Pipeline', icon: Zap, trigger: () => triggerWebhook(WEBHOOKS.runPipeline), description: 'Calculates stockouts, classifies risk, generates alerts, scores suppliers' },
-  { key: 'sendWhatsApp', label: 'Send WhatsApp Alert', icon: MessageCircle, trigger: () => triggerWebhook(WEBHOOKS.sendWhatsApp), description: 'Send current alerts summary to WhatsApp' },
+const getWorkflowButtons = (storeId) => [
+  { key: 'runWF08', label: 'Run Full Pipeline', icon: Zap, trigger: () => triggerWebhook(WEBHOOKS.runPipeline, storeId), description: 'Calculates stockouts, classifies risk, generates alerts, scores suppliers' },
+  { key: 'sendWhatsApp', label: 'Send WhatsApp Alert', icon: MessageCircle, trigger: () => triggerWebhook(WEBHOOKS.sendWhatsApp, storeId), description: 'Send current alerts summary to WhatsApp' },
 ]
 
 export default function Settings() {
@@ -325,7 +325,7 @@ export default function Settings() {
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {workflowButtons.map(wf => {
+          {getWorkflowButtons(storeProfile?.id).map(wf => {
             const isRunning = runningWF[wf.key]
             const cooldownRemaining = cooldowns[wf.key] || 0
             const isDisabled = isRunning || cooldownRemaining > 0

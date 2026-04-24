@@ -25,11 +25,16 @@ const parseError = async (res) => {
 }
 
 /**
- * Fire-and-forget webhook trigger (no request body).
+ * Fire-and-forget webhook trigger with tenant context.
+ * Always sends { store_id } in the POST body so n8n workflows know which store to process.
  * Use for WF-08 (runPipeline) and WF-07 (sendWhatsApp).
  */
-export const triggerWebhook = async (url) => {
-  const res = await fetch(url, { method: 'POST' })
+export const triggerWebhook = async (url, storeId) => {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ store_id: storeId || null }),
+  })
   if (!res.ok) throw new Error(await parseError(res))
   return res
 }

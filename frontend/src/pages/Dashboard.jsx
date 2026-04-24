@@ -132,7 +132,7 @@ export default function Dashboard() {
   const handleRunPipeline = async () => {
     setPipelineState('running')
     try {
-      await triggerWebhook(WEBHOOKS.runPipeline)
+      await triggerWebhook(WEBHOOKS.runPipeline, storeProfile.id)
       // Safety timeout: force success after 20s if DB event never arrives.
       setTimeout(() => {
         setPipelineState((prev) => {
@@ -152,7 +152,7 @@ export default function Dashboard() {
   const handleSendWhatsApp = async () => {
     setSendingWhatsApp(true)
     try {
-      await triggerWebhook(WEBHOOKS.sendWhatsApp)
+      await triggerWebhook(WEBHOOKS.sendWhatsApp, storeProfile.id)
       toast.success('WhatsApp alert sent!')
     } catch {
       toast.error('Failed to send WhatsApp alert')

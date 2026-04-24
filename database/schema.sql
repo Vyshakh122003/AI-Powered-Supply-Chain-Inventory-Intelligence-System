@@ -50,7 +50,7 @@ COMMENT ON TABLE "Store Profiles" IS 'Registered store profiles linked to Supaba
 CREATE TABLE IF NOT EXISTS "Products" (
     id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),     -- Internal row ID
     created_at              TIMESTAMPTZ NOT NULL    DEFAULT now(),                 -- Row creation timestamp
-    product_id              TEXT        NOT NULL UNIQUE,                           -- Business key (e.g. MILK_001, TEA_001)
+    product_id              TEXT        NOT NULL,                                  -- Business key (e.g. MILK_001, TEA_001)
     product_name            TEXT        NOT NULL,                                  -- Human-readable product name
     category                TEXT,                                                  -- Product category (Dairy, Beverages, etc.)
     current_stock           INTEGER     NOT NULL DEFAULT 0,                        -- Current units in stock
@@ -61,14 +61,16 @@ CREATE TABLE IF NOT EXISTS "Products" (
     days_to_stockout        INTEGER,                                               -- Calculated: current_stock / avg_daily_sales
     estimated_stockout_date DATE,                                                  -- Calculated: today + days_to_stockout
     risk_level              TEXT        DEFAULT 'UNKNOWN',                          -- Classification: HIGH, MEDIUM, LOW, UNKNOWN
-    store_id                UUID,                                                  -- FK to "Store Profiles".id (for multi-tenancy)
+    store_id                UUID        NOT NULL,                                  -- FK to "Store Profiles".id (for multi-tenancy)
     unit                    TEXT        DEFAULT 'Pieces',                           -- Unit of measurement (Pieces, Kg, Litres)
     preferred_supplier_id   TEXT,                                                  -- Preferred supplier_id for this product
     safety_factor           NUMERIC     DEFAULT 1.2,                               -- Product-level safety factor override
     expiry_days             INTEGER,                                                -- Shelf life in days (NULL = non-perishable)
     is_seasonal             BOOLEAN     DEFAULT false,                              -- Whether demand is seasonal
     peak_season_months      TEXT,                                                   -- Comma-separated months (e.g. "10,11,12")
-    last_manual_update      TIMESTAMPTZ                                            -- Timestamp of last manual stock update
+    last_manual_update      TIMESTAMPTZ,                                           -- Timestamp of last manual stock update
+
+    CONSTRAINT uq_products_store_product UNIQUE (store_id, product_id)
 );
 
 COMMENT ON TABLE "Products" IS 'Master product catalog with stock levels, sales velocity, risk classification, and stockout projections.';
@@ -89,7 +91,7 @@ CREATE INDEX IF NOT EXISTS idx_products_store_id     ON "Products" (store_id);
 CREATE TABLE IF NOT EXISTS "Suppliers" (
     id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),     -- Internal row ID
     created_at          TIMESTAMPTZ NOT NULL    DEFAULT now(),                 -- Row creation timestamp
-    supplier_id         TEXT        NOT NULL UNIQUE,                           -- Business key (e.g. SUP_001)
+    supplier_id         TEXT        NOT NULL,                                  -- Business key (e.g. SUP_001)
     supplier_name       TEXT        NOT NULL,                                  -- Supplier company name
     contact_person      TEXT,                                                  -- Primary contact name
     phone_number        TEXT,                                                  -- Contact phone (with country code)
@@ -102,7 +104,9 @@ CREATE TABLE IF NOT EXISTS "Suppliers" (
     supplier_grade      TEXT,                                                  -- Letter grade: A (>=80), B (>=60), C (>=40), D (<40)
     score_breakdown     TEXT,                                                  -- Human-readable score explanation from WF-06
     supplies_categories TEXT,                                                  -- JSON array string of categories supplied
-    store_id            UUID                                                   -- FK to "Store Profiles".id (for multi-tenancy)
+    store_id            UUID        NOT NULL,                                  -- FK to "Store Profiles".id (for multi-tenancy)
+
+    CONSTRAINT uq_suppliers_store_supplier UNIQUE (store_id, supplier_id)
 );
 
 COMMENT ON TABLE "Suppliers" IS 'Supplier directory with reliability/price scoring and grade classification.';
@@ -129,11 +133,11 @@ CREATE TABLE IF NOT EXISTS "Stock Alerts" (
     current_stock       INTEGER,                                               -- Stock level at time of alert
     reorder_threshold   INTEGER     NOT NULL,                                 -- Threshold that was breached
     alert_status        TEXT        NOT NULL DEFAULT 'Active',                -- Active | Dismissed
-    store_id            UUID,                                                  -- FK to "Store Profiles".id
+    store_id            UUID        NOT NULL,                                  -- FK to "Store Profiles".id
     last_alerted_at     TIMESTAMPTZ,                                          -- Last time a WhatsApp notification was sent
 
     CONSTRAINT fk_stock_alerts_product
-        FOREIGN KEY (product_id) REFERENCES "Products" (product_id)
+        FOREIGN KEY (store_id, product_id) REFERENCES "Products" (store_id, product_id)
         ON DELETE CASCADE
 );
 
@@ -161,12 +165,12 @@ CREATE TABLE IF NOT EXISTS "Reorder Suggestions" (
     reason              TEXT        NOT NULL,                                  -- AI-generated explanation for the suggestion
     status              TEXT        NOT NULL DEFAULT 'Pending',               -- Pending | Approved | Dismissed
     suggestion_date     TIMESTAMPTZ NOT NULL,                                 -- When the suggestion was generated
-    store_id            UUID,                                                  -- FK to "Store Profiles".id
+    store_id            UUID        NOT NULL,                                  -- FK to "Store Profiles".id
     ai_generated        BOOLEAN     DEFAULT true,                             -- Whether this was AI-generated or manual
     approved_at         TIMESTAMPTZ,                                          -- Timestamp when approved by user
 
     CONSTRAINT fk_reorder_suggestions_supplier
-        FOREIGN KEY (supplier_id) REFERENCES "Suppliers" (supplier_id)
+        FOREIGN KEY (store_id, supplier_id) REFERENCES "Suppliers" (store_id, supplier_id)
         ON DELETE CASCADE
 );
 
@@ -187,7 +191,7 @@ CREATE INDEX IF NOT EXISTS idx_reorder_store_id     ON "Reorder Suggestions" (st
 CREATE TABLE IF NOT EXISTS "Stock Transactions" (
     id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),     -- Internal row ID
     created_at          TIMESTAMPTZ NOT NULL    DEFAULT now(),                 -- Row creation timestamp
-    store_id            UUID,                                                  -- FK to "Store Profiles".id
+    store_id            UUID        NOT NULL,                                  -- FK to "Store Profiles".id
     product_id          TEXT,                                                  -- FK to "Products".product_id
     product_name        TEXT        NOT NULL,                                  -- Denormalized for display
     transaction_type    TEXT        NOT NULL,                                  -- sale | restock | adjustment | delivery | manual_update
@@ -214,7 +218,7 @@ CREATE INDEX IF NOT EXISTS idx_stock_txn_created_at   ON "Stock Transactions" (c
 CREATE TABLE IF NOT EXISTS "Daily Snapshots" (
     id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),     -- Internal row ID
     created_at          TIMESTAMPTZ NOT NULL    DEFAULT now(),                 -- Row creation timestamp
-    store_id            UUID,                                                  -- FK to "Store Profiles".id
+    store_id            UUID        NOT NULL,                                  -- FK to "Store Profiles".id
     snapshot_date       DATE        NOT NULL,                                  -- The date this snapshot represents
     health_score        NUMERIC     NOT NULL,                                  -- Inventory health score 0–100
     total_products      INTEGER     NOT NULL DEFAULT 0,                       -- Total SKUs tracked
@@ -242,7 +246,7 @@ CREATE INDEX IF NOT EXISTS idx_snapshots_store_id  ON "Daily Snapshots" (store_i
 CREATE TABLE IF NOT EXISTS "System Logs" (
     id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),     -- Internal row ID
     created_at          TIMESTAMPTZ NOT NULL    DEFAULT now(),                 -- Row creation timestamp
-    store_id            UUID,                                                  -- FK to "Store Profiles".id
+    store_id            UUID        NOT NULL,                                  -- FK to "Store Profiles".id
     workflow_name       TEXT        NOT NULL,                                  -- Workflow identifier (e.g. "WF-08 Daily Orchestrator")
     status              TEXT        NOT NULL,                                  -- success | error | warning
     records_processed   INTEGER,                                               -- Number of records processed in this run
@@ -256,6 +260,167 @@ COMMENT ON TABLE "System Logs" IS 'Execution log for all n8n workflow runs for m
 CREATE INDEX IF NOT EXISTS idx_system_logs_workflow  ON "System Logs" (workflow_name);
 CREATE INDEX IF NOT EXISTS idx_system_logs_status    ON "System Logs" (status);
 CREATE INDEX IF NOT EXISTS idx_system_logs_store_id  ON "System Logs" (store_id);
+
+
+-- =============================================================================
+-- Row-Level Security (RLS)
+-- =============================================================================
+-- Multi-tenant isolation model:
+-- - A user can access only their own "Store Profiles" row (user_id = auth.uid()).
+-- - For all store-scoped tables, access is allowed only when row.store_id belongs
+--   to the authenticated user's store profile.
+-- =============================================================================
+
+-- Enable RLS on all application tables
+ALTER TABLE "Store Profiles" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Products" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Suppliers" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Stock Alerts" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Reorder Suggestions" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Stock Transactions" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Daily Snapshots" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "System Logs" ENABLE ROW LEVEL SECURITY;
+
+-- Store Profiles policies
+DROP POLICY IF EXISTS "store_profiles_select_own" ON "Store Profiles";
+CREATE POLICY "store_profiles_select_own"
+ON "Store Profiles"
+FOR SELECT
+USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "store_profiles_insert_own" ON "Store Profiles";
+CREATE POLICY "store_profiles_insert_own"
+ON "Store Profiles"
+FOR INSERT
+WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "store_profiles_update_own" ON "Store Profiles";
+CREATE POLICY "store_profiles_update_own"
+ON "Store Profiles"
+FOR UPDATE
+USING (user_id = auth.uid())
+WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "store_profiles_delete_own" ON "Store Profiles";
+CREATE POLICY "store_profiles_delete_own"
+ON "Store Profiles"
+FOR DELETE
+USING (user_id = auth.uid());
+
+-- Shared tenant predicate for store-scoped tables
+-- row.store_id must match the authenticated user's store profile id
+
+-- Products policies
+DROP POLICY IF EXISTS "products_store_isolation" ON "Products";
+CREATE POLICY "products_store_isolation"
+ON "Products"
+FOR ALL
+USING (
+  store_id IN (
+    SELECT id FROM "Store Profiles" WHERE user_id = auth.uid()
+  )
+)
+WITH CHECK (
+  store_id IN (
+    SELECT id FROM "Store Profiles" WHERE user_id = auth.uid()
+  )
+);
+
+-- Suppliers policies
+DROP POLICY IF EXISTS "suppliers_store_isolation" ON "Suppliers";
+CREATE POLICY "suppliers_store_isolation"
+ON "Suppliers"
+FOR ALL
+USING (
+  store_id IN (
+    SELECT id FROM "Store Profiles" WHERE user_id = auth.uid()
+  )
+)
+WITH CHECK (
+  store_id IN (
+    SELECT id FROM "Store Profiles" WHERE user_id = auth.uid()
+  )
+);
+
+-- Stock Alerts policies
+DROP POLICY IF EXISTS "stock_alerts_store_isolation" ON "Stock Alerts";
+CREATE POLICY "stock_alerts_store_isolation"
+ON "Stock Alerts"
+FOR ALL
+USING (
+  store_id IN (
+    SELECT id FROM "Store Profiles" WHERE user_id = auth.uid()
+  )
+)
+WITH CHECK (
+  store_id IN (
+    SELECT id FROM "Store Profiles" WHERE user_id = auth.uid()
+  )
+);
+
+-- Reorder Suggestions policies
+DROP POLICY IF EXISTS "reorder_suggestions_store_isolation" ON "Reorder Suggestions";
+CREATE POLICY "reorder_suggestions_store_isolation"
+ON "Reorder Suggestions"
+FOR ALL
+USING (
+  store_id IN (
+    SELECT id FROM "Store Profiles" WHERE user_id = auth.uid()
+  )
+)
+WITH CHECK (
+  store_id IN (
+    SELECT id FROM "Store Profiles" WHERE user_id = auth.uid()
+  )
+);
+
+-- Stock Transactions policies
+DROP POLICY IF EXISTS "stock_transactions_store_isolation" ON "Stock Transactions";
+CREATE POLICY "stock_transactions_store_isolation"
+ON "Stock Transactions"
+FOR ALL
+USING (
+  store_id IN (
+    SELECT id FROM "Store Profiles" WHERE user_id = auth.uid()
+  )
+)
+WITH CHECK (
+  store_id IN (
+    SELECT id FROM "Store Profiles" WHERE user_id = auth.uid()
+  )
+);
+
+-- Daily Snapshots policies
+DROP POLICY IF EXISTS "daily_snapshots_store_isolation" ON "Daily Snapshots";
+CREATE POLICY "daily_snapshots_store_isolation"
+ON "Daily Snapshots"
+FOR ALL
+USING (
+  store_id IN (
+    SELECT id FROM "Store Profiles" WHERE user_id = auth.uid()
+  )
+)
+WITH CHECK (
+  store_id IN (
+    SELECT id FROM "Store Profiles" WHERE user_id = auth.uid()
+  )
+);
+
+-- System Logs policies
+DROP POLICY IF EXISTS "system_logs_store_isolation" ON "System Logs";
+CREATE POLICY "system_logs_store_isolation"
+ON "System Logs"
+FOR ALL
+USING (
+  store_id IN (
+    SELECT id FROM "Store Profiles" WHERE user_id = auth.uid()
+  )
+)
+WITH CHECK (
+  store_id IN (
+    SELECT id FROM "Store Profiles" WHERE user_id = auth.uid()
+  )
+);
 
 
 -- =============================================================================
