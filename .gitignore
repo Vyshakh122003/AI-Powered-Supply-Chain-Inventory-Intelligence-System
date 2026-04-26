@@ -37,5 +37,5 @@ nul
 HANDOFF.md
 HANDOFF (Antigravity).md
 
-# Backend workflow with secrets (Twilio SID)
-backend/WF-07-whatsapp-alert-sender.json
+# Backend workflow secrets are REDACTED in exports — safe to track
+.gstack/

@@ -1,0 +1,560 @@
+{
+  "updatedAt": "2026-03-15T07:05:07.698Z",
+  "createdAt": "2026-03-12T09:53:17.564Z",
+  "id": "C_-48mOxTzD9s-2H8UBT8",
+  "name": "WF-07 WhatsApp Alert Sender",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "send-whatsapp",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -448,
+        -32
+      ],
+      "id": "d38f89f2-1eb1-441c-b75d-a51e30cbc6e6",
+      "name": "Webhook Trigger",
+      "webhookId": "65a84497-fe57-4b39-a986-2c58d5bed335",
+      "notesInFlow": true,
+      "notes": "POST webhook entry point at /send-whatsapp.\nCalled by WF-08 Daily Orchestrator or manually from the frontend Settings page."
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "Stock Alerts",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "alert_status",
+              "condition": "eq",
+              "keyValue": "Active"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        -32
+      ],
+      "id": "bb188f06-6aed-4f0f-aebe-948e22f75bb8",
+      "name": "Fetch Active Alerts",
+      "notesInFlow": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "cTHIcrIVh1Uh0w7G",
+          "name": "Supabase account"
+        }
+      },
+      "notes": "Queries the Stock Alerts table for rows where alert_status = 'Active'.\nReturns product names, stock levels, and last alert timestamps."
+    },
+    {
+      "parameters": {
+        "jsCode": "const alerts = $input.all().map(i => i.json);\n\nif (alerts.length === 0) {\n  return [{ json: { skip: true, message: 'No active alerts' } }];\n}\n\n// Sort by urgency — lowest stock first\nalerts.sort((a, b) => (a.current_stock || 0) - (b.current_stock || 0));\n\n// Anti-spam: filter out alerts sent within last 24 hours\nconst now = new Date();\nconst alertsToSend = alerts.filter(a => {\n  if (!a.last_alerted_at) return true;\n  const lastSent = new Date(a.last_alerted_at);\n  const hoursSince = (now - lastSent) / (1000 * 60 * 60);\n  return hoursSince >= 24;\n});\n\nif (alertsToSend.length === 0) {\n  return [{ json: { skip: true, message: 'All alerts sent within last 24 hours' } }];\n}\n\n// Build message lines\nconst lines = alertsToSend.map(a => {\n  if (a.current_stock === 0) {\n    return `• ${a.product_name} — OUT OF STOCK (0 units)`;\n  }\n  return `• ${a.product_name} — ${a.current_stock} units left`;\n});\n\nconst message = `🔴 *StockSense Alert*\\n\\n` +\n  `${alertsToSend.length} product(s) need urgent attention:\\n\\n` +\n  lines.join('\\n') +\n  `\\n\\nAI reorder suggestions are ready on your dashboard.`;\n\nreturn [{\n  json: {\n    message,\n    alertIds: alertsToSend.map(a => a.id),\n    to: 'whatsapp:+REDACTED_STORE_PHONE',\n    from: 'whatsapp:+REDACTED_TWILIO_PHONE'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        -32
+      ],
+      "id": "89eeea4b-e0c0-4da1-a756-b9d59b8ed6f6",
+      "name": "Build WhatsApp Message",
+      "notesInFlow": true,
+      "notes": "Builds a formatted WhatsApp alert message.\n\nIncludes anti-spam logic:\n- Filters out alerts already sent within the last 24 hours\n- Sorts by urgency (lowest stock first)\n- Formats product lines with stock levels\n- Returns skip=true if no alerts need sending."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twilio.com/2010-04-01/Accounts/REDACTED_TWILIO_ACCOUNT_SID/Messages.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "twilioApi",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "To",
+              "value": "={{ $json.to }}"
+            },
+            {
+              "name": "Body",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "From",
+              "value": "=whatsapp:+14155238886"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        176,
+        -32
+      ],
+      "id": "f813bcee-589b-4aa4-9e38-ac5a166e449a",
+      "name": "Send WhatsApp via Twilio",
+      "notesInFlow": true,
+      "credentials": {
+        "twilioApi": {
+          "id": "5H4e5JnuH9F3B605",
+          "name": "Twilio account"
+        }
+      },
+      "notes": "HTTP POST request to the Twilio WhatsApp API.\nSends the formatted alert message to the store owner's registered WhatsApp number.\nUses Twilio sandbox or production credentials."
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $('Build WhatsApp Message').first().json;\n\nif (input.skip) {\n  return [{ json: { message: input.message } }];\n}\n\nreturn input.alertIds.map(id => ({\n  json: { id, last_alerted_at: new Date().toISOString() }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        -32
+      ],
+      "id": "576c16d3-9d27-4c67-b179-8878f0411dce",
+      "name": "Update last_alerted_at",
+      "notesInFlow": true,
+      "notes": "Updates the last_alerted_at timestamp on each alert that was successfully sent.\nThis powers the 24-hour anti-spam filter on subsequent runs."
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -448,
+        -224
+      ],
+      "id": "00527ee6-f973-420b-8542-33bbfc9ad71d",
+      "name": "When Executed by Another Workflow",
+      "notesInFlow": true,
+      "notes": "Sub-workflow entry point.\nCalled by WF-08 Daily Orchestrator at the end of the daily pipeline."
+    },
+    {
+      "parameters": {
+        "content": "## WF-07: WhatsApp Alert Sender\n\n**Triggers:** POST webhook `/send-whatsapp` or sub-workflow call from WF-08\n**External API:** Twilio WhatsApp Messaging API\n\n**Purpose:** Notifies the store owner via WhatsApp when products need urgent restocking attention.\n\n**Flow:**\n1. Fetch all active stock alerts from Supabase\n2. Apply 24-hour anti-spam filter\n3. Sort by urgency (lowest stock first)\n4. Build formatted WhatsApp message\n5. Send via Twilio API\n6. Update alert timestamps to prevent re-sending",
+        "height": 404,
+        "width": 560
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -944,
+        -640
+      ],
+      "id": "sticky-wf07-overview",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Anti-Spam Protection\n\nAlerts sent within the last 24 hours are automatically filtered out to prevent notification fatigue.\nThe `last_alerted_at` timestamp is updated after each successful send.",
+        "height": 204,
+        "width": 340
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        -544
+      ],
+      "id": "sticky-wf07-antispam",
+      "name": "Sticky Note1"
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Active Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Active Alerts": {
+      "main": [
+        [
+          {
+            "node": "Build WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp via Twilio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp via Twilio": {
+      "main": [
+        [
+          {
+            "node": "Update last_alerted_at",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Fetch Active Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "6e8b19dd-aae9-4da9-9f3e-426790176ad1",
+  "activeVersionId": "244098cb-9464-4733-9647-54fe9dbe8da2",
+  "versionCounter": 73,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-03-12T09:53:17.564Z",
+      "createdAt": "2026-03-12T09:53:17.564Z",
+      "role": "workflow:owner",
+      "workflowId": "C_-48mOxTzD9s-2H8UBT8",
+      "projectId": "ilqDzvKBCaYiT4Cg",
+      "project": {
+        "updatedAt": "2025-07-08T20:13:53.401Z",
+        "createdAt": "2025-07-08T19:51:26.738Z",
+        "id": "ilqDzvKBCaYiT4Cg",
+        "name": "Vyshakh Vijayan <vyshakhvponnachat@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
+        "projectRelations": [
+          {
+            "updatedAt": "2025-07-08T19:51:26.738Z",
+            "createdAt": "2025-07-08T19:51:26.738Z",
+            "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
+            "projectId": "ilqDzvKBCaYiT4Cg",
+            "user": {
+              "updatedAt": "2026-03-17T06:13:54.573Z",
+              "createdAt": "2025-07-08T19:51:25.310Z",
+              "id": "9e48b6f1-8e64-4176-8e7a-011246de5dea",
+              "email": "vyshakhvponnachat@gmail.com",
+              "firstName": "Vyshakh",
+              "lastName": "Vijayan",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2025-07-08T20:14:28.526Z",
+                "personalization_survey_n8n_version": "1.100.1",
+                "automationGoalDevops": [
+                  "other"
+                ],
+                "automationGoalDevopsOther": "Projects",
+                "companySize": "personalUser",
+                "companyType": "education",
+                "role": "engineering",
+                "reportedSource": "google"
+              },
+              "settings": {
+                "userActivated": true,
+                "easyAIWorkflowOnboarded": true,
+                "firstSuccessfulWorkflowId": "JgDNR0tDWj0Z_DVfHB4Fo",
+                "userActivatedAt": 1773375331682,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1773728030505
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-03-17",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-03-15T07:00:59.317Z",
+    "createdAt": "2026-03-15T07:00:59.317Z",
+    "versionId": "244098cb-9464-4733-9647-54fe9dbe8da2",
+    "workflowId": "C_-48mOxTzD9s-2H8UBT8",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "send-whatsapp",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -448,
+          -32
+        ],
+        "id": "d38f89f2-1eb1-441c-b75d-a51e30cbc6e6",
+        "name": "Webhook Trigger",
+        "webhookId": "65a84497-fe57-4b39-a986-2c58d5bed335",
+        "notes": "POST webhook entry point at /send-whatsapp.\nCalled by WF-08 Daily Orchestrator or manually from the frontend Settings page.",
+        "notesInFlow": true
+      },
+      {
+        "parameters": {
+          "operation": "getAll",
+          "tableId": "Stock Alerts",
+          "returnAll": true,
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "alert_status",
+                "condition": "eq",
+                "keyValue": "Active"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          -240,
+          -32
+        ],
+        "id": "bb188f06-6aed-4f0f-aebe-948e22f75bb8",
+        "name": "Fetch Active Alerts",
+        "credentials": {
+          "supabaseApi": {
+            "id": "cTHIcrIVh1Uh0w7G",
+            "name": "Supabase account"
+          }
+        },
+        "notes": "Queries the Stock Alerts table for rows where alert_status = 'Active'.\nReturns product names, stock levels, and last alert timestamps.",
+        "notesInFlow": true
+      },
+      {
+        "parameters": {
+          "jsCode": "const alerts = $input.all().map(i => i.json);\n\nif (alerts.length === 0) {\n  return [{ json: { skip: true, message: 'No active alerts' } }];\n}\n\n// Sort by urgency — lowest stock first\nalerts.sort((a, b) => (a.current_stock || 0) - (b.current_stock || 0));\n\n// Anti-spam: filter out alerts sent within last 24 hours\nconst now = new Date();\nconst alertsToSend = alerts.filter(a => {\n  if (!a.last_alerted_at) return true;\n  const lastSent = new Date(a.last_alerted_at);\n  const hoursSince = (now - lastSent) / (1000 * 60 * 60);\n  return hoursSince >= 24;\n});\n\nif (alertsToSend.length === 0) {\n  return [{ json: { skip: true, message: 'All alerts sent within last 24 hours' } }];\n}\n\n// Build message lines\nconst lines = alertsToSend.map(a => {\n  if (a.current_stock === 0) {\n    return `• ${a.product_name} — OUT OF STOCK (0 units)`;\n  }\n  return `• ${a.product_name} — ${a.current_stock} units left`;\n});\n\nconst message = `🔴 *StockSense Alert*\\n\\n` +\n  `${alertsToSend.length} product(s) need urgent attention:\\n\\n` +\n  lines.join('\\n') +\n  `\\n\\nAI reorder suggestions are ready on your dashboard.`;\n\nreturn [{\n  json: {\n    message,\n    alertIds: alertsToSend.map(a => a.id),\n    to: 'whatsapp:+917994596076',\n    from: 'whatsapp:+12702798776'\n  }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -32,
+          -32
+        ],
+        "id": "89eeea4b-e0c0-4da1-a756-b9d59b8ed6f6",
+        "name": "Build WhatsApp Message",
+        "notes": "Builds a formatted WhatsApp alert message.\n\nIncludes anti-spam logic:\n- Filters out alerts already sent within the last 24 hours\n- Sorts by urgency (lowest stock first)\n- Formats product lines with stock levels\n- Returns skip=true if no alerts need sending.",
+        "notesInFlow": true
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.twilio.com/2010-04-01/Accounts/REDACTED_TWILIO_ACCOUNT_SID/Messages.json",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "twilioApi",
+          "sendBody": true,
+          "contentType": "form-urlencoded",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "To",
+                "value": "={{ $json.to }}"
+              },
+              {
+                "name": "Body",
+                "value": "={{ $json.message }}"
+              },
+              {
+                "name": "From",
+                "value": "=whatsapp:+14155238886"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          176,
+          -32
+        ],
+        "id": "f813bcee-589b-4aa4-9e38-ac5a166e449a",
+        "name": "Send WhatsApp via Twilio",
+        "credentials": {
+          "twilioApi": {
+            "id": "5H4e5JnuH9F3B605",
+            "name": "Twilio account"
+          }
+        },
+        "notes": "HTTP POST request to the Twilio WhatsApp API.\nSends the formatted alert message to the store owner's registered WhatsApp number.\nUses Twilio sandbox or production credentials.",
+        "notesInFlow": true
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $('Build WhatsApp Message').first().json;\n\nif (input.skip) {\n  return [{ json: { message: input.message } }];\n}\n\nreturn input.alertIds.map(id => ({\n  json: { id, last_alerted_at: new Date().toISOString() }\n}));"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          384,
+          -32
+        ],
+        "id": "576c16d3-9d27-4c67-b179-8878f0411dce",
+        "name": "Update last_alerted_at",
+        "notes": "Updates the last_alerted_at timestamp on each alert that was successfully sent.\nThis powers the 24-hour anti-spam filter on subsequent runs.",
+        "notesInFlow": true
+      },
+      {
+        "parameters": {
+          "inputSource": "passthrough"
+        },
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          -448,
+          -224
+        ],
+        "id": "00527ee6-f973-420b-8542-33bbfc9ad71d",
+        "name": "When Executed by Another Workflow",
+        "notes": "Sub-workflow entry point.\nCalled by WF-08 Daily Orchestrator at the end of the daily pipeline.",
+        "notesInFlow": true
+      },
+      {
+        "parameters": {
+          "width": 560,
+          "height": 260,
+          "content": "## WF-07: WhatsApp Alert Sender\n\n**Triggers:** POST webhook `/send-whatsapp` or sub-workflow call from WF-08\n**External API:** Twilio WhatsApp Messaging API\n\n**Purpose:** Notifies the store owner via WhatsApp when products need urgent restocking attention.\n\n**Flow:**\n1. Fetch all active stock alerts from Supabase\n2. Apply 24-hour anti-spam filter\n3. Sort by urgency (lowest stock first)\n4. Build formatted WhatsApp message\n5. Send via Twilio API\n6. Update alert timestamps to prevent re-sending"
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          -480,
+          -500
+        ],
+        "id": "sticky-wf07-overview",
+        "name": "Sticky Note"
+      },
+      {
+        "parameters": {
+          "width": 340,
+          "height": 140,
+          "content": "## Anti-Spam Protection\n\nAlerts sent within the last 24 hours are automatically filtered out to prevent notification fatigue.\nThe `last_alerted_at` timestamp is updated after each successful send."
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          -60,
+          -280
+        ],
+        "id": "sticky-wf07-antispam",
+        "name": "Sticky Note1"
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [
+          [
+            {
+              "node": "Fetch Active Alerts",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Fetch Active Alerts": {
+        "main": [
+          [
+            {
+              "node": "Build WhatsApp Message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build WhatsApp Message": {
+        "main": [
+          [
+            {
+              "node": "Send WhatsApp via Twilio",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Send WhatsApp via Twilio": {
+        "main": [
+          [
+            {
+              "node": "Update last_alerted_at",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "When Executed by Another Workflow": {
+        "main": [
+          [
+            {
+              "node": "Fetch Active Alerts",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Vyshakh Vijayan",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-15T07:00:59.432Z",
+        "id": 32,
+        "workflowId": "C_-48mOxTzD9s-2H8UBT8",
+        "versionId": "244098cb-9464-4733-9647-54fe9dbe8da2",
+        "event": "activated",
+        "userId": "9e48b6f1-8e64-4176-8e7a-011246de5dea"
+      }
+    ]
+  }
+}
