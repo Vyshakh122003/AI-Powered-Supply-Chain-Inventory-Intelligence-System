@@ -75,7 +75,7 @@ export default function Reorder() {
   useEffect(() => {
     const channel = supabase
       .channel('reorder-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'Reorder Suggestions' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Reorder Suggestions', filter: `store_id=eq.${storeProfile?.id}` }, () => {
         fetchData()
       })
       .subscribe()

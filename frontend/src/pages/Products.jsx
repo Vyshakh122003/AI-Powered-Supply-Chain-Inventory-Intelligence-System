@@ -136,7 +136,7 @@ export default function Products() {
   useEffect(() => {
     const channel = supabase
       .channel('products-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'Products' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Products', filter: `store_id=eq.${storeProfile?.id}` }, () => {
         fetchProducts()
       })
       .subscribe()

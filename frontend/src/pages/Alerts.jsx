@@ -51,7 +51,7 @@ export default function Alerts() {
   useEffect(() => {
     const channel = supabase
       .channel('alerts-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'Stock Alerts' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Stock Alerts', filter: `store_id=eq.${storeProfile?.id}` }, () => {
         fetchAlerts()
       })
       .subscribe()

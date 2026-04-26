@@ -57,7 +57,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/dashboard-preview" element={<Dashboard />} />
+
 
           {/* Auth-required but no sidebar layout */}
           <Route path="/onboarding" element={<Onboarding />} />
@@ -78,7 +78,7 @@ function App() {
 
             <Route path="/settings" element={<Settings />} />
             <Route path="/quick-update" element={<QuickUpdate />} />
-            {/* <Route path="/deliveries" element={<Deliveries />} /> */}
+            <Route path="/deliveries" element={<Deliveries />} />
             <Route path="/logs" element={<Logs />} />
           </Route>
 

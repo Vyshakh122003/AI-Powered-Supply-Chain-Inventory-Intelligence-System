@@ -75,7 +75,7 @@ export default function Logs() {
   useEffect(() => {
     const channel = supabase
       .channel('logs-changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'System Logs' }, () => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'System Logs', filter: `store_id=eq.${storeProfile?.id}` }, () => {
         fetchLogs()
       })
       .subscribe()

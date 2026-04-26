@@ -62,10 +62,10 @@ export default function Dashboard() {
     fetchData()
 
     const channels = [
-      supabase.channel('dash-products').on('postgres_changes', { event: '*', schema: 'public', table: 'Products' }, () => fetchData()).subscribe(),
-      supabase.channel('dash-alerts').on('postgres_changes', { event: '*', schema: 'public', table: 'Stock Alerts' }, () => fetchData()).subscribe(),
-      supabase.channel('dash-reorders').on('postgres_changes', { event: '*', schema: 'public', table: 'Reorder Suggestions' }, () => fetchData()).subscribe(),
-      supabase.channel('dash-logs').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'System Logs' }, (payload) => {
+      supabase.channel('dash-products').on('postgres_changes', { event: '*', schema: 'public', table: 'Products', filter: `store_id=eq.${storeProfile.id}` }, () => fetchData()).subscribe(),
+      supabase.channel('dash-alerts').on('postgres_changes', { event: '*', schema: 'public', table: 'Stock Alerts', filter: `store_id=eq.${storeProfile.id}` }, () => fetchData()).subscribe(),
+      supabase.channel('dash-reorders').on('postgres_changes', { event: '*', schema: 'public', table: 'Reorder Suggestions', filter: `store_id=eq.${storeProfile.id}` }, () => fetchData()).subscribe(),
+      supabase.channel('dash-logs').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'System Logs', filter: `store_id=eq.${storeProfile.id}` }, (payload) => {
         if (payload.new && payload.new.workflow_name === 'WF-08 Daily Orchestrator') {
           setPipelineState('complete')
           fetchData()
