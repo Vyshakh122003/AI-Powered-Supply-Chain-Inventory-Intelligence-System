@@ -3,6 +3,7 @@
 // Prod: Vercel serverless functions at /api/* proxy to Railway n8n
 //       (same-origin to browser, server-to-server to n8n — no CORS).
 const isDev = import.meta.env.DEV
+const N8N_API_KEY = import.meta.env.VITE_N8N_API_KEY
 
 export const WEBHOOKS = {
   productIngest: isDev ? '/webhook/product-sales-ingest' : '/api/product-ingest',
@@ -11,6 +12,13 @@ export const WEBHOOKS = {
 }
 
 // ── helpers ─────────────────────────────────────────────────────────
+
+/** Build standard headers for all n8n webhook calls. */
+const webhookHeaders = () => {
+  const headers = { 'Content-Type': 'application/json' }
+  if (N8N_API_KEY) headers['X-N8N-API-KEY'] = N8N_API_KEY
+  return headers
+}
 
 const parseError = async (res) => {
   try {
@@ -32,7 +40,7 @@ const parseError = async (res) => {
 export const triggerWebhook = async (url, storeId) => {
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: webhookHeaders(),
     body: JSON.stringify({ store_id: storeId || null }),
   })
   if (!res.ok) throw new Error(await parseError(res))
@@ -45,7 +53,7 @@ export const triggerWebhook = async (url, storeId) => {
 export const postWebhook = async (url, body) => {
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: webhookHeaders(),
     body: JSON.stringify(body),
   })
   if (!res.ok) throw new Error(await parseError(res))
