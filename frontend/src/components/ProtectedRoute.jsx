@@ -22,7 +22,10 @@ export default function ProtectedRoute({ children }) {
 
   // Fail-closed: if profile is missing or onboarding not completed, redirect to onboarding.
   // This prevents users with no profile (failed fetch, new signup race) from seeing unscoped data.
-  if (!storeProfile || !storeProfile.onboarding_complete) {
+  // Backward compat: existing stores with real data (store_name set) are treated as onboarded.
+  const isOnboarded = storeProfile?.onboarding_complete ||
+    (storeProfile?.store_name && storeProfile.store_name !== 'My Store')
+  if (!storeProfile || !isOnboarded) {
     return <Navigate to="/onboarding" replace />
   }
 
