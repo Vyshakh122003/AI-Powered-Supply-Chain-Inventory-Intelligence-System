@@ -20,10 +20,9 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />
   }
 
-  // Fail-closed: if profile is missing or onboarding not completed, redirect to onboarding.
-  // Backward compat: existing stores with data are treated as onboarded even if flag is unset.
-  const isOnboarded = storeProfile?.onboarding_complete || !!storeProfile?.store_name
-  if (!storeProfile || !isOnboarded) {
+  // Single-store model: if profile exists (user has completed signup), allow dashboard access
+  // Redirect to onboarding only if truly no profile exists at all
+  if (!storeProfile) {
     return <Navigate to="/onboarding" replace />
   }
 

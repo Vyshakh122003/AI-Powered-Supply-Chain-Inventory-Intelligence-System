@@ -10,35 +10,40 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   // Fetch store profile for the current user
+  // Single-store model: try to find existing profile, claim it if orphaned, or return null
   const fetchStoreProfile = async (userId) => {
     try {
+      // 1. Try primary lookup by user_id
       let { data, error } = await supabase
         .from('Store Profiles')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle()
-
       if (error) throw error
 
-      // Backward compatibility: older rows used id = user_id without user_id populated
+      // 2. Fallback: if not found, get any existing profile and claim it
       if (!data) {
-        const legacy = await supabase
+        const { data: anyProfile, error: anyError } = await supabase
           .from('Store Profiles')
           .select('*')
-          .eq('id', userId)
+          .limit(1)
           .maybeSingle()
+        if (anyError) throw anyError
 
-        if (!legacy.error && legacy.data) {
-          data = legacy.data
+        if (anyProfile) {
+          // Link this profile to the current user
+          if (!anyProfile.user_id) {
+            await supabase
+              .from('Store Profiles')
+              .update({ user_id: userId })
+              .eq('id', anyProfile.id)
+          }
+          data = { ...anyProfile, user_id: userId }
         }
       }
 
-      // If still no profile, let ProtectedRoute handle it (redirects to onboarding)
-      // Do NOT auto-create here — that causes duplicate profiles and orphans existing data.
-
       setStoreProfile(data || null)
     } catch {
-      // Profile may not exist yet
       setStoreProfile(null)
     }
   }

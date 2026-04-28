@@ -73,14 +73,15 @@ export default function Logs() {
 
   // Realtime
   useEffect(() => {
+    if (!storeProfile?.id) return
     const channel = supabase
       .channel('logs-changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'System Logs', filter: `store_id=eq.${storeProfile?.id}` }, () => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'System Logs', filter: `store_id=eq.${storeProfile.id}` }, () => {
         fetchLogs()
       })
       .subscribe()
     return () => supabase.removeChannel(channel)
-  }, [fetchLogs])
+  }, [fetchLogs, storeProfile?.id])
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE)
 
