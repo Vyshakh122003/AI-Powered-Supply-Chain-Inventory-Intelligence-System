@@ -33,38 +33,8 @@ export function AuthProvider({ children }) {
         }
       }
 
-      // If no profile exists (eg. email confirmation flow), create a minimal one
-      if (!data) {
-        const { error: insertError } = await supabase
-          .from('Store Profiles')
-          .insert({
-            id: userId,
-            user_id: userId,
-            store_name: 'My Store',
-            owner_name: '',
-            phone: null,
-            whatsapp_numbers: '',
-            safety_factor: 1.5,
-            default_lead_days: 3,
-            timezone: 'Asia/Kolkata',
-            onboarding_complete: false,
-          })
-
-        // Ignore duplicate-race errors; refetch below
-        if (insertError && !String(insertError.message || '').toLowerCase().includes('duplicate')) {
-          throw insertError
-        }
-
-        const retry = await supabase
-          .from('Store Profiles')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle()
-
-        if (!retry.error && retry.data) {
-          data = retry.data
-        }
-      }
+      // If still no profile, let ProtectedRoute handle it (redirects to onboarding)
+      // Do NOT auto-create here — that causes duplicate profiles and orphans existing data.
 
       setStoreProfile(data || null)
     } catch {
