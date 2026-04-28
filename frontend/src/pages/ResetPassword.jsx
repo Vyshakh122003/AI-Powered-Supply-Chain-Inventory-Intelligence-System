@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
-import { Package, Loader2, Mail, Lock, CheckCircle2 } from 'lucide-react'
+import { Package, Loader2, Mail, Lock, CheckCircle2, Home } from 'lucide-react'
 
 export default function ResetPassword() {
   const navigate = useNavigate()
@@ -83,7 +83,10 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-surface flex items-center justify-center px-4">
+    <div className="min-h-screen bg-surface flex items-center justify-center px-4 relative">
+      <Link to="/" title="Back to Home" className="absolute top-5 left-5 p-2.5 rounded-lg border border-border bg-white hover:bg-gray-50 text-muted hover:text-text transition-colors shadow-sm">
+        <Home className="w-5 h-5" />
+      </Link>
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
