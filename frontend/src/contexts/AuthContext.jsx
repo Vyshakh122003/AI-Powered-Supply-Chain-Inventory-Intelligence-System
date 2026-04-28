@@ -47,7 +47,7 @@ export function AuthProvider({ children }) {
             safety_factor: 1.5,
             default_lead_days: 3,
             timezone: 'Asia/Kolkata',
-            onboarding_completed: false,
+            onboarding_complete: false,
           })
 
         // Ignore duplicate-race errors; refetch below
@@ -124,7 +124,7 @@ export function AuthProvider({ children }) {
           safety_factor: 1.5,
           default_lead_days: 3,
           timezone: 'Asia/Kolkata',
-          onboarding_completed: false,
+          onboarding_complete: false,
         })
       if (profileError) console.error('Error creating store profile:', profileError)
     }

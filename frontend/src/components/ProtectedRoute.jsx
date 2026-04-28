@@ -22,7 +22,7 @@ export default function ProtectedRoute({ children }) {
 
   // Fail-closed: if profile is missing or onboarding not completed, redirect to onboarding.
   // This prevents users with no profile (failed fetch, new signup race) from seeing unscoped data.
-  if (!storeProfile || !storeProfile.onboarding_completed) {
+  if (!storeProfile || !storeProfile.onboarding_complete) {
     return <Navigate to="/onboarding" replace />
   }
 
