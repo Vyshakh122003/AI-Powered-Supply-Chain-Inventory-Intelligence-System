@@ -249,10 +249,7 @@ export default function Onboarding() {
     <div className="min-h-screen bg-surface flex items-center justify-center px-4 py-10 relative">
       {/* Home button — top-left corner */}
       <button
-        onClick={async () => {
-          await supabase.auth.signOut()
-          navigate('/')
-        }}
+        onClick={() => navigate('/')}
         title="Back to Home"
         className="absolute top-5 left-5 p-2.5 rounded-lg border border-border bg-white hover:bg-gray-50 text-muted hover:text-text transition-colors cursor-pointer shadow-sm"
       >
