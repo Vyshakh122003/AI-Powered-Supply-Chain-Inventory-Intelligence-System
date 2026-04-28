@@ -143,7 +143,7 @@ export function AuthProvider({ children }) {
   }
 
   const refreshProfile = () => {
-    if (user) fetchStoreProfile(user.id)
+    if (user) return fetchStoreProfile(user.id)
   }
 
   const value = {

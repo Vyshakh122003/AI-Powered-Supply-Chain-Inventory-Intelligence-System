@@ -83,7 +83,7 @@ export default function Onboarding() {
 
       if (error) throw error
       toast.success('Store setup complete!')
-      refreshProfile()
+      await refreshProfile()
       navigate('/dashboard')
     } catch (err) {
       toast.error('Failed to save profile: ' + (err?.message || 'Please try again.'))
