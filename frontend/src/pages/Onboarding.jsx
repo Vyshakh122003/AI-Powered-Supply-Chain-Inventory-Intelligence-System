@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import {
   Package, Store, User, Clock,
-  ArrowRight, ArrowLeft, Loader2, CheckCircle2, LogOut,
+  ArrowRight, ArrowLeft, Loader2, CheckCircle2, LogOut, Home,
 } from 'lucide-react'
 
 const STORE_TYPES = [
@@ -74,7 +74,7 @@ export default function Onboarding() {
           phone: form.phone,
           city: form.city,
           store_type: form.store_type,
-          whatsapp_numbers: whatsappArr,
+          whatsapp_numbers: whatsappArr.length > 0 ? whatsappArr.join(', ') : null,
           safety_factor: parseFloat(form.safety_factor) || 1.5,
           default_lead_days: parseInt(form.default_lead_days, 10) || 3,
           onboarding_completed: true,
@@ -86,8 +86,8 @@ export default function Onboarding() {
       refreshProfile()
       navigate('/dashboard')
     } catch (err) {
-      toast.error('Failed to save profile. Please try again.')
-      console.error(err)
+      toast.error('Failed to save profile: ' + (err?.message || 'Please try again.'))
+      console.error('Onboarding save error:', err)
     } finally {
       setSaving(false)
     }
@@ -246,7 +246,18 @@ export default function Onboarding() {
   const canGoNext = currentStep.validate()
 
   return (
-    <div className="min-h-screen bg-surface flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-surface flex items-center justify-center px-4 py-10 relative">
+      {/* Home button — top-left corner */}
+      <button
+        onClick={async () => {
+          await supabase.auth.signOut()
+          navigate('/')
+        }}
+        title="Back to Home"
+        className="absolute top-5 left-5 p-2.5 rounded-lg border border-border bg-white hover:bg-gray-50 text-muted hover:text-text transition-colors cursor-pointer shadow-sm"
+      >
+        <Home className="w-5 h-5" />
+      </button>
       <div className="w-full max-w-lg">
         {/* Logo */}
         <div className="text-center mb-6">
@@ -340,19 +351,6 @@ export default function Onboarding() {
         </div>
       </div>
 
-        {/* Escape route */}
-        <p className="text-center text-xs text-muted mt-4">
-          Want to sign in with a different account?{' '}
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut()
-              navigate('/login')
-            }}
-            className="text-accent hover:underline cursor-pointer"
-          >
-            Sign out & go to login
-          </button>
-        </p>
     </div>
   )
 }
