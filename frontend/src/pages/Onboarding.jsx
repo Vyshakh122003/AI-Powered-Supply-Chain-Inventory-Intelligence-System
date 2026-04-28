@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import {
   Package, Store, User, Clock,
-  ArrowRight, ArrowLeft, Loader2, CheckCircle2,
+  ArrowRight, ArrowLeft, Loader2, CheckCircle2, LogOut,
 } from 'lucide-react'
 
 const STORE_TYPES = [
@@ -79,7 +79,7 @@ export default function Onboarding() {
           default_lead_days: parseInt(form.default_lead_days, 10) || 3,
           onboarding_completed: true,
         })
-        .eq('id', user.id)
+        .eq('user_id', user.id)
 
       if (error) throw error
       toast.success('Store setup complete!')
@@ -296,7 +296,16 @@ export default function Onboarding() {
                 Back
               </button>
             ) : (
-              <div />
+              <button
+                onClick={async () => {
+                  await supabase.auth.signOut()
+                  navigate('/')
+                }}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-red-600 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </button>
             )}
 
             {isLastStep ? (
@@ -330,6 +339,20 @@ export default function Onboarding() {
           </div>
         </div>
       </div>
+
+        {/* Escape route */}
+        <p className="text-center text-xs text-muted mt-4">
+          Want to sign in with a different account?{' '}
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut()
+              navigate('/login')
+            }}
+            className="text-accent hover:underline cursor-pointer"
+          >
+            Sign out & go to login
+          </button>
+        </p>
     </div>
   )
 }
