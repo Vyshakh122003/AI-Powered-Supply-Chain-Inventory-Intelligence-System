@@ -77,11 +77,27 @@ export default function Onboarding() {
         onboarding_complete: true,
       }
 
-      // For single-user: update the Store Profile by its id
-      const { error } = await supabase
-        .from('Store Profiles')
-        .update(updateData)
-        .eq('id', storeProfile.id)
+      // If storeProfile exists, update it. Otherwise create a new one.
+      let error
+      if (storeProfile?.id) {
+        // Update existing profile
+        const result = await supabase
+          .from('Store Profiles')
+          .update(updateData)
+          .eq('id', storeProfile.id)
+        error = result.error
+      } else {
+        // Create new profile (fallback if somehow missing)
+        const result = await supabase
+          .from('Store Profiles')
+          .insert(updateData)
+          .select()
+          .single()
+        error = result.error
+        if (!error && result.data) {
+          setStoreProfile(result.data)
+        }
+      }
 
       if (error) throw error
       toast.success('Store setup complete!')

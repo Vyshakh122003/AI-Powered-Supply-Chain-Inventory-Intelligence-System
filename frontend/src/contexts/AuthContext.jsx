@@ -74,30 +74,28 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
 
-    // For single-user mode: create or ensure one Store Profile exists
+    // For single-user mode: always create a Store Profile on signup
     if (data.user && data.session) {
-      // Check if profile already exists
-      const { data: existing } = await supabase
+      const { data: newProfile, error: profileError } = await supabase
         .from('Store Profiles')
-        .select('*')
-        .limit(1)
-        .maybeSingle()
+        .insert({
+          store_name: storeName,
+          owner_name: storeName,
+          phone: null,
+          whatsapp_numbers: '',
+          safety_factor: 1.5,
+          default_lead_days: 3,
+          timezone: 'Asia/Kolkata',
+          onboarding_complete: false,
+        })
+        .select()
+        .single()
 
-      if (!existing) {
-        // Create the only store profile
-        const { error: profileError } = await supabase
-          .from('Store Profiles')
-          .insert({
-            store_name: storeName,
-            owner_name: storeName,
-            phone: null,
-            whatsapp_numbers: '',
-            safety_factor: 1.5,
-            default_lead_days: 3,
-            timezone: 'Asia/Kolkata',
-            onboarding_complete: false,
-          })
-        if (profileError) console.error('Error creating store profile:', profileError)
+      if (profileError) {
+        console.error('Error creating store profile:', profileError)
+      } else if (newProfile) {
+        // Set the newly created profile in state
+        setStoreProfile(newProfile)
       }
     }
 
