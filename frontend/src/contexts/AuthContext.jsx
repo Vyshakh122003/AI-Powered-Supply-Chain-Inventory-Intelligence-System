@@ -9,42 +9,31 @@ export function AuthProvider({ children }) {
   const [storeProfile, setStoreProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Fetch store profile for the current user
-  // Single-store model: try to find existing profile, claim it if orphaned, or return null
+  // Fetch the single store profile (no multi-tenancy)
   const fetchStoreProfile = async (userId) => {
     try {
-      // 1. Try primary lookup by user_id
-      let { data, error } = await supabase
+      // Get the first (and only) store profile
+      const { data, error } = await supabase
         .from('Store Profiles')
         .select('*')
-        .eq('user_id', userId)
-        .maybeSingle()
-      if (error) throw error
-
-      // 2. Fallback: if not found, get any existing profile and claim it
-      if (!data) {
-        const { data: anyProfile, error: anyError } = await supabase
-          .from('Store Profiles')
-          .select('*')
-          .limit(1)
-          .maybeSingle()
-        if (anyError) throw anyError
-
-        if (anyProfile) {
-          // Link this profile to the current user
-          if (!anyProfile.user_id) {
-            await supabase
-              .from('Store Profiles')
-              .update({ user_id: userId })
-              .eq('id', anyProfile.id)
-          }
-          data = { ...anyProfile, user_id: userId }
+        .limit(1)
+        .single()
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No profile exists yet - will be created on signup
+          setStoreProfile(null)
+          return null
         }
+        throw error
       }
 
-      setStoreProfile(data || null)
-    } catch {
+      setStoreProfile(data)
+      return data
+    } catch (error) {
+      console.error('Error fetching store profile:', error)
       setStoreProfile(null)
+      return null
     }
   }
 
@@ -72,7 +61,7 @@ export function AuthProvider({ children }) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => subscription?.unsubscribe()
   }, [])
 
   const signIn = async (email, password) => {
@@ -85,23 +74,31 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
 
-    // Create store profile only when session exists (email-confirmation flows have no session here)
+    // For single-user mode: create or ensure one Store Profile exists
     if (data.user && data.session) {
-      const { error: profileError } = await supabase
+      // Check if profile already exists
+      const { data: existing } = await supabase
         .from('Store Profiles')
-        .insert({
-          id: data.user.id,
-          user_id: data.user.id,
-          store_name: storeName,
-          owner_name: storeName,
-          phone: null,
-          whatsapp_numbers: '',
-          safety_factor: 1.5,
-          default_lead_days: 3,
-          timezone: 'Asia/Kolkata',
-          onboarding_complete: false,
-        })
-      if (profileError) console.error('Error creating store profile:', profileError)
+        .select('*')
+        .limit(1)
+        .maybeSingle()
+
+      if (!existing) {
+        // Create the only store profile
+        const { error: profileError } = await supabase
+          .from('Store Profiles')
+          .insert({
+            store_name: storeName,
+            owner_name: storeName,
+            phone: null,
+            whatsapp_numbers: '',
+            safety_factor: 1.5,
+            default_lead_days: 3,
+            timezone: 'Asia/Kolkata',
+            onboarding_complete: false,
+          })
+        if (profileError) console.error('Error creating store profile:', profileError)
+      }
     }
 
     // If Supabase has email confirmation enabled, session will be null

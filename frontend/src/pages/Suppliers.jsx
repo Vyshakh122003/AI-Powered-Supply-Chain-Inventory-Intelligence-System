@@ -20,17 +20,11 @@ export default function Suppliers() {
   const [deleting, setDeleting] = useState(false)
 
   const fetchSuppliers = async () => {
-    if (!storeProfile?.id) {
-      setSuppliers([])
-      setLoading(false)
-      return
-    }
     setLoading(true)
     try {
       const { data, error } = await supabase
         .from('Suppliers')
         .select('*')
-        .eq('store_id', storeProfile.id)
         .order('composite_score', { ascending: false })
 
       if (error) throw error
@@ -92,7 +86,6 @@ export default function Suppliers() {
   }
 
   const handleSaveEdit = async (supplierId) => {
-    if (!storeProfile?.id) return
     try {
       const categoriesArray = editData.supplies_categories
         ? editData.supplies_categories.split(',').map(c => c.trim()).filter(Boolean)
@@ -109,7 +102,6 @@ export default function Suppliers() {
           supplies_categories: categoriesArray,
         })
         .eq('supplier_id', supplierId)
-        .eq('store_id', storeProfile.id)
       if (error) throw error
       toast.success('Supplier updated')
       setEditingId(null)
@@ -126,14 +118,12 @@ export default function Suppliers() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return
-    if (!storeProfile?.id) return
     setDeleting(true)
     try {
       const { error } = await supabase
         .from('Suppliers')
         .delete()
         .eq('supplier_id', deleteTarget.supplier_id)
-        .eq('store_id', storeProfile.id)
       if (error) throw error
       toast.success('Supplier deleted')
       setDeleteTarget(null)

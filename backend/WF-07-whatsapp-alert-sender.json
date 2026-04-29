@@ -36,6 +36,11 @@
               "keyName": "alert_status",
               "condition": "eq",
               "keyValue": "Active"
+            },
+            {
+              "keyName": "store_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.store_id || ($json.body && $json.body.store_id ? $json.body.store_id : '') }}"
             }
           ]
         }
@@ -345,6 +350,11 @@
                 "keyName": "alert_status",
                 "condition": "eq",
                 "keyValue": "Active"
+              },
+              {
+                "keyName": "store_id",
+                "condition": "eq",
+                "keyValue": "={{ $json.store_id || ($json.body && $json.body.store_id ? $json.body.store_id : '') }}"
               }
             ]
           }
@@ -368,7 +378,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const alerts = $input.all().map(i => i.json);\n\nif (alerts.length === 0) {\n  return [{ json: { skip: true, message: 'No active alerts' } }];\n}\n\n// Sort by urgency — lowest stock first\nalerts.sort((a, b) => (a.current_stock || 0) - (b.current_stock || 0));\n\n// Anti-spam: filter out alerts sent within last 24 hours\nconst now = new Date();\nconst alertsToSend = alerts.filter(a => {\n  if (!a.last_alerted_at) return true;\n  const lastSent = new Date(a.last_alerted_at);\n  const hoursSince = (now - lastSent) / (1000 * 60 * 60);\n  return hoursSince >= 24;\n});\n\nif (alertsToSend.length === 0) {\n  return [{ json: { skip: true, message: 'All alerts sent within last 24 hours' } }];\n}\n\n// Build message lines\nconst lines = alertsToSend.map(a => {\n  if (a.current_stock === 0) {\n    return `• ${a.product_name} — OUT OF STOCK (0 units)`;\n  }\n  return `• ${a.product_name} — ${a.current_stock} units left`;\n});\n\nconst message = `🔴 *StockSense Alert*\\n\\n` +\n  `${alertsToSend.length} product(s) need urgent attention:\\n\\n` +\n  lines.join('\\n') +\n  `\\n\\nAI reorder suggestions are ready on your dashboard.`;\n\nreturn [{\n  json: {\n    message,\n    alertIds: alertsToSend.map(a => a.id),\n    to: 'whatsapp:+917994596076',\n    from: 'whatsapp:+12702798776'\n  }\n}];"
+          "jsCode": "const alerts = $input.all().map(i => i.json);\n\nif (alerts.length === 0) {\n  return [{ json: { skip: true, message: 'No active alerts' } }];\n}\n\n// Sort by urgency — lowest stock first\nalerts.sort((a, b) => (a.current_stock || 0) - (b.current_stock || 0));\n\n// Anti-spam: filter out alerts sent within last 24 hours\nconst now = new Date();\nconst alertsToSend = alerts.filter(a => {\n  if (!a.last_alerted_at) return true;\n  const lastSent = new Date(a.last_alerted_at);\n  const hoursSince = (now - lastSent) / (1000 * 60 * 60);\n  return hoursSince >= 24;\n});\n\nif (alertsToSend.length === 0) {\n  return [{ json: { skip: true, message: 'All alerts sent within last 24 hours' } }];\n}\n\n// Build message lines\nconst lines = alertsToSend.map(a => {\n  if (a.current_stock === 0) {\n    return `• ${a.product_name} — OUT OF STOCK (0 units)`;\n  }\n  return `• ${a.product_name} — ${a.current_stock} units left`;\n});\n\nconst message = `🔴 *StockSense Alert*\\n\\n` +\n  `${alertsToSend.length} product(s) need urgent attention:\\n\\n` +\n  lines.join('\\n') +\n  `\\n\\nAI reorder suggestions are ready on your dashboard.`;\n\nreturn [{\n  json: {\n    message,\n    alertIds: alertsToSend.map(a => a.id),\n    to: 'whatsapp:+REDACTED_STORE_PHONE',\n    from: 'whatsapp:+REDACTED_TWILIO_PHONE'\n  }\n}];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,

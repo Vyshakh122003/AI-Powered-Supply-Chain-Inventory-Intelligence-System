@@ -40,18 +40,11 @@ export default function Products() {
   const [editData, setEditData] = useState({})
 
   const fetchProducts = async () => {
-    if (!storeProfile?.id) {
-      setProducts([])
-      setTotalCount(0)
-      setLoading(false)
-      return
-    }
     setLoading(true)
     try {
       let query = supabase
         .from('Products')
         .select('*', { count: 'exact' })
-        .eq('store_id', storeProfile.id)
         .order('days_to_stockout', { ascending: true, nullsFirst: false })
 
       if (search) {
@@ -86,11 +79,9 @@ export default function Products() {
   const [categories, setCategories] = useState([])
   const [suppliers, setSuppliers] = useState([])
   useEffect(() => {
-    if (!storeProfile?.id) return
     supabase
       .from('Products')
       .select('category')
-      .eq('store_id', storeProfile.id)
       .then(({ data }) => {
         const cats = [...new Set((data || []).map(d => d.category).filter(Boolean))]
         setCategories(cats.sort())
@@ -100,10 +91,9 @@ export default function Products() {
     supabase
       .from('Suppliers')
       .select('supplier_id, supplier_name')
-      .eq('store_id', storeProfile.id)
       .order('supplier_name')
       .then(({ data }) => setSuppliers(data || []))
-  }, [storeProfile])
+  }, [])
 
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
@@ -136,7 +126,7 @@ export default function Products() {
   useEffect(() => {
     const channel = supabase
       .channel('products-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'Products', filter: `store_id=eq.${storeProfile?.id}` }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Products' }, () => {
         fetchProducts()
       })
       .subscribe()
@@ -170,7 +160,6 @@ export default function Products() {
         unit_price: Number(editData.unit_price),
         avg_daily_sales: Number(editData.avg_daily_sales),
         preferred_supplier_id: editData.preferred_supplier_id || null,
-        store_id: storeProfile.id,
       }
       await postWebhook(WEBHOOKS.productIngest, body)
 
@@ -180,7 +169,7 @@ export default function Products() {
         await new Promise(r => setTimeout(r, 1000))
         await supabase.from('Products').update({
           preferred_supplier_id: editData.preferred_supplier_id || null
-        }).eq('product_id', productId).eq('store_id', storeProfile.id)
+        }).eq('product_id', productId)
       }
 
       toast.success('Product updated')
@@ -200,7 +189,6 @@ export default function Products() {
     if (!window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) return
     try {
       const { error } = await supabase.from('Products').delete().eq('product_id', productId)
-        .eq('store_id', storeProfile.id)
       if (error) throw error
       toast.success('Product deleted')
       fetchProducts()

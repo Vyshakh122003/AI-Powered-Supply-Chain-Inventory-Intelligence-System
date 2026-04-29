@@ -26,22 +26,13 @@ export default function Dashboard() {
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false)
 
   const fetchData = async () => {
-    if (!storeProfile?.id) {
-      setProducts([])
-      setAlertsCount(0)
-      setReordersCount(0)
-      setSuppliers([])
-      setSnapshots([])
-      setLoading(false)
-      return
-    }
     try {
       const [productsRes, alertsRes, reordersRes, suppliersRes, snapshotsRes] = await Promise.all([
-        supabase.from('Products').select('*').eq('store_id', storeProfile.id),
-        supabase.from('Stock Alerts').select('id').eq('alert_status', 'Active').eq('store_id', storeProfile.id),
-        supabase.from('Reorder Suggestions').select('id').eq('status', 'Pending').eq('store_id', storeProfile.id),
-        supabase.from('Suppliers').select('supplier_id, supplier_name').eq('store_id', storeProfile.id),
-        supabase.from('Daily Snapshots').select('snapshot_date, health_score').eq('store_id', storeProfile.id).order('snapshot_date', { ascending: true }).limit(30),
+        supabase.from('Products').select('*'),
+        supabase.from('Stock Alerts').select('id').eq('alert_status', 'Active'),
+        supabase.from('Reorder Suggestions').select('id').eq('status', 'Pending'),
+        supabase.from('Suppliers').select('supplier_id, supplier_name'),
+        supabase.from('Daily Snapshots').select('snapshot_date, health_score').order('snapshot_date', { ascending: true }).limit(30),
       ])
 
       setProducts(productsRes.data || [])
@@ -58,14 +49,13 @@ export default function Dashboard() {
 
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
-    if (!storeProfile?.id) return
     fetchData()
 
     const channels = [
-      supabase.channel('dash-products').on('postgres_changes', { event: '*', schema: 'public', table: 'Products', filter: `store_id=eq.${storeProfile.id}` }, () => fetchData()).subscribe(),
-      supabase.channel('dash-alerts').on('postgres_changes', { event: '*', schema: 'public', table: 'Stock Alerts', filter: `store_id=eq.${storeProfile.id}` }, () => fetchData()).subscribe(),
-      supabase.channel('dash-reorders').on('postgres_changes', { event: '*', schema: 'public', table: 'Reorder Suggestions', filter: `store_id=eq.${storeProfile.id}` }, () => fetchData()).subscribe(),
-      supabase.channel('dash-logs').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'System Logs', filter: `store_id=eq.${storeProfile.id}` }, (payload) => {
+      supabase.channel('dash-products').on('postgres_changes', { event: '*', schema: 'public', table: 'Products' }, () => fetchData()).subscribe(),
+      supabase.channel('dash-alerts').on('postgres_changes', { event: '*', schema: 'public', table: 'Stock Alerts' }, () => fetchData()).subscribe(),
+      supabase.channel('dash-reorders').on('postgres_changes', { event: '*', schema: 'public', table: 'Reorder Suggestions' }, () => fetchData()).subscribe(),
+      supabase.channel('dash-logs').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'System Logs' }, (payload) => {
         if (payload.new && payload.new.workflow_name === 'WF-08 Daily Orchestrator') {
           setPipelineState('complete')
           fetchData()
@@ -74,7 +64,7 @@ export default function Dashboard() {
     ]
 
     return () => channels.forEach(c => supabase.removeChannel(c))
-  }, [storeProfile])
+  }, [])
   /* eslint-enable react-hooks/exhaustive-deps */
   // Clear 'complete' state after 1.5 seconds per user spec
   useEffect(() => {

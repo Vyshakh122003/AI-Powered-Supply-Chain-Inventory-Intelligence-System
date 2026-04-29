@@ -18,29 +18,21 @@ export default function Reorder() {
   const [actionId, setActionId] = useState(null)
 
   const fetchData = async () => {
-    if (!storeProfile?.id) {
-      setSuggestions([])
-      setProducts({})
-      setSuppliers({})
-      setLoading(false)
-      return
-    }
     setLoading(true)
     try {
-      // Fetch suggestions scoped to this store
+      // Fetch suggestions
       const { data: suggestionsData, error } = await supabase
         .from('Reorder Suggestions')
         .select('*')
-        .eq('store_id', storeProfile.id)
         .eq('status', filter)
         .order('suggestion_date', { ascending: false })
 
       if (error) throw error
 
-      // Fetch products and suppliers in parallel for lookups (store-scoped)
+      // Fetch products and suppliers in parallel for lookups
       const [productsRes, suppliersRes] = await Promise.all([
-        supabase.from('Products').select('product_id, product_name, unit_price').eq('store_id', storeProfile.id),
-        supabase.from('Suppliers').select('supplier_id, supplier_name, phone_number').eq('store_id', storeProfile.id),
+        supabase.from('Products').select('product_id, product_name, unit_price'),
+        supabase.from('Suppliers').select('supplier_id, supplier_name, phone_number'),
       ])
 
       // Build lookup maps
@@ -75,7 +67,7 @@ export default function Reorder() {
   useEffect(() => {
     const channel = supabase
       .channel('reorder-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'Reorder Suggestions', filter: `store_id=eq.${storeProfile?.id}` }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Reorder Suggestions' }, () => {
         fetchData()
       })
       .subscribe()
@@ -84,14 +76,12 @@ export default function Reorder() {
   /* eslint-enable react-hooks/exhaustive-deps */
 
   const handleApprove = async (id) => {
-    if (!storeProfile?.id) return
     setActionId(id)
     try {
       const { error } = await supabase
         .from('Reorder Suggestions')
         .update({ status: 'Approved', approved_at: new Date().toISOString() })
         .eq('id', id)
-        .eq('store_id', storeProfile.id)
       if (error) throw error
       toast.success('Suggestion approved')
       fetchData()
@@ -103,14 +93,12 @@ export default function Reorder() {
   }
 
   const handleDismiss = async (id) => {
-    if (!storeProfile?.id) return
     setActionId(id)
     try {
       const { error } = await supabase
         .from('Reorder Suggestions')
         .update({ status: 'Dismissed' })
         .eq('id', id)
-        .eq('store_id', storeProfile.id)
       if (error) throw error
       toast.success('Suggestion dismissed')
       fetchData()

@@ -27,18 +27,11 @@ export default function Logs() {
   const [totalCount, setTotalCount] = useState(0)
 
   const fetchLogs = useCallback(async () => {
-    if (!storeProfile?.id) {
-      setLogs([])
-      setTotalCount(0)
-      setLoading(false)
-      return
-    }
     setLoading(true)
     try {
       let query = supabase
         .from('System Logs')
         .select('*', { count: 'exact' })
-        .eq('store_id', storeProfile.id)
         .order('created_at', { ascending: false })
 
       if (search) {
@@ -73,15 +66,14 @@ export default function Logs() {
 
   // Realtime
   useEffect(() => {
-    if (!storeProfile?.id) return
     const channel = supabase
       .channel('logs-changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'System Logs', filter: `store_id=eq.${storeProfile.id}` }, () => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'System Logs' }, () => {
         fetchLogs()
       })
       .subscribe()
     return () => supabase.removeChannel(channel)
-  }, [fetchLogs, storeProfile?.id])
+  }, [fetchLogs])
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE)
 

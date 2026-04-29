@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { postWebhook, WEBHOOKS } from '../lib/config'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import {
   Upload, X, FileSpreadsheet, Loader2, CheckCircle2,
@@ -69,6 +70,7 @@ function parseCsv(text) {
 }
 
 export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
+  const { storeProfile } = useAuth()
   const fileRef = useRef(null)
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState(null)
@@ -112,6 +114,10 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
   }
 
   const handleImport = async () => {
+    if (!storeProfile?.id) {
+      toast.error('Store profile not loaded yet. Please try again.')
+      return
+    }
     if (!preview || preview.rows.length === 0) return
 
     setImporting(true)

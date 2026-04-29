@@ -210,7 +210,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ ($env.N8N_HOST || 'http://localhost:5678') + '/webhook/supplier-scoring' }}",
+        "url": "={{ $env.N8N_HOST + '/webhook/supplier-scoring' }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -270,7 +270,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ ($env.N8N_HOST || 'http://localhost:5678') + '/webhook/send-whatsapp' }}",
+        "url": "={{ $env.N8N_HOST + '/webhook/send-whatsapp' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"store_id\": \"{{$('Merge').first().json.store_id}}\"}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -1040,7 +1043,7 @@
       },
       {
         "parameters": {
-          "jsCode": "return [{ json: { triggered_at: new Date().toISOString() } }];"
+          "jsCode": "let store_id = null;\ntry { store_id = $('Webhook Trigger').first().json.body.store_id; } catch(e) {}\nif (!store_id) try { store_id = $('Fetch Products').first().json.store_id; } catch(e) {}\nreturn [{ json: { triggered_at: new Date().toISOString(), store_id } }];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -1170,7 +1173,10 @@
       {
         "parameters": {
           "method": "POST",
-          "url": "http://localhost:5678/webhook/send-whatsapp",
+          "url": "={{ $env.N8N_HOST + '/webhook/send-whatsapp' }}",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\"store_id\": \"{{$('Merge').first().json.store_id}}\"}",
           "options": {}
         },
         "type": "n8n-nodes-base.httpRequest",
@@ -1186,7 +1192,7 @@
       },
       {
         "parameters": {
-          "jsCode": "return [{ json: { done: true } }];"
+          "jsCode": "return [{ json: { done: true, store_id: $('Merge').first().json.store_id } }];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -1202,7 +1208,7 @@
       },
       {
         "parameters": {
-          "jsCode": "return [{ json: { done: true } }];"
+          "jsCode": "return [{ json: { done: true, store_id: $('Merge').first().json.store_id } }];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -1218,7 +1224,7 @@
       },
       {
         "parameters": {
-          "jsCode": "return [{ json: { done: true } }];"
+          "jsCode": "return [{ json: { done: true, store_id: $('Merge').first().json.store_id } }];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -1234,7 +1240,7 @@
       },
       {
         "parameters": {
-          "jsCode": "return [{ json: { done: true } }];"
+          "jsCode": "return [{ json: { done: true, store_id: $('Merge').first().json.store_id } }];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,

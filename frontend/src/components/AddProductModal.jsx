@@ -26,7 +26,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }) {
       supabase.from('Suppliers').select('supplier_id, supplier_name, delivery_time_days').order('supplier_name')
         .then(({ data }) => setSuppliers(data || []))
     }
-  }, [isOpen])
+  }, [isOpen, storeProfile])
 
   // Auto-calculate reorder threshold when avg_daily_sales or supplier changes
   useEffect(() => {
@@ -48,6 +48,10 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!storeProfile?.id) {
+      toast.error('Store profile not loaded yet. Please try again.')
+      return
+    }
     if (!formData.product_id || !formData.product_name) {
       toast.error('Product ID and name are required')
       return

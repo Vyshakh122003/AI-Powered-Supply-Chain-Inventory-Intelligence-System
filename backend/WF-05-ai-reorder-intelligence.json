@@ -31,6 +31,11 @@
               "keyName": "risk_level",
               "condition": "neq",
               "keyValue": "LOW"
+            },
+            {
+              "keyName": "store_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.store_id || ($json.body && $json.body.store_id ? $json.body.store_id : '') }}"
             }
           ]
         }
@@ -56,7 +61,16 @@
       "parameters": {
         "operation": "getAll",
         "tableId": "Suppliers",
-        "returnAll": true
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "store_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.store_id || ($json.body && $json.body.store_id ? $json.body.store_id : '') }}"
+            }
+          ]
+        }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
@@ -529,6 +543,11 @@
                 "keyName": "risk_level",
                 "condition": "neq",
                 "keyValue": "LOW"
+              },
+              {
+                "keyName": "store_id",
+                "condition": "eq",
+                "keyValue": "={{ $json.store_id || ($json.body && $json.body.store_id ? $json.body.store_id : '') }}"
               }
             ]
           }
@@ -554,7 +573,16 @@
         "parameters": {
           "operation": "getAll",
           "tableId": "Suppliers",
-          "returnAll": true
+          "returnAll": true,
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "store_id",
+                "condition": "eq",
+                "keyValue": "={{ $json.store_id || ($json.body && $json.body.store_id ? $json.body.store_id : '') }}"
+              }
+            ]
+          }
         },
         "type": "n8n-nodes-base.supabase",
         "typeVersion": 1,
@@ -720,7 +748,7 @@
       {
         "parameters": {
           "method": "DELETE",
-          "url": "https://xixdkapttirdedoivskx.supabase.co/rest/v1/Reorder%20Suggestions?id=neq.00000000-0000-0000-0000-000000000000",
+          "url": "=https://xixdkapttirdedoivskx.supabase.co/rest/v1/Reorder%20Suggestions?store_id=eq.{{ $('Code in JavaScript').first().json.store_id }}",
           "sendHeaders": true,
           "headerParameters": {
             "parameters": [

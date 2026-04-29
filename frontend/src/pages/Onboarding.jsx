@@ -59,27 +59,29 @@ export default function Onboarding() {
   }
 
   const handleFinish = async () => {
-    if (!user) return
     setSaving(true)
     try {
       const whatsappArr = form.whatsapp_numbers
         ? form.whatsapp_numbers.split(',').map((n) => n.trim()).filter(Boolean)
         : []
 
+      const updateData = {
+        store_name: form.store_name || storeProfile?.store_name || 'My Store',
+        owner_name: form.owner_name,
+        phone: form.phone,
+        city: form.city,
+        store_type: form.store_type,
+        whatsapp_numbers: whatsappArr.length > 0 ? whatsappArr.join(', ') : null,
+        safety_factor: parseFloat(form.safety_factor) || 1.5,
+        default_lead_days: parseInt(form.default_lead_days, 10) || 3,
+        onboarding_complete: true,
+      }
+
+      // For single-user: just update the only Store Profile
       const { error } = await supabase
         .from('Store Profiles')
-        .update({
-          store_name: form.store_name || storeProfile?.store_name || 'My Store',
-          owner_name: form.owner_name,
-          phone: form.phone,
-          city: form.city,
-          store_type: form.store_type,
-          whatsapp_numbers: whatsappArr.length > 0 ? whatsappArr.join(', ') : null,
-          safety_factor: parseFloat(form.safety_factor) || 1.5,
-          default_lead_days: parseInt(form.default_lead_days, 10) || 3,
-          onboarding_complete: true,
-        })
-        .eq('user_id', user.id)
+        .update(updateData)
+        .limit(1)
 
       if (error) throw error
       toast.success('Store setup complete!')

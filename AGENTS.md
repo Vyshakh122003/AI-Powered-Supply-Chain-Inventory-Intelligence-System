@@ -2,6 +2,73 @@
 
 > Guidance for AI coding agents operating in this repository.
 
+## Mandatory Session Gate (Do Not Skip)
+
+This repository uses a **fail-closed** agent workflow.
+
+Before handling any user request in any OpenCode session, the agent must:
+1. Read this file (`AGENTS.md`) fully.
+2. Verify OpenCode gstack skills are available.
+3. Load and use an appropriate gstack skill for the task.
+
+If any step above fails, the agent must **stop immediately** and report the blocker.
+The agent must not proceed with implementation, analysis, edits, commands, or advice
+until gstack skill loading is working.
+
+### Required Skill Source
+
+- Primary and required skill location for OpenCode: `~/.config/opencode/skills/gstack/`
+- Do not use repository-local copies as source-of-truth unless explicitly instructed.
+
+### Mandatory Preflight (Every Session)
+
+Run these checks at session start:
+
+```sh
+ls ~/.config/opencode/skills
+ls ~/.config/opencode/skills/gstack
+```
+
+Then load gstack root skill first, followed by task-specific skill(s):
+
+- Root: `skill("gstack")`
+- Examples: `skill("investigate")`, `skill("review")`, `skill("qa")`, `skill("cso")`, `skill("ship")`
+
+### If Skill Loading Fails
+
+If `skill("gstack")` or required task skill cannot be loaded:
+1. Stop work immediately.
+2. Report exact error text to user.
+3. Request user action to restore skill availability.
+4. Do not continue until a successful skill load is confirmed.
+
+### Mandatory Routing Rule
+
+For any task that matches a gstack workflow (debugging, QA, security review, code review,
+shipping, deployment, browser testing, planning), the agent must invoke the relevant gstack
+skill and follow it. **Do not bypass skill usage.**
+
+### Hard Stop Policy
+
+If user asks for project work and gstack cannot be loaded, the only valid response is:
+- blocked status
+- reason for gstack unavailability
+- exact next step to restore skill loading
+
+### Quick Operator Checklist
+
+Use this at the start of every session:
+
+```sh
+ls ~/.config/opencode/skills
+ls ~/.config/opencode/skills/gstack
+```
+
+Then in tool flow:
+1. `skill("gstack")`
+2. `skill("<task-specific-skill>")`
+3. If either fails, stop and report blocker (do not proceed)
+
 ## Project Overview
 
 StockSense AI is an inventory intelligence system for small Indian retail (kirana) stores.

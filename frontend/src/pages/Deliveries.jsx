@@ -29,17 +29,11 @@ export default function Deliveries() {
   }
 
   const fetchData = useCallback(async () => {
-    if (!storeProfile?.id) {
-      setProducts([])
-      setSuppliers([])
-      setLoading(false)
-      return
-    }
     setLoading(true)
     try {
       const [prodRes, supRes] = await Promise.all([
-        supabase.from('Products').select('product_id, product_name, category, current_stock, unit').eq('store_id', storeProfile.id).order('product_name'),
-        supabase.from('Suppliers').select('supplier_id, supplier_name').eq('store_id', storeProfile.id).order('supplier_name'),
+        supabase.from('Products').select('product_id, product_name, category, current_stock, unit').order('product_name'),
+        supabase.from('Suppliers').select('supplier_id, supplier_name').order('supplier_name'),
       ])
       if (prodRes.error) throw prodRes.error
       if (supRes.error) throw supRes.error
@@ -53,17 +47,11 @@ export default function Deliveries() {
   }, [storeProfile])
 
   const fetchRecentDeliveries = useCallback(async () => {
-    if (!storeProfile?.id) {
-      setRecentDeliveries([])
-      setLoadingRecent(false)
-      return
-    }
     setLoadingRecent(true)
     try {
       const { data, error } = await supabase
         .from('Stock Transactions')
         .select('*')
-        .eq('store_id', storeProfile.id)
         .eq('transaction_type', 'delivery')
         .order('created_at', { ascending: false })
         .limit(20)
@@ -118,7 +106,7 @@ export default function Deliveries() {
         const newStock = (product.current_stock || 0) + qty
 
         try {
-          // 1. Update Supabase Products table directly (instant, store-scoped)
+          // 1. Update Supabase Products table directly (instant)
           const { error: updateError } = await supabase
             .from('Products')
             .update({
@@ -126,7 +114,6 @@ export default function Deliveries() {
               last_restock_date: new Date().toISOString().split('T')[0],
             })
             .eq('product_id', item.product_id)
-            .eq('store_id', storeProfile.id)
 
           if (updateError) throw updateError
 
@@ -137,7 +124,6 @@ export default function Deliveries() {
             transaction_type: 'delivery',
             quantity_change: qty,
             new_stock_level: newStock,
-            store_id: storeProfile.id,
             notes: notes ? `${notes} (Supplier: ${selectedSupplier || 'None'})` : `Supplier: ${selectedSupplier || 'None'}`,
           }).then(({ error }) => {
             if (error) console.warn('Could not log transaction:', error.message)
@@ -150,7 +136,6 @@ export default function Deliveries() {
             category: product.category,
             current_stock: newStock,
             unit: product.unit,
-            store_id: storeProfile.id,
           }).catch((err) => console.warn('Webhook fire-and-forget failed (non-critical):', err.message))
 
           successCount++

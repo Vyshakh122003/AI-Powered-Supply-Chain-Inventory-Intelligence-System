@@ -39,7 +39,16 @@
       "parameters": {
         "operation": "getAll",
         "tableId": "Products",
-        "returnAll": true
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "store_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.store_id || ($json.body && $json.body.store_id ? $json.body.store_id : '') }}"
+            }
+          ]
+        }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
@@ -377,7 +386,16 @@
         "parameters": {
           "operation": "getAll",
           "tableId": "Products",
-          "returnAll": true
+          "returnAll": true,
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "store_id",
+                "condition": "eq",
+                "keyValue": "={{ $json.store_id || ($json.body && $json.body.store_id ? $json.body.store_id : '') }}"
+              }
+            ]
+          }
         },
         "type": "n8n-nodes-base.supabase",
         "typeVersion": 1,
@@ -398,7 +416,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const now = new Date().toISOString();\nconst products = $input.all().map(i => i.json);\n\nconst alerts = products\n  .filter(p => (parseInt(p.current_stock) || 0) <= (parseInt(p.reorder_threshold) || 0))\n  .map(p => ({\n    json: {\n      product_id: String(p.product_id),\n      product_name: String(p.product_name).trim(),\n      alert_name: `Low Stock Alert: ${String(p.product_name).trim()}`,\n      alert_date: now,\n      current_stock: parseInt(p.current_stock) || 0,\n      reorder_threshold: parseInt(p.reorder_threshold) || 0,\n      alert_status: 'Active'\n    }\n  }));\n\nif (alerts.length === 0) {\n  return [{ json: { skip: true } }];\n}\n\nreturn alerts;"
+          "jsCode": "const now = new Date().toISOString();\nconst products = $input.all().map(i => i.json);\nconst store_id = products[0]?.store_id || null;\n\nconst alerts = products\n  .filter(p => p.store_id === store_id)\n  .filter(p => (parseInt(p.current_stock) || 0) <= (parseInt(p.reorder_threshold) || 0))\n  .map(p => ({\n    json: {\n      product_id: String(p.product_id),\n      product_name: String(p.product_name).trim(),\n      alert_name: `Low Stock Alert: ${String(p.product_name).trim()}`,\n      alert_date: now,\n      current_stock: parseInt(p.current_stock) || 0,\n      reorder_threshold: parseInt(p.reorder_threshold) || 0,\n      alert_status: 'Active',\n      store_id: p.store_id\n    }\n  }));\n\nif (alerts.length === 0) {\n  return [{ json: { skip: true, store_id } }];\n}\n\nreturn alerts;"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
@@ -419,7 +437,7 @@
         "notes": "HTTP DELETE request to clear ALL existing rows from the Stock Alerts table.\nThis is a full-refresh approach - all alerts are regenerated each run.",
         "parameters": {
           "method": "DELETE",
-          "url": "https://xixdkapttirdedoivskx.supabase.co/rest/v1/Stock%20Alerts?id=not.is.null",
+          "url": "=https://xixdkapttirdedoivskx.supabase.co/rest/v1/Stock%20Alerts?store_id=eq.{{ $('Compute \u0026 Filter').first().json.store_id }}",
           "sendHeaders": true,
           "headerParameters": {
             "parameters": [
@@ -477,6 +495,10 @@
               {
                 "fieldId": "alert_status",
                 "fieldValue": "={{ $json.alert_status }}"
+                },
+                {
+                  "fieldId": "store_id",
+                  "fieldValue": "={{ $json.store_id }}"
               }
             ]
           }
