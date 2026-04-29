@@ -77,11 +77,11 @@ export default function Onboarding() {
         onboarding_complete: true,
       }
 
-      // For single-user: just update the only Store Profile
+      // For single-user: update the Store Profile by its id
       const { error } = await supabase
         .from('Store Profiles')
         .update(updateData)
-        .limit(1)
+        .eq('id', storeProfile.id)
 
       if (error) throw error
       toast.success('Store setup complete!')
