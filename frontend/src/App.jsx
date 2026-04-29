@@ -1,94 +1,40 @@
-import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { Toaster } from 'react-hot-toast'
-import { AuthProvider } from './contexts/AuthContext'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute'
-import Layout from './components/Layout'
+import Landing from './pages/Landing'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
+import Onboarding from './pages/Onboarding'
+import Dashboard from './pages/Dashboard'
+import Products from './pages/Products'
+import Suppliers from './pages/Suppliers'
+import Alerts from './pages/Alerts'
+import Reorder from './pages/Reorder'
+import Deliveries from './pages/Deliveries'
+import QuickUpdate from './pages/QuickUpdate'
+import Logs from './pages/Logs'
+import Settings from './pages/Settings'
+import ResetPassword from './pages/ResetPassword'
 
-const Landing = lazy(() => import('./pages/Landing'))
-const Login = lazy(() => import('./pages/Login'))
-const Signup = lazy(() => import('./pages/Signup'))
-const ResetPassword = lazy(() => import('./pages/ResetPassword'))
-const Onboarding = lazy(() => import('./pages/Onboarding'))
-const Dashboard = lazy(() => import('./pages/Dashboard'))
-const Products = lazy(() => import('./pages/Products'))
-const Alerts = lazy(() => import('./pages/Alerts'))
-const Reorder = lazy(() => import('./pages/Reorder'))
-const Suppliers = lazy(() => import('./pages/Suppliers'))
-
-const Settings = lazy(() => import('./pages/Settings'))
-const QuickUpdate = lazy(() => import('./pages/QuickUpdate'))
-const Deliveries = lazy(() => import('./pages/Deliveries'))
-const Logs = lazy(() => import('./pages/Logs'))
-
-function LoadingFallback() {
+export default function App() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-3 border-accent border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-muted">Loading...</p>
-      </div>
-    </div>
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/onboarding" element={<Onboarding />} />
+
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
+      <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
+      <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
+      <Route path="/reorder" element={<ProtectedRoute><Reorder /></ProtectedRoute>} />
+      <Route path="/deliveries" element={<ProtectedRoute><Deliveries /></ProtectedRoute>} />
+      <Route path="/quick-update" element={<ProtectedRoute><QuickUpdate /></ProtectedRoute>} />
+      <Route path="/logs" element={<ProtectedRoute><Logs /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
-
-function App() {
-  return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 3000,
-            success: {
-              style: { background: '#059669', color: '#fff' },
-              iconTheme: { primary: '#fff', secondary: '#059669' },
-            },
-            error: {
-              style: { background: '#DC2626', color: '#fff' },
-              iconTheme: { primary: '#fff', secondary: '#DC2626' },
-            },
-          }}
-        />
-        <Suspense fallback={<LoadingFallback />}>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-
-
-          {/* Auth-required but no sidebar layout */}
-          <Route path="/onboarding" element={<Onboarding />} />
-
-          {/* Protected routes with layout */}
-          <Route
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/alerts" element={<Alerts />} />
-            <Route path="/reorder" element={<Reorder />} />
-            <Route path="/suppliers" element={<Suppliers />} />
-
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/quick-update" element={<QuickUpdate />} />
-            <Route path="/deliveries" element={<Deliveries />} />
-            <Route path="/logs" element={<Logs />} />
-          </Route>
-
-          {/* Default: unauthenticated → landing, authenticated → dashboard */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-        </Suspense>
-      </AuthProvider>
-    </BrowserRouter>
-  )
-}
-
-export default App

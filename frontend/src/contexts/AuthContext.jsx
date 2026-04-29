@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
@@ -9,64 +9,58 @@ export function AuthProvider({ children }) {
   const [storeProfile, setStoreProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Fetch the single store profile (no multi-tenancy)
-  const fetchStoreProfile = async (userId) => {
+  const fetchStoreProfile = async () => {
     try {
-      // Get the first (and only) store profile
       const { data, error } = await supabase
         .from('Store Profiles')
         .select('*')
+        .order('created_at', { ascending: true })
         .limit(1)
-        .single()
-      
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No profile exists yet - will be created on signup
-          setStoreProfile(null)
-          return null
-        }
-        throw error
-      }
+        .maybeSingle()
 
-      setStoreProfile(data)
-      return data
+      if (error) throw error
+      setStoreProfile(data || null)
+      return data || null
     } catch (error) {
-      console.error('Error fetching store profile:', error)
+      console.error('Failed to load store profile:', error)
       setStoreProfile(null)
       return null
     }
   }
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      setSession(currentSession)
-      setUser(currentSession?.user ?? null)
-      if (currentSession?.user) {
-        fetchStoreProfile(currentSession.user.id)
+    let mounted = true
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return
+      setSession(data.session)
+      setUser(data.session?.user || null)
+      if (data.session?.user) {
+        fetchStoreProfile()
       }
       setLoading(false)
     })
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
-        setSession(newSession)
-        setUser(newSession?.user ?? null)
-        if (newSession?.user) {
-          fetchStoreProfile(newSession.user.id)
-        } else {
-          setStoreProfile(null)
-        }
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+      setUser(nextSession?.user || null)
+      if (nextSession?.user) {
+        fetchStoreProfile()
+      } else {
+        setStoreProfile(null)
       }
-    )
+    })
 
-    return () => subscription?.unsubscribe()
+    return () => {
+      mounted = false
+      authListener.subscription.unsubscribe()
+    }
   }, [])
 
   const signIn = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
+    await fetchStoreProfile()
     return data
   }
 
@@ -74,34 +68,34 @@ export function AuthProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
 
-    // For single-user mode: always create a Store Profile on signup
-    if (data.user && data.session) {
-      const { data: newProfile, error: profileError } = await supabase
+    if (data.session) {
+      const { data: existing } = await supabase
         .from('Store Profiles')
-        .insert({
-          store_name: storeName,
-          owner_name: storeName,
-          phone: null,
-          whatsapp_numbers: '',
-          safety_factor: 1.5,
-          default_lead_days: 3,
-          timezone: 'Asia/Kolkata',
-          onboarding_complete: false,
-        })
-        .select()
-        .single()
+        .select('*')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle()
 
-      if (profileError) {
-        console.error('Error creating store profile:', profileError)
-      } else if (newProfile) {
-        // Set the newly created profile in state
-        setStoreProfile(newProfile)
+      if (!existing) {
+        const { data: created, error: createError } = await supabase
+          .from('Store Profiles')
+          .insert({
+            user_id: data.user.id,
+            store_name: storeName,
+            owner_name: storeName,
+            onboarding_complete: false,
+            safety_factor: 1.5,
+            default_lead_days: 3,
+            timezone: 'Asia/Kolkata',
+          })
+          .select()
+          .single()
+
+        if (createError) throw createError
+        setStoreProfile(created)
+      } else {
+        setStoreProfile(existing)
       }
-    }
-
-    // If Supabase has email confirmation enabled, session will be null
-    if (data.user && !data.session) {
-      return { user: data.user, session: null, emailConfirmationRequired: true }
     }
 
     return data
@@ -112,9 +106,7 @@ export function AuthProvider({ children }) {
     if (error) throw error
   }
 
-  const refreshProfile = () => {
-    if (user) return fetchStoreProfile(user.id)
-  }
+  const refreshProfile = () => fetchStoreProfile()
 
   const value = {
     session,
@@ -125,6 +117,7 @@ export function AuthProvider({ children }) {
     signUp,
     signOut,
     refreshProfile,
+    setStoreProfile,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
@@ -134,7 +127,7 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   const context = useContext(AuthContext)
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error('useAuth must be used within AuthProvider')
   }
   return context
 }
