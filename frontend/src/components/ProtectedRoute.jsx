@@ -21,7 +21,7 @@ export default function ProtectedRoute({ children }) {
   }
 
   // If store profile exists but onboarding not completed, redirect to onboarding
-  if (storeProfile && !storeProfile.onboarding_completed) {
+  if (storeProfile && !storeProfile.onboarding_complete) {
     return <Navigate to="/onboarding" replace />
   }
 

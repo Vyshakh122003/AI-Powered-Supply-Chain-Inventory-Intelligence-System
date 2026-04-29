@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
-import { postWebhook, WEBHOOKS } from '../lib/config'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
+import { postWebhook, WEBHOOKS } from '../lib/config'
 import toast from 'react-hot-toast'
 import {
   Upload, X, FileSpreadsheet, Loader2, CheckCircle2,
@@ -25,10 +26,9 @@ function parseCsvLine(line) {
     const ch = line[i]
     if (inQuotes) {
       if (ch === '"') {
-        // Escaped quote ("") or end of quoted field
         if (i + 1 < line.length && line[i + 1] === '"') {
           current += '"'
-          i++ // skip next quote
+          i++
         } else {
           inQuotes = false
         }
@@ -69,6 +69,7 @@ function parseCsv(text) {
 }
 
 export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
+  const { user } = useAuth()
   const fileRef = useRef(null)
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState(null)
@@ -113,6 +114,10 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
 
   const handleImport = async () => {
     if (!preview || preview.rows.length === 0) return
+    if (!user?.id) {
+      toast.error('You must be logged in to import products.')
+      return
+    }
 
     setImporting(true)
     let success = 0
@@ -120,34 +125,58 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
     const errors = []
 
     try {
+      // Fetch the store_id from the user's profile directly at import time
+      let storeId = null
+      try {
+        const { data: profile } = await supabase
+          .from('Store Profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle()
+        storeId = profile?.id || null
+      } catch {
+        // If profile fetch fails, continue without store_id
+        console.warn('Could not fetch store profile for import, continuing without store_id')
+      }
+
       for (const row of preview.rows) {
+        const productData = {
+          product_id: row.product_id,
+          product_name: row.product_name,
+          category: row.category || null,
+          current_stock: Number(row.current_stock) || 0,
+          reorder_threshold: Number(row.reorder_threshold) || 0,
+          unit_price: Number(row.unit_price) || 0,
+          avg_daily_sales: Number(row.avg_daily_sales) || 0,
+          unit: row.unit || 'pcs',
+          preferred_supplier_id: row.preferred_supplier_id || null,
+        }
+
+        // Add store_id only if we have one
+        if (storeId) {
+          productData.store_id = storeId
+        }
+
         try {
-          const body = {
-            product_id: row.product_id,
-            product_name: row.product_name,
-            category: row.category || null,
-            current_stock: Number(row.current_stock) || 0,
-            reorder_threshold: Number(row.reorder_threshold) || 0,
-            unit_price: Number(row.unit_price) || 0,
-            avg_daily_sales: Number(row.avg_daily_sales) || 0,
-            unit: row.unit || 'pcs',
-            preferred_supplier_id: row.preferred_supplier_id || null,
-          }
-          await postWebhook(WEBHOOKS.productIngest, body)
-          
-          // Patch preferred_supplier_id directly to Supabase as the n8n workflow
-          // may not handle this field yet.
-          if (row.preferred_supplier_id) {
-            await supabase
-              .from('Products')
-              .update({ preferred_supplier_id: row.preferred_supplier_id })
-              .eq('product_id', row.product_id)
+          // Insert directly into Supabase Products table
+          const { error: upsertError } = await supabase
+            .from('Products')
+            .upsert(productData, { onConflict: 'product_id' })
+
+          if (upsertError) throw upsertError
+
+          // Fire WF-01 webhook in background (non-blocking)
+          // This lets n8n do its data cleaning pipeline
+          try {
+            await postWebhook(WEBHOOKS.productIngest, productData)
+          } catch {
+            // Webhook failure is non-fatal — DB is the source of truth
           }
 
           success++
         } catch (err) {
           failed++
-          errors.push(`${row.product_id}: ${err.message}`)
+          errors.push(`${row.product_id}: ${err.message || 'Failed to save product'}`)
         }
       }
 

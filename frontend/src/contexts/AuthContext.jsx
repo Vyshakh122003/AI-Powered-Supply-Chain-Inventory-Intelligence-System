@@ -44,7 +44,7 @@ export function AuthProvider({ children }) {
           whatsapp_numbers: null,
           safety_factor: 1.5,
           default_lead_days: 3,
-          onboarding_completed: false,
+          onboarding_complete: false,
         })
         .select()
         .single()
@@ -106,7 +106,7 @@ export function AuthProvider({ children }) {
           whatsapp_numbers: null,
           safety_factor: 1.5,
           default_lead_days: 3,
-          onboarding_completed: false,
+          onboarding_complete: false,
         })
       if (profileError) console.error('Error creating store profile:', profileError)
     }

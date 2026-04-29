@@ -69,9 +69,9 @@ export default function Settings() {
     if (!user) return
     setSaving(true)
     try {
-      const whatsappArr = form.whatsapp_numbers
-        ? form.whatsapp_numbers.split(',').map(n => n.trim()).filter(Boolean)
-        : []
+      const whatsappStr = form.whatsapp_numbers
+        ? form.whatsapp_numbers.split(',').map(n => n.trim()).filter(Boolean).join(', ')
+        : null
 
       const { error } = await supabase
         .from('Store Profiles')
@@ -79,7 +79,7 @@ export default function Settings() {
           store_name: form.store_name,
           owner_name: form.owner_name,
           phone: form.phone,
-          whatsapp_numbers: whatsappArr,
+          whatsapp_numbers: whatsappStr,
           city: form.city || null,
           store_type: form.store_type || null,
           safety_factor: parseFloat(form.safety_factor) || 1.5,
@@ -87,7 +87,7 @@ export default function Settings() {
           alert_time: form.alert_time || '08:00',
           timezone: form.timezone || 'Asia/Kolkata',
         })
-        .eq('id', user.id)
+        .eq('user_id', user.id)
 
       if (error) throw error
       toast.success('Profile saved')

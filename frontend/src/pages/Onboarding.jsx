@@ -46,7 +46,7 @@ export default function Onboarding() {
   }
 
   // If onboarding already completed, go to dashboard
-  if (!authLoading && storeProfile?.onboarding_completed) {
+  if (!authLoading && storeProfile?.onboarding_complete) {
     return <Navigate to="/dashboard" replace />
   }
 
@@ -62,9 +62,9 @@ export default function Onboarding() {
     if (!user) return
     setSaving(true)
     try {
-      const whatsappArr = form.whatsapp_numbers
-        ? form.whatsapp_numbers.split(',').map((n) => n.trim()).filter(Boolean)
-        : []
+      const whatsappStr = form.whatsapp_numbers
+        ? form.whatsapp_numbers.split(',').map((n) => n.trim()).filter(Boolean).join(', ')
+        : null
 
       const { error } = await supabase
         .from('Store Profiles')
@@ -74,12 +74,12 @@ export default function Onboarding() {
           phone: form.phone,
           city: form.city,
           store_type: form.store_type,
-          whatsapp_numbers: whatsappArr,
+          whatsapp_numbers: whatsappStr,
           safety_factor: parseFloat(form.safety_factor) || 1.5,
           default_lead_days: parseInt(form.default_lead_days, 10) || 3,
-          onboarding_completed: true,
+          onboarding_complete: true,
         })
-        .eq('id', user.id)
+        .eq('user_id', user.id)
 
       if (error) throw error
       toast.success('Store setup complete!')

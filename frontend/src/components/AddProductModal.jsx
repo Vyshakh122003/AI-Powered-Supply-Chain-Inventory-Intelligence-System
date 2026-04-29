@@ -54,6 +54,11 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }) {
     }
     setLoading(true)
     try {
+      if (!storeProfile?.id) {
+        toast.error('Store profile is not ready yet. Please try again in a moment.')
+        return
+      }
+
       const body = {
         product_id: formData.product_id,
         product_name: formData.product_name,
@@ -63,24 +68,20 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }) {
         reorder_threshold: Number(formData.reorder_threshold) || 0,
         unit_price: Number(formData.unit_price) || 0,
         preferred_supplier_id: formData.preferred_supplier_id || null,
+        store_id: storeProfile.id,
       }
-      await postWebhook(WEBHOOKS.productIngest, body)
-      
-      // Patch supplier association after webhook has created/updated the product.
-      // Retry with delay since the webhook is async and the row may not exist yet.
-      if (formData.preferred_supplier_id) {
-        const patchSupplier = async (retries = 3) => {
-          const { error: patchErr } = await supabase.from('Products').update({
-            preferred_supplier_id: formData.preferred_supplier_id
-          }).eq('product_id', formData.product_id)
-          if (patchErr && retries > 0) {
-            await new Promise(r => setTimeout(r, 1000))
-            return patchSupplier(retries - 1)
-          }
-        }
-        // Wait a moment for the webhook to process, then patch
-        await new Promise(r => setTimeout(r, 1500))
-        await patchSupplier()
+
+      const { error: upsertError } = await supabase
+        .from('Products')
+        .upsert(body, { onConflict: 'product_id' })
+
+      if (upsertError) throw upsertError
+
+      try {
+        await postWebhook(WEBHOOKS.productIngest, body)
+      } catch {
+        // Keep the user-facing add flow successful if the workflow webhook
+        // is temporarily unavailable.
       }
 
       toast.success('Product added successfully!')
