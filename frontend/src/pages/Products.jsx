@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { WEBHOOKS, postWebhook } from '../lib/config'
 import { formatCurrency } from '../lib/helpers'
@@ -16,6 +17,7 @@ import {
 const PAGE_SIZE = 20
 
 export default function Products() {
+  const { storeProfile } = useAuth()
   const location = useLocation()
   const initialParams = new URLSearchParams(location.search)
   const initialRisk = (() => {
@@ -145,31 +147,45 @@ export default function Products() {
 
   const handleSaveEdit = async (productId) => {
     try {
-      const body = {
-        product_id: productId,
+      if (!storeProfile?.id) {
+        toast.error('Store profile not ready')
+        return
+      }
+
+      // 1. Directly update Supabase (Source of Truth)
+      const updatePayload = {
         product_name: editData.product_name,
         category: editData.category,
-        current_stock: Number(editData.current_stock),
-        reorder_threshold: Number(editData.reorder_threshold),
-        unit_price: Number(editData.unit_price),
-        avg_daily_sales: Number(editData.avg_daily_sales),
+        current_stock: Number(editData.current_stock) || 0,
+        reorder_threshold: Number(editData.reorder_threshold) || 0,
+        unit_price: Number(editData.unit_price) || 0,
+        avg_daily_sales: Number(editData.avg_daily_sales) || 0,
         preferred_supplier_id: editData.preferred_supplier_id || null,
       }
-      await postWebhook(WEBHOOKS.productIngest, body)
 
-      // Patch supplier association after webhook processes.
-      // Small delay to let the async webhook update the row first.
-      if (editData.preferred_supplier_id !== undefined) {
-        await new Promise(r => setTimeout(r, 1000))
-        await supabase.from('Products').update({
-          preferred_supplier_id: editData.preferred_supplier_id || null
-        }).eq('product_id', productId)
+      const { error: dbError } = await supabase
+        .from('Products')
+        .update(updatePayload)
+        .eq('product_id', productId)
+        .eq('store_id', storeProfile.id)
+
+      if (dbError) throw dbError
+
+      // 2. Fire webhook non-blockingly for secondary processing (stockout calculations)
+      const webhookPayload = {
+        product_id: productId,
+        store_id: storeProfile.id,
+        ...updatePayload
       }
+      postWebhook(WEBHOOKS.productIngest, webhookPayload).catch(() => {
+        console.warn('Webhook failed, but DB was updated')
+      })
 
       toast.success('Product updated')
       setEditingId(null)
       fetchProducts()
-    } catch {
+    } catch (err) {
+      console.error(err)
       toast.error('Failed to update product')
     }
   }
