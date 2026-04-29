@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import {
-  Package, Store, User, Clock,
+  Package, Store, User, Clock, Home,
   ArrowRight, ArrowLeft, Loader2, CheckCircle2,
 } from 'lucide-react'
 
@@ -246,7 +246,16 @@ export default function Onboarding() {
   const canGoNext = currentStep.validate()
 
   return (
-    <div className="min-h-screen bg-surface flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-surface flex items-center justify-center px-4 py-10 relative">
+      {/* Home button */}
+      <button
+        onClick={() => navigate('/')}
+        className="absolute top-5 left-5 inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted hover:text-text bg-white border border-border rounded-lg shadow-sm hover:shadow transition-all cursor-pointer"
+      >
+        <Home className="w-4 h-4" />
+        Home
+      </button>
+
       <div className="w-full max-w-lg">
         {/* Logo */}
         <div className="text-center mb-6">

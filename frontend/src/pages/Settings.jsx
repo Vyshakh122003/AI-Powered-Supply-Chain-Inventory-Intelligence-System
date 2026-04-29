@@ -86,6 +86,7 @@ export default function Settings() {
           default_lead_days: parseInt(form.default_lead_days, 10) || 3,
           alert_time: form.alert_time || '08:00',
           timezone: form.timezone || 'Asia/Kolkata',
+          onboarding_complete: true,
         })
         .eq('user_id', user.id)
 
