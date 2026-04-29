@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, Navigate } from 'react-router-dom'
+import { useNavigate, Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
@@ -248,13 +248,13 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen bg-surface flex items-center justify-center px-4 py-10 relative">
       {/* Home button */}
-      <button
-        onClick={() => navigate('/')}
+      <Link
+        to="/"
         className="absolute top-5 left-5 inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted hover:text-text bg-white border border-border rounded-lg shadow-sm hover:shadow transition-all cursor-pointer"
       >
         <Home className="w-4 h-4" />
         Home
-      </button>
+      </Link>
 
       <div className="w-full max-w-lg">
         {/* Logo */}

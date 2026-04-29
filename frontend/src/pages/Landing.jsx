@@ -1,4 +1,4 @@
-import { Link, Navigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
   Package, BarChart3, AlertTriangle, Truck, Brain,
@@ -47,6 +47,7 @@ const stats = [
 
 export default function Landing() {
   const { session, loading } = useAuth()
+  const isAuthenticated = !loading && session
 
   if (loading) {
     return (
@@ -54,11 +55,6 @@ export default function Landing() {
         <Loader2 className="w-8 h-8 animate-spin text-accent" />
       </div>
     )
-  }
-
-  // If already authenticated, go to dashboard
-  if (session) {
-    return <Navigate to="/dashboard" replace />
   }
 
   return (
@@ -73,18 +69,30 @@ export default function Landing() {
             <span className="text-lg font-bold text-text tracking-tight">StockSense AI</span>
           </div>
           <div className="flex items-center gap-3">
-            <Link
-              to="/login"
-              className="text-sm font-medium text-muted hover:text-text transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link
-              to="/signup"
-              className="text-sm font-medium bg-accent text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Get Started
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center gap-2 text-sm font-medium bg-accent text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Go to Dashboard
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="text-sm font-medium text-muted hover:text-text transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/signup"
+                  className="text-sm font-medium bg-accent text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
