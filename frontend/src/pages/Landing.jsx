@@ -112,19 +112,31 @@ export default function Landing() {
           generate smart reorder suggestions, and keep your kirana store running smoothly.
         </p>
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link
-            to="/signup"
-            className="inline-flex items-center gap-2 bg-accent text-white px-6 py-3 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
-          >
-            Start Free
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-          <Link
-            to="/login"
-            className="inline-flex items-center gap-2 bg-white text-text border border-border px-6 py-3 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors"
-          >
-            Sign In
-          </Link>
+          {isAuthenticated ? (
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center gap-2 bg-accent text-white px-6 py-3 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Go to Dashboard
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/signup"
+                className="inline-flex items-center gap-2 bg-accent text-white px-6 py-3 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Start Free
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-2 bg-white text-text border border-border px-6 py-3 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Sign In
+              </Link>
+            </>
+          )}
         </div>
       </section>
 
@@ -214,13 +226,23 @@ export default function Landing() {
         <p className="text-muted mt-2 max-w-lg mx-auto">
           Join store owners who have automated their supply chain decisions with AI.
         </p>
-        <Link
-          to="/signup"
-          className="inline-flex items-center gap-2 bg-accent text-white px-6 py-3 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors mt-6"
-        >
-          Create Free Account
-          <ArrowRight className="w-4 h-4" />
-        </Link>
+        {isAuthenticated ? (
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center gap-2 bg-accent text-white px-6 py-3 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors mt-6"
+          >
+            Go to Dashboard
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        ) : (
+          <Link
+            to="/signup"
+            className="inline-flex items-center gap-2 bg-accent text-white px-6 py-3 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors mt-6"
+          >
+            Create Free Account
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        )}
       </section>
 
       {/* ── Footer ─────────────────────────────────────── */}

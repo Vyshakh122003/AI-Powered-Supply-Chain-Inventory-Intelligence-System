@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import {
-  Package, Store, User, Clock, Home,
+  Package, Store, User, Clock, Home, LogOut,
   ArrowRight, ArrowLeft, Loader2, CheckCircle2,
 } from 'lucide-react'
 
@@ -25,7 +25,7 @@ const CITIES = [
 ]
 
 export default function Onboarding() {
-  const { user, session, loading: authLoading, storeProfile, refreshProfile } = useAuth()
+  const { user, session, loading: authLoading, storeProfile, refreshProfile, signOut } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
@@ -255,6 +255,18 @@ export default function Onboarding() {
         <Home className="w-4 h-4" />
         Home
       </Link>
+
+      {/* Sign Out button */}
+      <button
+        onClick={async () => {
+          await signOut()
+          navigate('/login')
+        }}
+        className="absolute top-5 right-5 inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted hover:text-text bg-white border border-border rounded-lg shadow-sm hover:shadow transition-all cursor-pointer"
+      >
+        <LogOut className="w-4 h-4" />
+        Sign Out
+      </button>
 
       <div className="w-full max-w-lg">
         {/* Logo */}
