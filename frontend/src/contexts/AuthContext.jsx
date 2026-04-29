@@ -15,23 +15,55 @@ export function AuthProvider({ children }) {
       const { data, error } = await supabase
         .from('Store Profiles')
         .select('*')
-        .eq('id', userId)
+        .eq('user_id', userId)
         .maybeSingle()
       if (!error && data) {
         setStoreProfile(data)
+        return
       }
-    } catch {
-      // Profile may not exist yet
+
+      // Legacy fallback for profiles created before user_id was wired up.
+      const { data: legacyData, error: legacyError } = await supabase
+        .from('Store Profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle()
+      if (!legacyError && legacyData) {
+        setStoreProfile(legacyData)
+        return
+      }
+
+      // Auto-repair: If we still have no profile, create one now!
+      const { data: newProfile, error: insertError } = await supabase
+        .from('Store Profiles')
+        .insert({
+          user_id: userId,
+          store_name: 'My Store',
+          owner_name: '',
+          phone: '',
+          whatsapp_numbers: null,
+          safety_factor: 1.5,
+          default_lead_days: 3,
+          onboarding_completed: false,
+        })
+        .select()
+        .single()
+      
+      if (!insertError && newProfile) {
+        setStoreProfile(newProfile)
+      }
+    } catch (err) {
+      console.error('Failed to fetch/create store profile:', err)
     }
   }
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
       setSession(currentSession)
       setUser(currentSession?.user ?? null)
       if (currentSession?.user) {
-        fetchStoreProfile(currentSession.user.id)
+        await fetchStoreProfile(currentSession.user.id)
       }
       setLoading(false)
     })
@@ -64,17 +96,14 @@ export function AuthProvider({ children }) {
 
     // Create store profile
     if (data.user) {
-      const storeId = `store_${data.user.id.slice(0, 8)}`
       const { error: profileError } = await supabase
         .from('Store Profiles')
         .insert({
-          id: data.user.id,
-          store_id: storeId,
+          user_id: data.user.id,
           store_name: storeName,
           owner_name: '',
           phone: '',
-          email: email,
-          whatsapp_numbers: [],
+          whatsapp_numbers: null,
           safety_factor: 1.5,
           default_lead_days: 3,
           onboarding_completed: false,
