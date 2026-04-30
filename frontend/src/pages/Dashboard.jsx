@@ -81,10 +81,14 @@ export default function Dashboard() {
     }
   }, [pipelineState])
 
-  // Clear 'complete' state after 1.5 seconds per user spec
+  // Clear states after delay
   useEffect(() => {
     if (pipelineState === 'complete') {
       const t = setTimeout(() => setPipelineState('idle'), 1500)
+      return () => clearTimeout(t)
+    }
+    if (pipelineState === 'failed') {
+      const t = setTimeout(() => setPipelineState('idle'), 3500)
       return () => clearTimeout(t)
     }
   }, [pipelineState])
@@ -138,12 +142,11 @@ export default function Dashboard() {
     setPipelineState('running')
     try {
       await triggerWebhook(WEBHOOKS.runPipeline)
-      // Safety timeout: force success after 20s if DB event never arrives.
+      // Safety timeout: transition to failed after 20s if DB event never arrives.
       setTimeout(() => {
         setPipelineState((prev) => {
           if (prev === 'running') {
-            fetchData() 
-            return 'complete'
+            return 'failed'
           }
           return prev
         })

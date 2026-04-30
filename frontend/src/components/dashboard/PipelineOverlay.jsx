@@ -50,7 +50,7 @@ export default function PipelineOverlay({ pipelineState, pipelineResult, onClose
     }
   }, [pipelineState])
 
-  // On Complete, append the final line instantly
+  // On Complete or Failed, append the final line instantly
   useEffect(() => {
     if (pipelineState === 'complete') {
       const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false })
@@ -59,6 +59,14 @@ export default function PipelineOverlay({ pipelineState, pipelineResult, onClose
         timestamp: timeStr, 
         id: 'done',
         success: true
+      }])
+    } else if (pipelineState === 'failed') {
+      const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false })
+      setLines(prev => [...prev, { 
+        text: 'ERROR: Pipeline connection timeout or upstream failure', 
+        timestamp: timeStr, 
+        id: 'failed',
+        error: true
       }])
     }
   }, [pipelineState])
@@ -71,6 +79,8 @@ export default function PipelineOverlay({ pipelineState, pipelineResult, onClose
   let progressWidth = 0
   if (pipelineState === 'complete') {
     progressWidth = 100
+  } else if (pipelineState === 'failed') {
+    progressWidth = Math.min(95, (elapsed / 12) * 95) // freeze where it died
   } else if (pipelineState === 'running') {
     progressWidth = Math.min(95, (elapsed / 12) * 95)
   }
@@ -81,8 +91,8 @@ export default function PipelineOverlay({ pipelineState, pipelineResult, onClose
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md transition-opacity">
       <div className="bg-[#020617] border border-slate-700 rounded-2xl shadow-2xl w-[420px] min-h-[480px] overflow-hidden flex flex-col relative transition-all duration-300">
         
-        {/* RUNNING & COMPLETE STATE */}
-        {(pipelineState === 'running' || pipelineState === 'complete') && (
+        {/* RUNNING, COMPLETE & FAILED STATE */}
+        {(pipelineState === 'running' || pipelineState === 'complete' || pipelineState === 'failed') && (
           <>
             {/* TOP SECTION - Radar Pulse */}
             <div className="h-44 flex items-center justify-center relative overflow-hidden bg-slate-900/40 border-b border-slate-800/50">
@@ -93,6 +103,13 @@ export default function PipelineOverlay({ pipelineState, pipelineResult, onClose
                     <CheckCircle2 className="w-12 h-12 text-green-500" />
                   </div>
                   <span className="text-green-500 font-bold text-lg tracking-tight">Intelligence Updated</span>
+                </div>
+              ) : pipelineState === 'failed' ? (
+                <div className="relative z-10 flex flex-col items-center animate-bounce">
+                  <div className="p-4 bg-red-500/20 rounded-full mb-2">
+                    <AlertTriangle className="w-12 h-12 text-red-500" />
+                  </div>
+                  <span className="text-red-500 font-bold text-lg tracking-tight">Pipeline Failed</span>
                 </div>
               ) : (
                 <div className="relative flex items-center justify-center w-12 h-12">
@@ -117,6 +134,13 @@ export default function PipelineOverlay({ pipelineState, pipelineResult, onClose
                     {pipelineResult?.reorders || 0} AI suggestions ready
                   </p>
                 </div>
+              ) : pipelineState === 'failed' ? (
+                <div className="flex flex-col items-center text-center h-full justify-center animate-terminal">
+                   <p className="text-sm text-red-400/80 leading-relaxed font-mono">
+                    System timed out waiting for database confirmation.<br/>
+                    Please check n8n for workflow execution details.
+                  </p>
+                </div>
               ) : (
                 <div className="flex flex-col gap-1.5 font-mono text-[11px] leading-tight text-slate-400">
                   {visibleLines.map((line, idx) => {
@@ -124,9 +148,9 @@ export default function PipelineOverlay({ pipelineState, pipelineResult, onClose
                     return (
                       <div key={line.id} className="animate-terminal flex items-start gap-2">
                         <span className="text-slate-500 shrink-0">[{line.timestamp}]</span>
-                        <span className={line.success ? 'text-green-400' : 'text-slate-300'}>
-                          {line.success ? '✓' : '►'} {line.text}
-                          {isLast && (
+                        <span className={line.error ? 'text-red-400 font-bold' : line.success ? 'text-green-400' : 'text-slate-300'}>
+                          {line.error ? '✗' : line.success ? '✓' : '►'} {line.text}
+                          {isLast && pipelineState === 'running' && (
                             <span className="ml-1 inline-block w-1.5 bg-blue-500 h-3 animate-pulse align-middle" />
                           )}
                         </span>
@@ -141,7 +165,7 @@ export default function PipelineOverlay({ pipelineState, pipelineResult, onClose
             <div className="px-6 pb-6 mt-auto">
               <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden mb-2">
                 <div 
-                  className={`h-full transition-all ease-out ${pipelineState === 'complete' ? 'bg-green-500 duration-500' : 'bg-blue-600 duration-1000'}`}
+                  className={`h-full transition-all ease-out ${pipelineState === 'complete' ? 'bg-green-500 duration-500' : pipelineState === 'failed' ? 'bg-red-500 duration-300' : 'bg-blue-600 duration-1000'}`}
                   style={{ width: `${progressWidth}%` }}
                 />
               </div>
