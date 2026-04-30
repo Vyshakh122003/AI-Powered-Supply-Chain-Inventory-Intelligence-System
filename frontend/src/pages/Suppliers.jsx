@@ -78,6 +78,8 @@ export default function Suppliers() {
       email: supplier.email || '',
       delivery_time_days: supplier.delivery_time_days || '',
       supplies_categories: parseCategories(supplier.supplies_categories).join(', '),
+      reliability_score: supplier.reliability_score != null ? (supplier.reliability_score * 10).toFixed(1) : '',
+      price_score: supplier.price_score != null ? (supplier.price_score * 10).toFixed(1) : '',
     })
   }
 
@@ -96,6 +98,8 @@ export default function Suppliers() {
           email: editData.email || null,
           delivery_time_days: editData.delivery_time_days ? Number(editData.delivery_time_days) : null,
           supplies_categories: categoriesArray,
+          reliability_score: editData.reliability_score ? (Number(editData.reliability_score) / 10) : null,
+          price_score: editData.price_score ? (Number(editData.price_score) / 10) : null,
         })
         .eq('supplier_id', supplierId)
       if (error) throw error
@@ -232,11 +236,27 @@ export default function Suppliers() {
                         <td className="text-right px-4 py-3 font-mono">
                           {supplier.composite_score ?? '—'}
                         </td>
-                        <td className="text-right px-4 py-3 font-mono text-muted">
-                          {supplier.reliability_score != null ? (supplier.reliability_score * 10).toFixed(1) : '—'}/10
+                        <td className="px-4 py-3 text-right">
+                          <input
+                            type="number"
+                            min="0"
+                            max="10"
+                            step="0.1"
+                            value={editData.reliability_score}
+                            onChange={(e) => setEditData(prev => ({ ...prev, reliability_score: e.target.value }))}
+                            className="w-16 px-2 py-1 border border-border rounded text-sm text-right"
+                          />
                         </td>
-                        <td className="text-right px-4 py-3 font-mono text-muted">
-                          {supplier.price_score != null ? (supplier.price_score * 10).toFixed(1) : '—'}/10
+                        <td className="px-4 py-3 text-right">
+                          <input
+                            type="number"
+                            min="0"
+                            max="10"
+                            step="0.1"
+                            value={editData.price_score}
+                            onChange={(e) => setEditData(prev => ({ ...prev, price_score: e.target.value }))}
+                            className="w-16 px-2 py-1 border border-border rounded text-sm text-right"
+                          />
                         </td>
                         <td className="px-4 py-3 text-right">
                           <input
