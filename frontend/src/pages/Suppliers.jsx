@@ -91,13 +91,6 @@ export default function Suppliers() {
 
       const rScore = editData.reliability_score ? (Number(editData.reliability_score) / 10) : null
       const pScore = editData.price_score ? (Number(editData.price_score) / 10) : null
-      
-      let composite = null
-      let grade = null
-      if (rScore != null && pScore != null) {
-        composite = Math.round((rScore * 0.6 + pScore * 0.4) * 100)
-        grade = composite >= 80 ? 'A' : composite >= 60 ? 'B' : composite >= 40 ? 'C' : 'D'
-      }
 
       const { error } = await supabase
         .from('Suppliers')
@@ -110,8 +103,6 @@ export default function Suppliers() {
           supplies_categories: categoriesArray,
           reliability_score: rScore,
           price_score: pScore,
-          composite_score: composite,
-          supplier_grade: grade,
         })
         .eq('supplier_id', supplierId)
       if (error) throw error

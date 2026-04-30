@@ -39,8 +39,6 @@ export default function AddSupplierModal({ isOpen, onClose, onSuccess }) {
     try {
       const reliabilityNorm = formData.reliability_score / 10
       const priceNorm = formData.price_score / 10
-      const composite = Math.round((reliabilityNorm * 0.6 + priceNorm * 0.4) * 100)
-      const grade = composite >= 80 ? 'A' : composite >= 60 ? 'B' : composite >= 40 ? 'C' : 'D'
 
       const { error } = await supabase.from('Suppliers').insert({
         supplier_id: formData.supplier_id,
@@ -54,8 +52,6 @@ export default function AddSupplierModal({ isOpen, onClose, onSuccess }) {
           : [],
         reliability_score: reliabilityNorm,
         price_score: priceNorm,
-        composite_score: composite,
-        supplier_grade: grade,
         store_id: storeProfile.id,
       })
       if (error) throw error
