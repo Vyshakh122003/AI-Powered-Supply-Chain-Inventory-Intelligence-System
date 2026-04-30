@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { X, Loader2 } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 
 export default function AddSupplierModal({ isOpen, onClose, onSuccess }) {
+  const { storeProfile } = useAuth()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     supplier_id: '',
@@ -29,6 +31,10 @@ export default function AddSupplierModal({ isOpen, onClose, onSuccess }) {
       toast.error('Supplier ID and name are required')
       return
     }
+    if (!storeProfile?.id) {
+      toast.error('Store profile not ready')
+      return
+    }
     setLoading(true)
     try {
       const reliabilityNorm = formData.reliability_score / 10
@@ -50,6 +56,7 @@ export default function AddSupplierModal({ isOpen, onClose, onSuccess }) {
         price_score: priceNorm,
         composite_score: composite,
         supplier_grade: grade,
+        store_id: storeProfile.id,
       })
       if (error) throw error
       toast.success('Supplier added successfully!')
