@@ -43,6 +43,7 @@
 }
 
 \begin{document}
+\raggedbottom
 
 \title{StockSense AI: Intelligent Inventory for India's Small Retailers}
 
@@ -56,13 +57,11 @@
 \maketitle
 
 \begin{abstract}
-Most small retailers in India still use notebooks and spreadsheets to track inventory. They have no way to predict what will sell or when items will run out. And they cannot afford the expensive enterprise software that large stores use.
+Most of the small scale shop owners or kirana Store owners still use notebooks or at max Excel sheets to track their inventory. They don't have access to  tools or technologies which help them in tracking the inventory and predicting situations like stockouts etc. Also, using the large scale expensive enterprise software is really impractical for them.
 
-I solved this by building StockSense AI. It is an inventory manager and supplier decision-support tool. The entire system runs on free and low-cost cloud services.
+In order to solve this problem I developed StockSense AI, which is an intelligent inventory management tool for the small retailers. It can predict stockout dates, flag risky items, score suppliers using a Weighted Sum Model, and explain generate reorder decisions along with it's explanation using the assistance of an LLM. Finally,the alerts generated will be sent directly to the shop owners WhatsApp.
 
-Here is what it does: predicts stockout dates, flags at-risk items, scores suppliers using a Weighted Sum Model, and explains reorder decisions using an LLM. Alerts go directly to the shop owner's WhatsApp via Twilio.
-
-I ran a daily orchestration that executes eight sequential workflows, complemented by two AI Vision pipelines for onboarding and delivery intake. I tested it with ten products. The monthly cost for a single store is under Rs. 500. The owner gets timely alerts without any extra effort.
+The entire product can be automated by enabling the orchestration of the pipeline at a fixed time so that the inventory is up to date. The product is powered  by 10 individual N8N workflows, which act as the brain of the system.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -70,7 +69,7 @@ Inventory Management, Supply Chain Intelligence, Workflow Automation, n8n, Large
 \end{IEEEkeywords}
 
 \section{Introduction}
-\IEEEPARstart{T}{here} are 12 million kirana stores scattered across India. They form the backbone of neighborhood retail. But most of them struggle with the basics: managing inventory. Manual tracking cannot predict what will sell. Store owners guess. They check stock at random. They run out unexpectedly. When a product runs out, they lose customers. When they overstock, items expire and money is wasted.
+\IEEEPARstart{T}{here} are 12 million kirana stores in India and they act as the supporting pillar of the retail industry in our country. But most of them face the common problem of efficient inventory management. They have to deal with situations like stockouts where they can loose a potential customer and overstock situations which is again financial loss.
 
 Small retailers face a specific set of constraints. Suppliers are scattered and unreliable. Delivery times change without warning. Affordable tools do not exist. Enterprise ERP costs thousands per month and is too complicated for one person to operate. Most point-of-sale systems only record what was sold. They do not predict what will be needed, warn about stockouts, rank suppliers, or recommend reorders.
 
@@ -84,59 +83,59 @@ Machine learning can forecast demand better than simple moving averages. That's 
 
 Recently, large language models have been proposed for procurement and ordering. They can reduce human bias in decision-making. But I found very little published work on running LLMs in real-time operational workflows with tight cost constraints. That gap is what I wanted to address.
 
-Low-code platforms like n8n changed what's possible. They democratized workflow automation. Before n8n, building an automated ordering system meant hiring developers. Now a single person can orchestrate complex workflows without writing code. This shift is significant for small businesses.
+Low code platforms like N8N has changed the overall technical capabilities and oppurtunities. Before this people had to hire an experienced developer to build workflow automation's for businesses, but nowadays people with even less or no technical knowledge can build automation workflows for various needs.
 
-Supplier scoring is not new. The Weighted Sum Model, which ranks suppliers by price, reliability, and delivery speed, has been used in operations research for decades.
+The supplier scoring model used in this project is also not a new concept as it is a fundamental concept of ranking suppliers based on pricing, reliability and delivery speed that has been used in the field of supply chain management and operations research for many decades.
 
-What I didn't find was a complete system that ties all these pieces together for small Indian retailers. You can find demand forecasting. You can find supplier scoring. You can find workflow automation. But I couldn't find one affordable, simple tool that integrates all three. Most smart retail solutions emphasize expensive hardware: barcode scanners, RFID readers, network infrastructure. These costs are prohibitive for a kirana store.
-
-My approach is different. I use software-only automation. No expensive sensors. No dedicated infrastructure. Just cloud services and n8n workflows. I integrated stockout prediction, supplier scoring with the Weighted Sum Model, LLM-based reorder reasoning, and WhatsApp notifications into a single affordable system designed specifically for small Indian stores.
+All the concepts discussed above exists as individual systems and they are used in various industries, but a complete package of all of them tied together as a single system is something which is missing and will be really helpful for small scale shop owners as they don't require the complex retail solutions available in the market which comes along with expensive hardware's like barcode scanner, RFID readers etc.Implementation of such heavy systems will be unnecessary financial burden on the kirana shop owners.
+  
+The approach that I used here is very simple. I am not claiming that I have built a complex software system, but what I have built is a very simple automation based system based on N8N which involves features like daily inventory management, stock alerts, supplier scoring, WhatsApp alerts, AI enabled inventory processing etc. This is a simple solution for the daily inventory related problems that kirana show owners face.
 
 \section{Motivation and Problem Specification}
 
-While academic literature explores sophisticated inventory models, a significant gap exists between high-end enterprise solutions and the operational reality of small-scale Indian retailers.
+My main motivation is to address the significant gap that exists between the high end enterprise solutions available in the market and the actual ground reality of operational conditions of small scale retailers in the country.
 
 \subsection{Socio-Economic Motivation}
-Kirana stores serve over 50 percent of India's retail market and are essential to neighborhood commerce. Yet they face significant technology access challenges, particularly given their limited capital budgets and lack of technical staff. The primary objective of StockSense AI is to enable small business owners to access inventory intelligence without requiring expensive ERP subscriptions. The financial impact of a single stockout (lost customer) or overstock (expired goods) can significantly impact the thin operating margins of a neighborhood shop.
+Kirana shop owners comprises over 50 percentage of India's retail market and it clearly shows that they contribute significantly towards the growth of the country. They operate in a very dynamic environment where situations like stock out or overstock can significantly impact them financially. Due to their limited budget and lack of technical staff, it is very difficult for them to afford high end enterprise solutions available in the market. Hence, the primary objective of StockSense AI is to make sure that even small scale shop owners have access to inventory intelligence without needing to subscribe to expensive ERP solutions.
 
 \subsection{Gap Analysis and Technical Advantage}
-A comparative analysis reveals two major gaps in existing systems:
+A comprehensive analysis on this problem shows that there are two major gaps in the existing system:
 \begin{enumerate}
-    \item \textbf{Financial Barrier}: Most "smart" systems require hardware (RFID) or monthly SaaS fees (Rs. 500--5,000). StockSense operates at under Rs.~500/month by orchestrating free-tier and low-cost cloud services, compared to Rs.~4,000+ for enterprise alternatives.
-    \item \textbf{Intelligent Support}: Basic POS systems track what \textit{was} sold, but do not predict what \textit{will} be needed. The integration of 8B-parameter LLMs provides reasoning-based reorder logic that was previously only available to large-scale retail chains.
+    \item \textbf{Financial Barrier}: Most of the existing solutions require expensive hardware like barcode scanners and they are really expensive for small scale business owners.Whereas StockSense AI operate under Rs.500/month by making use of free tier or low cost cloud services.
+    \item \textbf{Intelligent Support}: Basic POS systems that are available in the market can show what was sold but they cannot predict what will be needed or stockout conditions very efficiently. Hence, the integrating the LLM model provides a reasoning based reorder logic that was previously available to only large scale retail chains. 
 \end{enumerate}
 
 \subsection{Problem Statement}
-The objective of this research is to design and implement a minimal-infrastructure, automated intelligence pipeline that transforms raw inventory data into actionable reorder recommendations and delivers them via WhatsApp, thereby reducing manual error and stockout risks in small retail environments.
+The main objecive of my project is to design and implement a system that require minimum infrastructure needs and operate with the help of a automated intelligence pipeline that provides a really advanced inventory management system for small scale shop owners with features like stock our alerts delivered through WhatsApp, AI based reorder suggestions etc. 
 
 \section{Proposed System}
 
 \subsection{System Architecture}
 
-The system has four layers. Each layer has its own job and talks to the others through REST APIs. This design keeps things modular, scalable, and easy to test.
+The system basically consists of 4 main layers with  different responsibility and they communicate with each other with the help of REST API framework. This current design ensures that the overall system is modular, scalable and easier to test.
 
-The \textbf{Frontend Layer} is a React 19 Single Page Application (SPA), built with Vite 8 and Tailwind CSS v4. The shop owner gets various interfaces : an inventory dashboard showing stock levels and health scores, an AI reorder module for reviewing suggestions, and a supplier analytics page. The frontend talks to the workflow engine via REST webhooks. It connects to Supabase for authentication and real-time updates.
+The \textbf{Frontend Layer} is built using tech stack like React 19, Vite 8 and Tailwind CSS v4. The user can see various interfaces like an invntory dashboard showing current stock levels and overall store health, AI based reorders suggestions page, supplier scoring page etc. The frontend communicate with the backend that is N8N workflow automations using REST webshooks and connects to supabase for authentication and real time updates.
 
-The \textbf{Workflow Engine Layer} runs in n8n, an open-source automation platform. Ten workflows handle the entire business logic. Here's what each one does:
+The \textbf{Workflow Engine Layer} is based on a latest technology called N8N, which is an open source automation platform. There are 10 different workflows in this project that handles various functions like:
 
 \begin{itemize}
-\item \textit{WF-01} (Data Ingestion): Normalizes inventory updates and delivery records into the database.
-\item \textit{WF-02} (Stockout Calculation): Computes days-to-stockout for each product.
-\item \textit{WF-03} (Alert Filtering): Identifies products below reorder threshold.
-\item \textit{WF-04} (Risk Scoring): Classifies products as HIGH, MEDIUM, LOW, or UNKNOWN.
-\item \textit{WF-05} (AI Suggestions): Calls Groq API to generate reorder recommendations.
-\item \textit{WF-06} (Supplier Scoring): Computes supplier scores using Weighted Sum Model.
-\item \textit{WF-07} (WhatsApp Delivery): Sends alerts to the shop owner via Twilio.
-\item \textit{WF-08} (Master Orchestrator): Runs daily at 8:00 AM IST, executes WF-02 through WF-07 in order.
-\item \textit{WF-09} (AI Vision Onboarding): Extracts product data from photos for automated inventory setup.
-\item \textit{WF-10} (Smart Scan Invoices): Processes supplier bills to automatically update stock levels.
+\item \textit{WF-01} (Data Ingestion): Takes care of the inventory updates and delivery records in the database.
+\item \textit{WF-02} (Stockout Calculation): Calculates days to stockout for each product.
+\item \textit{WF-03} (Alert Filtering): Highlights risky products with stock level below their threshold.
+\item \textit{WF-04} (Risk Scoring): Classifies risk levels of products as HIGH, MEDIUM, LOW, or UNKNOWN.
+\item \textit{WF-05} (AI Suggestions): Generate reorder recommendations with the help of Groq AI.
+\item \textit{WF-06} (Supplier Scoring): Calculates supplier score using  the Weighted Sum Model.
+\item \textit{WF-07} (WhatsApp Delivery): Sends stock alerts to the shop owners with the help of Twillio API.
+\item \textit{WF-08} (Master Orchestrator): When deployed in cloud it will run daily automatically at a fixed time executing WF-02 to WF-07 in a sequential order.
+\item \textit{WF-09} (AI Vision Onboarding): Extracts product details automatically using Gemini 2.5 Flash model and helps in updating product details.
+\item \textit{WF-10} (Smart Scan Invoices): Process supplier bills using Gemini 2.5 Flash to automatically update stock levels.
 \end{itemize}
 
-The \textbf{Database Layer} uses Supabase (managed PostgreSQL) with real-time subscriptions via WebSocket. The schema has eight tables: Store Profiles, Products, Suppliers, Stock Alerts, Reorder Suggestions, Stock Transactions, Daily Snapshots, and System Logs. The operational data tables reference a store\_id field for future multi-store support, while Store Profiles acts as the parent store table. When inventory or alerts change, real-time subscriptions push updates to the dashboard instantly. No stale data.
+The \textbf{Database Layer} uses Supabase which is an open source postgreSQL based development platfom that provide real time access via websockets. The project schema consists of 8 major tables like Store Profile, Products, Suppliers, Stock Alerts, Reorder Suggestions, Stock Transactions, Daily Snapshots and System Logs. When the pipeline runs and inventory or alerts change the real time subscription pushes the latest updates to the frontend ensuring that there is no stale data.
 
-The \textbf{AI/External Services Layer} integrates three external APIs. Groq's Llama 3.1 8B model generates reorder reasoning, Google Gemini 2.5 Flash supports image-based product and invoice extraction, and Twilio's WhatsApp Business API sends alerts. In WF-05, I pass product data, stock levels, and supplier info to Groq. It returns a natural-language explanation of why to reorder. In WF-09 and WF-10, Gemini extracts structured data from uploaded images. In WF-07, alerts are formatted and sent via WhatsApp. The owner gets critical notifications instantly on their phone.
+The \textbf{AI/External Services Layer} integrates three external APIs. First one is the Groq's Llama 3.1 8B model that help in generating reorder reasoning, second is the Google Gemini 2.5 Flash model that helps in image based product and invoice processing, and last one is Twilio's WhatsApp Business API that helps in sending alerts to the shopowners. In WF-05,product data, stock levels, and supplier information is passed to Groq, it then processes all the inputs and give a reorder suggestion with reason. In WF-09 and WF-10, Gemini extracts structured data from the uploaded product or invoice images. In WF-07, alerts are generated and sent to the shopowners WhatsApp as soon as the pipeline runs.
 
-All layers talk to each other via HTTP REST and standard database drivers. This loose coupling lets me test each layer independently. If I need to swap out Supabase for PostgreSQL, I can do it without touching the workflows. Similarly, n8n can be replaced with another workflow platform later.
+All layers communicate with eachother using HTTP REST and standard database drivers. Hence, it facilitate easy testing of each layers independently without affecting another.
 
 \begin{figure}[H]
 \centering
@@ -178,13 +177,13 @@ All layers talk to each other via HTTP REST and standard database drivers. This 
 % ====== LAYER 2: Network & Security Bridge ======
 \draw[black, rounded corners=3pt, fill=gray!20] (0,-3.7) rectangle (11.6,-4.9);
 \node[font=\sffamily\scriptsize\bfseries] at (5.8,-3.95) {Network \& Security Bridge};
-\node[md, text width=2.6cm] at (3.2,-4.45) {Vite Proxy Server (:5173)};
+\node[md, text width=2.6cm] at (3.2,-4.45) {Local Vite Development Proxy (:5173)};
 \draw[wf arrow] (5.0,-4.45) -- (7.5,-4.45);
-\node[md, text width=3.2cm] at (9.3,-4.45) {ngrok Secure Tunnel (HTTPS)};
+\node[md, text width=3.2cm] at (9.3,-4.45) {ngrok Tunnel (HTTPS)};
 
 % ====== LAYER 3: n8n AI Workflow Engine ======
 \draw[black, rounded corners=3pt, fill=gray!2] (0,-5.2) rectangle (11.6,-7.7);
-\node[font=\sffamily\scriptsize\bfseries] at (5.8,-5.45) {n8n AI Workflow Engine};
+\node[font=\sffamily\scriptsize\bfseries] at (5.8,-5.45) {N8N Workflow System};
 
 % WF-08 Orchestrator sub-box
 \draw[black!60, rounded corners=2pt, dash pattern=on 4pt off 4pt] (0.15,-5.7) rectangle (9.6,-7.45);
@@ -219,20 +218,20 @@ All layers talk to each other via HTTP REST and standard database drivers. This 
 
 \subsection{Terminology Definitions}
 
-To avoid ambiguity, we define two central concepts in the system:
+The two of the central concepts in the system are:
 
-\textbf{Stock Alert:} A Stock Alert is triggered automatically when a product's current inventory level falls to or below its configured reorder threshold. For example, if rice is configured with a reorder threshold of 20 units and current stock drops to 20 or fewer units, a Stock Alert is generated. This is a deterministic, threshold-based trigger with no AI involvement.
+\textbf{Stock Alert:} A stock alert is generated when the current stock level of a product falls to the reorder threshold level or below it. For example, let's say the current stock level of Rice Bag(5Kg) is 20 and the the threshold that was set for this particular product was also 20, then a stock alert will be generated and it will be sent to the shop owners whatsapp with the help of twillio's API.
 
-\textbf{Reorder Suggestion:} A Reorder Suggestion is an AI-generated recommendation for the shop owner, created after a Stock Alert is triggered. The Groq Llama 3.1 8B model receives product details, current stock levels, supplier information, and recent sales history, then outputs natural language reasoning explaining why and how much to reorder. The suggestion includes specific supplier recommendations ranked by the Weighted Sum Model and includes context such as estimated delivery times and cost implications.
+\textbf{Reorder Suggestion:} A reorder suggestion is the AI generated recommendation for the shop owner after the stock alert is triggered and it is enabled with the help of Groq Llama 3.1 8B model. The model is given inputs like product details, current stock levels, supplier information, and recent sales history so that it can generate outputs in simple language stating how much reorder and from which supplier along with the reasoning.
 
-In the workflows: WF-03 generates Stock Alerts; WF-05 generates Reorder Suggestions based on those alerts.
+Hence, the WF-03 generates the stock alerts and WF-05 generates the reorder suggestions based on the stock alerts already generated.
 
 \subsection{Mathematical Models}
 
-The system implements several mathematical models for inventory analysis and supplier evaluation:
+The system is implemented using several mathematical models inorder to facilitate inventory analysis and supplier scoring. The various models are:
 
 \textbf{Stockout Prediction Model (WF-02):}
-The stockout date calculator computes the expected number of days until a product runs out of stock based on current inventory and sales velocity:
+This model calculates the expected number of days for a product to run out of stock based on the current stock level and the sales velocity:
 
 \begin{equation}
 \label{eq:stockout_days}
@@ -244,7 +243,7 @@ d_{\text{stockout}} = \left\lfloor \frac{S_{\text{current}}}{V_{\text{daily}}} \
 \text{date}_{\text{stockout}} = \text{date}_{\text{today}} + d_{\text{stockout}}
 \end{equation}
 
-where $S_{\text{current}}$ is the current stock level and $V_{\text{daily}}$ is the average daily sales velocity. If $V_{\text{daily}} = 0$, $d_{\text{stockout}}$ is set to 999 as a safe default. If $S_{\text{current}} = 0$, $d_{\text{stockout}} = 0$ indicating immediate stockout.
+where $S_{\text{current}}$ is the current stock level in the inventory and $V_{\text{daily}}$ is the average daily sales velocity of a particular product. If $V_{\text{daily}} = 0$, $d_{\text{stockout}}$ is set to 999 as a safe default. If $S_{\text{current}} = 0$, $d_{\text{stockout}} = 0$ indicating immediate stockout.
 
 \textbf{Stock Risk Classification (WF-04):}
 Products are classified into risk tiers based on $d_{\text{stockout}}$:
@@ -283,10 +282,10 @@ where the numerator is $n_L \cdot 100 + n_M \cdot 70 + n_H \cdot 30 + n_O \cdot 
 \section{Implementation}
 
 \subsection{Tools and Technologies}
-The proposed system is developed using a modern, low-cost technology stack carefully selected for accessibility and performance. The frontend application is built using \textbf{React 19} and \textbf{Vite 8}, with responsive styling implemented via \textbf{Tailwind CSS v4}. The backend architecture combines serverless database services with a self-hosted workflow engine, relying on \textbf{Supabase (PostgreSQL)} for robust, real-time database management and authentication. Complex business logic and orchestration are handled entirely by the \textbf{n8n} workflow automation engine. For AI-driven decision-making, the system integrates the \textbf{Groq API} hosting the Llama~3.1 8B model, ensuring high-speed inference for reorder suggestions. It also uses \textbf{Google Gemini 2.5 Flash} for product and invoice image extraction. Finally, the \textbf{Twilio API} is utilized for automated WhatsApp alert delivery.
+The proposed system is developed using a modern, low-cost technology stack carefully selected for accessibility and performance. The frontend application is built using \textbf{React 19} and \textbf{Vite 8}, with responsive styling implemented via \textbf{Tailwind CSS v4}. The backend architecture consists of the combination of serverless database service called supabase and a self hosted workflow engine relying on the database for robust and real time database management. All the complex business logics as well as orchestration are completely taken care of by the N8N workflow engine. For the AI based decision making capability the system uses Groq API hosting the Llama3.1 8B model which ensures high speed processing to facilitate reorder suggestions. The stock alerts which are generated are sent to the shop owners through whatsapp using the twillio's API.
 
 \subsection{Dataset}
-I tested the system with a synthesized dataset that mimics a real kirana store. The dataset includes a catalog of ten fast-moving consumer goods (FMCG) items with daily sales velocities, reorder thresholds, and current stock levels. I also created four supplier profiles with reliability and delivery speed metrics to test the supplier scoring model. This setup lets me validate edge cases systematically: zero sales days, stockouts, and delivery delays.
+In order to test the system I generated a synthesised product data set which consists of 10 different products and mapped them to 4 different suppliers.The helped me in testing the product thoroughly considering various edge cases like zero sales day, situations like stock outs and delivery delays.
 
 \subsection{Database Schema}
 
@@ -587,18 +586,13 @@ and (3)~available supplier profiles with
 \texttt{delivery\_time\_days}, and 
 \texttt{supplies\_categories}.
 
-The model is instructed to return a JSON array only, 
+The model is instructed to output a JSON array 
 with no markdown fencing or natural language preamble. 
-Each element contains \texttt{product\_id}, 
-\texttt{supplier\_id}, \texttt{suggested\_quantity} 
-(computed as $30 \times v$ where $v$ is average daily 
-sales), and a \texttt{reason} field providing a 
-single-sentence justification. Category matching between 
-products and supplier inventories is enforced as 
-case-insensitive. A rule-based fallback activates 
-if the API response cannot be parsed as valid JSON, 
-ensuring the system remains operational during 
-inference failures.
+Each element contains product id, 
+supplier id, suggested qty
+(calculated as $30 \times v$ where $v$ is average daily 
+sales), and a reason field providing a 
+single sentence justification for the suggestion it generated.
 
 For WF-09, a separate prompt instructs Google Gemini 2.5 Flash to analyze a base64-encoded image of a product and extract its \texttt{product\_name} and \texttt{category}. A recursive parser handles the multimodal response to correctly extract the structured JSON payload, enabling automated data entry.
 
@@ -632,12 +626,12 @@ The React 19 frontend provides the main application pages described in Table~\re
 \end{tabular}
 \end{table}
 
-The Dashboard implements a real-time pipeline overlay: when the user triggers WF-08, an animated modal cycles through realistic step messages while a Supabase Realtime subscription on System Logs listens for the pipeline completion insert. The moment n8n finishes, the overlay closes and the dashboard refreshes automatically without polling.
+Once the run pipeline button is triggered the user can see a animated overlay of pipeline processing that is taking place in the backend. If the pipeline completes the processing successfully then the user can see a green success message and automatically updated dashboard whereas if the pipeline fails then the user can see a failure message in red.
 
 \section{Results and Performance}
 
 
-The implemented system has been tested with sample data including ten products and four suppliers. Key performance characteristics are summarized in Table~\ref{tab:perf}.
+The implemented system was tested using a sample data consisting of 10 different products mapped against 4 different suppliers. The key performance metrics are summarized in the Table~\ref{tab:perf}.
 
 \begin{table}[htbp]
 \centering
@@ -659,9 +653,8 @@ Infrastructure Cost & Rs.\ 0 (prototype); $<$Rs.\ 500/mo (production) \\
 
 Table IV presents a comparative analysis of StockSense AI 
 against existing inventory management solutions available 
-to small Indian retailers. The comparison highlights the 
-unique positioning of the proposed system at the 
-intersection of AI capability and low-cost deployment.
+to small Indian retailers. The comparison shows the unique features 
+of StockSense AI compared to other existing products in the market.
 
 \begin{table}[htbp]
 \centering
@@ -685,10 +678,11 @@ Real-time Dashboard & Yes & Limited & Yes & No \\
 \end{table}
 
 \subsection*{Health Score Validation}
-To validate the health score formula defined in (5), 
-the system was evaluated across four inventory states 
-representative of typical kirana store conditions. 
-Table V presents the computed scores for each scenario.
+In order to validate the health score formula defined in (5), 
+the system was evaluated across four different inventory states 
+that represents some of the typical real time scenarios
+in the kriana stores. 
+The table V contains the computed scores for each of the scenarios.
 
 \begin{table}[htbp]
 \centering
@@ -707,52 +701,52 @@ Complete stockout  & 0  & 0 & 0 & 10 & 10 & 5   \\
 \end{tabular}
 \end{table}
 
-The formula produces scores consistent with operational 
-intuition: a fully stocked store scores 100, while a 
-store with eight out-of-stock products scores 18,
-signalling critical intervention. The non-zero floor 
-for complete stockout (score 5 rather than 0) avoids 
-false division-by-zero rendering in the dashboard gauge.
+Some of the key findings from the table which validates
+real world scenarios are: the fully stocked store scenario
+has a perfect score of 100 whereas the store with 3 oos 
+products has a score of 18 that shows the need of 
+critical intervention.
 
-The prototype operates on free-tier and sandbox services: Supabase (free tier PostgreSQL with 500~MB storage), Groq (free tier LLM with rate-limited inference), and n8n (self-hosted locally). Twilio WhatsApp is validated in sandbox mode during development. For production deployment, n8n requires cloud hosting (approximately Rs.~300--500/month on platforms such as Railway or Render), and the Twilio WhatsApp Business API incurs nominal per-message charges. Even with these costs, the total monthly expenditure for a single store remains under Rs.~500---an order of magnitude lower than enterprise alternatives such as Zoho Inventory.
+The prototype operates on free tier and sandboxed services like: Supabase , Groq, and N8N. The twilio WhatsApp is validated in sandbox environment mode during the development phase. For production deployment, n8n requires cloud hosting (approximately Rs.300 to 500/month on platforms such as Railway or Render), and the Twilio WhatsApp Business API incurs nominal charges/message. Even with these costs, the total monthly expenditure for a single store remains under Rs.500 which is practically affordable and useful for a small scale shop owner.
 
-The automated daily pipeline successfully orchestrates all sub-workflows in sequence, processing all products and generating alerts without manual intervention. The 8:00 AM IST schedule, configured via n8n's built-in cron trigger, delivers the daily intelligence digest at the start of business hours provided the workflow engine is actively hosted.
+The automated daily pipeline successfully orchestrates all sub workflows in sequence, processing all products and generating alerts without manual intervention. If the workflow engine is actively hosted in a cloud platform the shop owners can get the daily intelligence report at a specific time as per their 
+choice based on the individual specific needs using the N8N's built in cron trigger option that fires the pipeline automatically at a particular time.
 
-The WhatsApp integration provides a high-acceptance notification channel, particularly relevant for Indian retailers who prefer WhatsApp over email or SMS. The 24-hour anti-spam cooldown prevents notification fatigue while ensuring critical alerts are delivered promptly.
+The WhatsApp alert feature helps the shop owners in receiving stock alerts once the pipeline is triggered and it acts a simple yet effective source of information as most of the kirana shop owners in India will be using WhatsApp on a daily basis and it will be more convenient compared to SMS or mail notifications. The 24 hours anti spam cooldown feature ensure that the critical alerts are delivered promptly and service stays active.
 
-The health score provides an intuitive 0--100 metric summarizing inventory status at a glance. The weighted formula appropriately penalizes out-of-stock and high-risk products while rewarding well-stocked items.
+The health score on the main dashboard shows a score between 0 to 100 that shows the current state of the inventory and weighted formula correctly penalises the oos and high risk products whereas rewarding the well stocked products.
 
-AI-generated reorder suggestions using Groq Llama 3.1 8B provide contextual recommendations that consider product details, supplier capabilities, and current stock levels. The natural language reasoning output helps store owners understand the rationale behind each suggestion.
+The AI based reorder suggestion using the Groq Llama 3.1 8B provides really useful and simple recommendations in natural language that considers the product details, supplier capabilities, and current stock levels. It also helps the store owners in understanding the reason behind a particular suggestion generated.
 
 \section{Conclusion}
 
-This paper presented StockSense AI, a system for inventory management and supplier selection in small Indian retail stores. I demonstrated that sophisticated inventory intelligence is possible using entirely free-tier and low-cost cloud services, making advanced supply chain tools accessible to retailers who cannot afford enterprise software costing Rs.~4,000 or more per month.
+Hence, we discussed the detailed architecture and usage of the project StockSense AI in this paper. It clearly shows that this simple system helps small scale shop owners to track and manage their inventory in an efficient way with the help of advanced features that are available at a minimal cost compares to costly exisitng ERP solutions in the market.
 
-The system successfully integrates five key technical components: automated stockout prediction using daily sales velocity, AI-driven reorder recommendations via Groq Llama 3.1 8B, multi-criteria supplier scoring using a Weighted Sum Model, real-time WhatsApp alerts via Twilio, and fully orchestrated workflows in n8n. All of this operates at under Rs.~500 per month---an order of magnitude lower than traditional enterprise alternatives.
+The system successfully integrates 5 key technical parts like automated stockout prediction using daily sales velocity, AI-driven reorder recommendations via Groq Llama 3.1 8B, multi criteria supplier scoring using the Weighted Sum Model, real time WhatsApp alerts via Twilio, and fully orchestrated workflows in N8N. All of this operates at under Rs.500/month which is really cheaper and affordable for small scale shop owners compared to exising costly softwares.
 
-From an implementation perspective, the choice of low-code orchestration over traditional backend development proved particularly valuable. Rather than building custom microservices, n8n allowed rapid prototyping and deployment of complex business logic without requiring a dedicated development team. This design pattern is directly applicable to other small-business automation challenges where time-to-market and cost efficiency are critical.
+From the implementation perspective the usage of low code automation framework N8N was really useful as it helped in developing the complete backend as well as the business logics in a simple way compared to traditional coding method. This also shows that latest technologies like N8N is really helput in business automation's where time to market and cost efficiency plays a critical role in the operations.
 
-However, the system has clear limitations that merit discussion. First, stockout prediction relies on historical daily sales velocity and assumes demand patterns remain relatively stable. Sudden seasonal spikes or regional disruptions would not be captured without additional contextual inputs. Second, the Weighted Sum Model for supplier scoring is deterministic and does not learn from historical performance feedback. Over time, the weights could be adjusted based on actual delivery outcomes, creating an adaptive feedback loop. Third, the current implementation assumes a single store; scaling to multiple stores would require implementing row-level security and potentially partitioned data schemas in PostgreSQL.
+However current design and the overall system consists of several limitations that need to be disccused. First, the stock out prediction depends on historical daily sales velocity and assuems that the demand pattern remains relatively stable, it won't capture sudden seasonal spikes or situations like festivals etc. unless an extra context is provided. Second, the weigthed sum model which is used for supplier scoring is deterministic and it doesn't learn from historical performance feedbacks. Third, the current implementation is for a single store setup, inorder to facilitate multi stores capability we have enable row level security for the database tables and redesign the overall database schema.
 
-The success of this project suggests that the gap between what is theoretically optimal in supply chain management and what is practically deployed in small businesses is not primarily a technological one---it is an economic one. When tools become affordable and operationally simple, adoption becomes feasible. Future work should explore how similar low-cost integration patterns could serve other aspects of small retail operations: demand forecasting with external market data, dynamic pricing based on competitor analysis, or predictive maintenance for point-of-sale systems.
+Hence the project shows that with the help of latest technologies it is practically possible to develop simple but effective solutions to various business problems in much more cheaper way compared to traditional software development. StockSense AI is a practical and effective tool for kirana shop owners helping them in solving some of their biggest headaches related to inventory management
 
 \section{Future Scope}
 
 \label{sec:future}
 
-The current system is a working baseline. Future improvements are possible:
+The present system is a working prototype or proof of concept. Some of the future improvements in consideration are:
 
-\textbf{Barcode scanning} would let users look up products with the camera instead of typing IDs. The schema already accommodates barcode strings as identifiers.
+\textbf{Mobile App:} Since most of the small scale shope owners uses mobile as part of their daily life, hence it will be ideal to develop the mobile app version of this project.
 
-\textbf{Voice input in regional languages}---Telugu, Hindi, Marathi---would allow stock updates by speaking. The Web Speech API provides this natively in browsers.
+\textbf{Regional languages support:} Since India is a vast country with lot's of languages it will be ideal to cover as much regional languages possible inorder to cater to a large number of users.
 
-\textbf{Two-way WhatsApp} would let store owners approve reorder suggestions by replying to alerts, eliminating the need to log into the dashboard.
+\textbf{Two-way WhatsApp:} This feature would let the shop owners reply to the alerts that they revieve in WhatsApp and proceed to next stage without the need of logging into the app. 
 
 The schema has fields for seasonal tracking. During festivals, a seasonal multiplier could adjust demand estimates for accuracy around Diwali, Holi, and harvest season.
 
-\textbf{Multi-store support} through Supabase Row Level Security would let store chains use the system. The schema already includes store_id in all tables.
+\textbf{Multi-store support:} This can be facilitated with advanced database modelling and schema design.
 
-\textbf{Purchase order generation} would take approved suggestions and create formal orders with UPI payment links, completing the procurement cycle.
+\textbf{Purchase order generation:} This will process the reorder suggestions that are approved to the next stage of actual purchase which involves contacting suppliers and facilitation UPI payments automatically.
 
 \begin{thebibliography}{10}
 
