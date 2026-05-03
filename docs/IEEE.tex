@@ -62,7 +62,7 @@ I solved this by building StockSense AI. It is an inventory manager and supplier
 
 Here is what it does: predicts stockout dates, flags at-risk items, scores suppliers using a Weighted Sum Model, and explains reorder decisions using an LLM. Alerts go directly to the shop owner's WhatsApp via Twilio.
 
-I ran a daily orchestration that executes eight workflows in sequence. I tested it with six products. The monthly cost for a single store is under Rs. 500. The owner gets timely alerts without any extra effort.
+I ran a daily orchestration that executes eight sequential workflows, complemented by two AI Vision pipelines for onboarding and delivery intake. I tested it with ten products. The monthly cost for a single store is under Rs. 500. The owner gets timely alerts without any extra effort.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -74,7 +74,7 @@ Inventory Management, Supply Chain Intelligence, Workflow Automation, n8n, Large
 
 Small retailers face a specific set of constraints. Suppliers are scattered and unreliable. Delivery times change without warning. Affordable tools do not exist. Enterprise ERP costs thousands per month and is too complicated for one person to operate. Most point-of-sale systems only record what was sold. They do not predict what will be needed, warn about stockouts, rank suppliers, or recommend reorders.
 
-I built StockSense AI to fill this gap. The system tracks inventory levels and projects stockout dates using daily sales velocity. It generates reorder suggestions using Groq Llama 3.1 8B. It ranks suppliers based on price, reliability, and delivery speed. It sends alerts directly to the shop owner's WhatsApp. And it runs on a nearly free infrastructure that requires no manual setup.
+I built StockSense AI to fill this gap. The system tracks inventory levels and projects stockout dates using daily sales velocity. It extracts product details and processes supplier invoices from photos using Google Gemini 2.5 Flash. It generates reorder suggestions using Groq Llama 3.1 8B. It ranks suppliers based on price, reliability, and delivery speed. It sends alerts directly to the shop owner's WhatsApp. And it runs on a nearly free infrastructure that requires no manual setup.
 
 \section{Related Work}
 
@@ -117,7 +117,7 @@ The system has four layers. Each layer has its own job and talks to the others t
 
 The \textbf{Frontend Layer} is a React 19 Single Page Application (SPA), built with Vite 8 and Tailwind CSS v4. The shop owner gets various interfaces : an inventory dashboard showing stock levels and health scores, an AI reorder module for reviewing suggestions, and a supplier analytics page. The frontend talks to the workflow engine via REST webhooks. It connects to Supabase for authentication and real-time updates.
 
-The \textbf{Workflow Engine Layer} runs in n8n, an open-source automation platform. Eight workflows handle the entire business logic. Here's what each one does:
+The \textbf{Workflow Engine Layer} runs in n8n, an open-source automation platform. Ten workflows handle the entire business logic. Here's what each one does:
 
 \begin{itemize}
 \item \textit{WF-01} (Data Ingestion): Normalizes inventory updates and delivery records into the database.
@@ -127,14 +127,16 @@ The \textbf{Workflow Engine Layer} runs in n8n, an open-source automation platfo
 \item \textit{WF-05} (AI Suggestions): Calls Groq API to generate reorder recommendations.
 \item \textit{WF-06} (Supplier Scoring): Computes supplier scores using Weighted Sum Model.
 \item \textit{WF-07} (WhatsApp Delivery): Sends alerts to the shop owner via Twilio.
-\item \textit{WF-08} (Master Orchestrator): Runs daily at 8:00 AM IST, executes WF-01 through WF-07 in order.
+\item \textit{WF-08} (Master Orchestrator): Runs daily at 8:00 AM IST, executes WF-02 through WF-07 in order.
+\item \textit{WF-09} (AI Vision Onboarding): Extracts product data from photos for automated inventory setup.
+\item \textit{WF-10} (Smart Scan Invoices): Processes supplier bills to automatically update stock levels.
 \end{itemize}
 
-The \textbf{Database Layer} uses Supabase (managed PostgreSQL) with real-time subscriptions via WebSocket. The schema has eight tables: Products, InventoryTransactions, Suppliers, StockAlerts, ReorderSuggestions, SupplierScores, DeliveryHistory, and SystemLogs. Every table includes a store\_id field for future multi-store support. When inventory or alerts change, real-time subscriptions push updates to the dashboard instantly. No stale data.
+The \textbf{Database Layer} uses Supabase (managed PostgreSQL) with real-time subscriptions via WebSocket. The schema has eight tables: Store Profiles, Products, Suppliers, Stock Alerts, Reorder Suggestions, Stock Transactions, Daily Snapshots, and System Logs. The operational data tables reference a store\_id field for future multi-store support, while Store Profiles acts as the parent store table. When inventory or alerts change, real-time subscriptions push updates to the dashboard instantly. No stale data.
 
-The \textbf{AI/External Services Layer} integrates two external APIs. Groq's Llama 3.1 8B model generates reorder reasoning. Twilio's WhatsApp Business API sends alerts. In WF-05, I pass product data, stock levels, and supplier info to Groq. It returns a natural-language explanation of why to reorder. This helps shop owners understand the system's logic. In WF-07, alerts are formatted and sent via WhatsApp. The owner gets critical notifications instantly on their phone.
+The \textbf{AI/External Services Layer} integrates three external APIs. Groq's Llama 3.1 8B model generates reorder reasoning, Google Gemini 2.5 Flash supports image-based product and invoice extraction, and Twilio's WhatsApp Business API sends alerts. In WF-05, I pass product data, stock levels, and supplier info to Groq. It returns a natural-language explanation of why to reorder. In WF-09 and WF-10, Gemini extracts structured data from uploaded images. In WF-07, alerts are formatted and sent via WhatsApp. The owner gets critical notifications instantly on their phone.
 
-All layers talk to each other via HTTP REST and standard database drivers. This loose coupling lets me test each layer independently. If I need to swap out Supabase for PostgreSQL, I can do it without touching the workflows. Same with n8n—I can replace it with another platform later.
+All layers talk to each other via HTTP REST and standard database drivers. This loose coupling lets me test each layer independently. If I need to swap out Supabase for PostgreSQL, I can do it without touching the workflows. Similarly, n8n can be replaced with another workflow platform later.
 
 \begin{figure}[H]
 \centering
@@ -199,7 +201,7 @@ All layers talk to each other via HTTP REST and standard database drivers. This 
 \node[rectangle, draw=black, rounded corners=2pt, fill=white,
   font=\sffamily\tiny, text width=1.6cm, text centered, inner sep=3pt,
   minimum height=1.0cm] (api) at (10.7,-6.55)
-  {\textbf{External APIs:}\\Groq Llama 3.1 \&\\Twilio WhatsApp};
+  {\textbf{External APIs:}\\Groq Llama 3.1,\\Gemini 2.5 Flash,\\Twilio WhatsApp};
 \draw[wf arrow, black!60] (9.6,-6.55) -- (api.west);
 
 % ====== LAYER 4: Supabase Cloud Infrastructure ======
@@ -281,10 +283,10 @@ where the numerator is $n_L \cdot 100 + n_M \cdot 70 + n_H \cdot 30 + n_O \cdot 
 \section{Implementation}
 
 \subsection{Tools and Technologies}
-The proposed system is developed using a modern, low-cost technology stack carefully selected for accessibility and performance. The frontend application is built using \textbf{React 19} and \textbf{Vite 8}, with responsive styling implemented via \textbf{Tailwind CSS v4}. The backend architecture combines serverless database services with a self-hosted workflow engine, relying on \textbf{Supabase (PostgreSQL)} for robust, real-time database management and authentication. Complex business logic and orchestration are handled entirely by the \textbf{n8n} workflow automation engine. For AI-driven decision-making, the system integrates the \textbf{Groq API} hosting the Llama~3.1 8B model, ensuring high-speed inference for reorder suggestions. Finally, the \textbf{Twilio API} is utilized for automated WhatsApp alert delivery.
+The proposed system is developed using a modern, low-cost technology stack carefully selected for accessibility and performance. The frontend application is built using \textbf{React 19} and \textbf{Vite 8}, with responsive styling implemented via \textbf{Tailwind CSS v4}. The backend architecture combines serverless database services with a self-hosted workflow engine, relying on \textbf{Supabase (PostgreSQL)} for robust, real-time database management and authentication. Complex business logic and orchestration are handled entirely by the \textbf{n8n} workflow automation engine. For AI-driven decision-making, the system integrates the \textbf{Groq API} hosting the Llama~3.1 8B model, ensuring high-speed inference for reorder suggestions. It also uses \textbf{Google Gemini 2.5 Flash} for product and invoice image extraction. Finally, the \textbf{Twilio API} is utilized for automated WhatsApp alert delivery.
 
 \subsection{Dataset}
-I tested the system with a synthesized dataset that mimics a real kirana store. The dataset includes a catalog of six fast-moving consumer goods (FMCG) items with daily sales velocities, reorder thresholds, and current stock levels. I also created five supplier profiles with reliability and delivery speed metrics to test the supplier scoring model. This setup lets me validate edge cases systematically: zero sales days, stockouts, and delivery delays.
+I tested the system with a synthesized dataset that mimics a real kirana store. The dataset includes a catalog of ten fast-moving consumer goods (FMCG) items with daily sales velocities, reorder thresholds, and current stock levels. I also created four supplier profiles with reliability and delivery speed metrics to test the supplier scoring model. This setup lets me validate edge cases systematically: zero sales days, stockouts, and delivery delays.
 
 \subsection{Database Schema}
 
@@ -314,7 +316,7 @@ All tables use UUID primary keys generated via \texttt{gen\_random\_uuid()}. The
 
 \subsection{Workflow Pipeline}
 
-Eight n8n workflows implement the inventory intelligence pipeline.
+Ten n8n workflows implement the inventory intelligence pipeline.
 
 \textbf{WF-01: Product and Sales Data Ingestion} exposes a POST webhook at \texttt{/product-sales-ingest} that receives product data from the frontend Add Product modal. The workflow validates and upserts products into the Products table.
 
@@ -521,6 +523,54 @@ Eight n8n workflows implement the inventory intelligence pipeline.
 \label{fig:wf08}
 \end{figure}
 
+\textbf{WF-09: AI Vision Onboarding} exposes a webhook for the Smart Scan feature. It accepts base64-encoded image data from the frontend, prompts Google Gemini 2.5 Flash to extract product details (name, category), generates a collision-free sequential ID using existing database records, and returns structured JSON to auto-fill the product form.
+
+\begin{figure}[H]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[node distance=0.4cm and 0.5cm, align=center]
+  \node (n1) [wf trigger] {Webhook\\Trigger};
+  \node (n2) [wf node, right=of n1] {Gemini 2.5\\Flash};
+  \node (n3) [wf node, right=of n2] {Parse JSON\\Response};
+  \node (n4) [wf node, right=of n3] {Fetch Existing\\IDs};
+  \node (n5) [wf node, right=of n4] {Generate\\Unique ID};
+  \node (n6) [wf node, right=of n5] {Respond to\\Webhook};
+
+  \draw [wf arrow] (n1) -- (n2);
+  \draw [wf arrow] (n2) -- (n3);
+  \draw [wf arrow] (n3) -- (n4);
+  \draw [wf arrow] (n4) -- (n5);
+  \draw [wf arrow] (n5) -- (n6);
+\end{tikzpicture}%
+}
+\caption{WF-09: AI Vision Onboarding Pipeline.}
+\label{fig:wf09}
+\end{figure}
+
+\textbf{WF-10: Smart Scan for Supplier Invoices} processes photos of physical delivery bills to automate inventory intake. It uses Gemini 2.5 Flash to extract product names and quantities, then performs fuzzy matching against the existing inventory database to compute and update the new stock levels.
+
+\begin{figure}[H]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[node distance=0.4cm and 0.5cm, align=center]
+  \node (n1) [wf trigger] {Webhook\\Trigger};
+  \node (n2) [wf node, right=of n1] {Gemini 2.5\\Flash};
+  \node (n3) [wf node, right=of n2] {Parse JSON\\Items};
+  \node (n4) [wf node, right=of n3] {Fetch Current\\Inventory};
+  \node (n5) [wf node, right=of n4] {Fuzzy Match\\\& Calculate};
+  \node (n6) [wf node, right=of n5] {Respond to\\Webhook};
+
+  \draw [wf arrow] (n1) -- (n2);
+  \draw [wf arrow] (n2) -- (n3);
+  \draw [wf arrow] (n3) -- (n4);
+  \draw [wf arrow] (n4) -- (n5);
+  \draw [wf arrow] (n5) -- (n6);
+\end{tikzpicture}%
+}
+\caption{WF-10: Smart Scan Invoice Pipeline.}
+\label{fig:wf10}
+\end{figure}
+
 \subsection{LLM Prompt Engineering}
 
 WF-05 constructs a structured prompt submitted to the 
@@ -550,24 +600,28 @@ if the API response cannot be parsed as valid JSON,
 ensuring the system remains operational during 
 inference failures.
 
+For WF-09, a separate prompt instructs Google Gemini 2.5 Flash to analyze a base64-encoded image of a product and extract its \texttt{product\_name} and \texttt{category}. A recursive parser handles the multimodal response to correctly extract the structured JSON payload, enabling automated data entry.
+
+For WF-10, the prompt directs the LLM to identify all line items on a supplier invoice, specifically extracting product names and total delivered quantities. The resulting JSON is then passed to a code-based fuzzy matching algorithm that maps these items to the store's specific \texttt{product\_id} schema by calculating string similarity scores against the active inventory table.
+
 \subsection{Frontend Application}
 
-The React 19 frontend provides 12 routes as described in Table~\ref{tab:routes}.
+The React 19 frontend provides the main application pages described in Table~\ref{tab:routes}.
 
 \begin{table}[htbp]
 \centering
-\caption{Frontend Routes and Functions}
+\caption{Frontend Pages and Functions}
 \label{tab:routes}
 \begin{tabular}{p{2.2cm}p{5.5cm}}
 \toprule
-\textbf{Route} & \textbf{Function} \\
+\textbf{Page} & \textbf{Function} \\
 \midrule
 / & Landing page \\
 /login, /signup & Supabase Auth entry points \\
 /reset-password & Password reset flow \\
 /onboarding & 3-step store setup wizard \\
 /dashboard & Health score, KPIs, critical products, trend chart \\
-/products & Product CRUD with CSV bulk import \\
+/products & Product CRUD, CSV bulk import, and AI Smart Scan \\
 /quick-update & Batch stock adjustments \\
 /alerts & Stock alert feed with dismiss \\
 /reorder & AI reorder suggestions with approve/dismiss \\
@@ -583,7 +637,7 @@ The Dashboard implements a real-time pipeline overlay: when the user triggers WF
 \section{Results and Performance}
 
 
-The implemented system has been tested with sample data including six products and three suppliers. Key performance characteristics are summarized in Table~\ref{tab:perf}.
+The implemented system has been tested with sample data including ten products and four suppliers. Key performance characteristics are summarized in Table~\ref{tab:perf}.
 
 \begin{table}[htbp]
 \centering
@@ -593,9 +647,9 @@ The implemented system has been tested with sample data including six products a
 \toprule
 \textbf{Metric} & \textbf{Value} \\
 \midrule
-Number of Workflows & 8 \\
+Number of Workflows & 10 \\
 Number of Database Tables & 8 \\
-Number of Frontend Routes & 12 \\
+Number of Main Frontend Pages & 12 \\
 Pipeline Execution Time & $\sim$13 seconds \\
 WhatsApp Message Delivery & $<$5 seconds \\
 Infrastructure Cost & Rs.\ 0 (prototype); $<$Rs.\ 500/mo (production) \\
@@ -645,17 +699,17 @@ Table V presents the computed scores for each scenario.
 \toprule
 \textbf{Scenario} & $n_L$ & $n_M$ & $n_H$ & $n_O$ & $N$ & $H$ \\
 \midrule
-All well-stocked   & 6 & 0 & 0 & 0 & 6 & 100 \\
-Demo state         & 1 & 2 & 3 & 0 & 6 & 55  \\
-Partial stockout   & 0 & 1 & 2 & 3 & 6 & 18  \\
-Complete stockout  & 0 & 0 & 0 & 6 & 6 & 5   \\
+All well-stocked   & 10 & 0 & 0 & 0 & 10 & 100 \\
+Demo state         & 3  & 1 & 6 & 0 & 10 & 55  \\
+Severe stockout    & 0  & 2 & 0 & 8 & 10 & 18  \\
+Complete stockout  & 0  & 0 & 0 & 10 & 10 & 5   \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 The formula produces scores consistent with operational 
 intuition: a fully stocked store scores 100, while a 
-store with three out-of-stock products scores 18, 
+store with eight out-of-stock products scores 18,
 signalling critical intervention. The non-zero floor 
 for complete stockout (score 5 rather than 0) avoids 
 false division-by-zero rendering in the dashboard gauge.
