@@ -64,13 +64,13 @@
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{6pt}
 
-% ── Chapter heading: 16pt Bold ────────────────────────────────────────────────
+% ── Chapter heading: Centered, Chapter N (12pt), Title (16pt) ─────────────────
 \titleformat{\chapter}[display]
-  {\normalfont\fontsize{16}{20}\bfseries}
-  {CHAPTER \thechapter}
-  {0pt}
+  {\normalfont\centering}
+  {\fontsize{12}{16}\bfseries Chapter \thechapter}
+  {6pt}
   {\fontsize{16}{20}\bfseries}
-\titlespacing*{\chapter}{0pt}{0pt}{18pt}
+\titlespacing*{\chapter}{0pt}{-20pt}{18pt}
 
 % ── Section heading: 14pt CAPS ───────────────────────────────────────────────
 \titleformat{\section}
