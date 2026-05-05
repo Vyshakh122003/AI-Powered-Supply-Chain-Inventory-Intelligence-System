@@ -95,42 +95,27 @@ alternatives for the unorganised retail segment.
 Table~\ref{tab:litcomp} presents a structured comparison of the reviewed works against StockSense
 AI across key evaluation dimensions relevant to small Indian retail deployment.
 
+\begin{table}[H]
+\centering
+\caption{Comparative Analysis of Existing Solutions vs.\ StockSense AI}
+\label{tab:litcomp}
 {\singlespacing
-\begin{longtable}{@{}p{2.6cm} p{1.4cm} p{1.4cm} p{1.4cm} p{1.4cm} p{1.4cm} p{1.6cm}@{}}
-\caption{Comparative Analysis of Related Works vs.\ StockSense AI}
-\label{tab:litcomp} \\
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{@{}l X X X X@{}}
 \toprule
-\textbf{Feature} &
-\textbf{Wang et al.\ 2024} &
-\textbf{Kheawpeam 2023} &
-\textbf{Manoharan 2024} &
-\textbf{Poongothai 2024} &
-\textbf{Amir \& Atif 2025} &
-\textbf{StockSense AI} \\
+\textbf{Feature} & \textbf{StockSense AI} & \textbf{Vyapar} & \textbf{Zoho} & \textbf{Khatabook} \\
 \midrule
-\endfirsthead
-\toprule
-\textbf{Feature} &
-\textbf{Wang et al.\ 2024} &
-\textbf{Kheawpeam 2023} &
-\textbf{Manoharan 2024} &
-\textbf{Poongothai 2024} &
-\textbf{Amir \& Atif 2025} &
-\textbf{StockSense AI} \\
-\midrule
-\endhead
+AI Reorder & \textbf{Yes} & No & Limited & No \\
+Stockout Prediction & \textbf{Automated} & Threshold alerts only & Basic & No \\
+Supplier Scoring & \textbf{WSM-based} & No & Basic & No \\
+WhatsApp Alerts & \textbf{Automated} & Transactional only & Transactional only & No \\
+Monthly Cost & \textbf{Rs.\ 0--500} & Rs.\ 0--599 & Rs.\ 2999+ & Rs.\ 0 \\
+Setup Complexity & \textbf{Low} & Medium & High & Low \\
+Real-time Dashboard & \textbf{Yes} & Limited & Yes & Basic \\
 \bottomrule
-\endfoot
-Hardware-free & No & Yes & No & No & Yes & Yes \\
-LLM Integration & No & No & No & No & No & Yes \\
-WhatsApp Alerts & No & No & No & No & No & Yes \\
-Supplier Scoring & No & No & No & No & No & Yes \\
-Stockout Prediction & Basic & ML-based & Sensor-based & ML-based & No & Rule-based \\
-AI Vision & No & No & No & CNN-based & No & Gemini Flash \\
-Cost (\rupee/mo) & High & High & High & High & Low & $<$500 \\
-Deployable Prototype & No & No & No & No & No & Yes \\
-\end{longtable}
+\end{tabularx}
 }
+\end{table}
 
 \section{Research Gap and Motivation}
 
