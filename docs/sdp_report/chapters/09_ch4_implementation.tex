@@ -333,6 +333,24 @@ markdown fencing or preamble. The workflow then queries the Products table to de
 highest existing product ID suffix and returns an auto-incremented collision-free ID along
 with the extracted fields to the frontend form.
 
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[node distance=0.5cm and 0.8cm, align=center]
+  \node (n1) [wftrigger] {Webhook\\Trigger};
+  \node (n2) [wfnode, right=of n1] {Gemini 2.5\\Flash};
+  \node (n3) [wfnode, right=of n2] {Parse JSON\\Response};
+  \node (n4) [wfnode, right=of n3] {Fetch Existing\\IDs};
+  \node (n5) [wfnode, right=of n4] {Generate\\Unique ID};
+  \node (n6) [wfnode, right=of n5] {Respond to\\Webhook};
+  \draw[wfarrow] (n1)--(n2); \draw[wfarrow] (n2)--(n3); \draw[wfarrow] (n3)--(n4);
+  \draw[wfarrow] (n4)--(n5); \draw[wfarrow] (n5)--(n6);
+\end{tikzpicture}%
+}
+\caption{WF-09: AI Vision Onboarding Workflow.}
+\label{fig:wf09}
+\end{figure}
+
 \subsection{WF-10: Smart Scan for Supplier Invoices}
 
 WF-10 processes photographs of physical supplier delivery bills. The image is submitted to
@@ -343,6 +361,24 @@ an n8n Code node. The algorithm computes character-level similarity scores betwe
 extracted product name and all inventory product names, selecting the best match above a
 defined confidence threshold. The matched product IDs and computed new stock levels are
 returned to the frontend for the store owner to review and confirm.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[node distance=0.5cm and 0.8cm, align=center]
+  \node (n1) [wftrigger] {Webhook\\Trigger};
+  \node (n2) [wfnode, right=of n1] {Gemini 2.5\\Flash};
+  \node (n3) [wfnode, right=of n2] {Parse JSON\\Items};
+  \node (n4) [wfnode, right=of n3] {Fetch Current\\Inventory};
+  \node (n5) [wfnode, right=of n4] {Fuzzy Match\\\& Calculate};
+  \node (n6) [wfnode, right=of n5] {Respond to\\Webhook};
+  \draw[wfarrow] (n1)--(n2); \draw[wfarrow] (n2)--(n3); \draw[wfarrow] (n3)--(n4);
+  \draw[wfarrow] (n4)--(n5); \draw[wfarrow] (n5)--(n6);
+\end{tikzpicture}%
+}
+\caption{WF-10: Smart Scan Invoice Workflow.}
+\label{fig:wf10}
+\end{figure}
 
 \section{Key Code Snippets with Explanation}
 
