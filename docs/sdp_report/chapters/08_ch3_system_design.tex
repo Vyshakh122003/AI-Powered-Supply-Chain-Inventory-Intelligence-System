@@ -121,6 +121,7 @@ Services} (Groq, Gemini, Twilio), participates in sub-use cases triggered by the
 
 \begin{figure}[H]
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
   actor/.style={draw, ellipse, minimum width=1.4cm, minimum height=0.7cm,
                 align=center, font=\sffamily\scriptsize},
@@ -135,9 +136,9 @@ Services} (Groq, Gemini, Twilio), participates in sub-use cases triggered by the
 \node[font=\sffamily\small\bfseries] at (3.5, 6.6) {StockSense AI System};
 
 % Actors
-\node[actor] (owner) at (-1.5, 4.0) {Store\\Owner};
-\node[actor] (engine) at (-1.5, -3.0) {n8n Engine};
-\node[actor] (ai) at (8.5, 0) {External\\AI Services};
+\node[actor] (owner) at (-3.0, 4.0) {Store\\Owner};
+\node[actor] (engine) at (-3.0, -3.0) {n8n Engine};
+\node[actor] (ai) at (10.0, 0) {External\\AI Services};
 
 % Use cases inside system
 \node[uc] (uc1)  at (3.5,  5.7) {Register / Log In};
@@ -164,7 +165,8 @@ Services} (Groq, Gemini, Twilio), participates in sub-use cases triggered by the
 \foreach \t in {uc4,uc5,uc8,uc10}
   \draw[line] (ai) -- (\t);
 
-\end{tikzpicture}
+\end{tikzpicture}%
+}
 \caption{Use Case Diagram for StockSense AI.}
 \label{fig:usecase}
 \end{figure}
