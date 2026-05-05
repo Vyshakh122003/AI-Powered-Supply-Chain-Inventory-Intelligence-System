@@ -15,66 +15,74 @@ and updated independently.
 \centering
 \resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[align=center,
-  lyr/.style={rectangle, rounded corners=4pt, draw=black, fill=gray!4,
-              minimum width=14cm, inner sep=8pt},
-  box/.style={rectangle, rounded corners=3pt, draw=black!60, fill=white,
-              font=\sffamily\scriptsize, inner sep=4pt, text width=2.6cm,
-              minimum height=0.8cm, align=center},
-  hdr/.style={font=\sffamily\small\bfseries},
-  arr/.style={-Stealth, thick},
+  md/.style={rectangle, rounded corners=2pt, draw=black, fill=white,
+    font=\sffamily\tiny, minimum height=0.5cm, text centered, inner sep=2pt},
+  hd/.style={rectangle, rounded corners=1pt, draw=black, fill=gray!15, 
+    font=\sffamily\tiny\bfseries, minimum height=0.35cm, text centered, inner sep=2pt},
 ]
 
-%% Layer 1 — Frontend
-\node[lyr, minimum height=3.2cm] (L1) at (0,0) {};
-\node[hdr] at (0, 1.3) {Layer 1: React 19 Frontend SPA (Vite 8 + Tailwind CSS v4)};
-\node[box] at (-4.4, 0) {Dashboard\\\& KPI Cards};
-\node[box] at (-1.6, 0) {Products\\CRUD \& Smart Scan};
-\node[box] at (1.2, 0)  {AI Reorder\\\& Supplier Analytics};
-\node[box] at (4.0, 0)  {Auth, Onboarding\\\& Settings};
+% ====== LAYER 1: React 19 Frontend SPA ======
+\draw[black, rounded corners=3pt, fill=gray!2] (0,0) rectangle (11.6,-3.4);
+\node[font=\sffamily\scriptsize\bfseries] at (5.8,-0.25) {React 19 Frontend SPA};
 
-%% Layer 2 — Network Bridge
-\node[lyr, minimum height=1.6cm] (L2) at (0,-2.8) {};
-\node[hdr] at (0, -2.2) {Layer 2: Network \& Security Bridge};
-\node[box, text width=4.5cm] at (-3.0, -2.9) {Local Vite Dev Proxy (:5173)\\\texttt{/webhook/*} → n8n};
-\node[box, text width=4.5cm] at (3.0, -2.9)  {Production: ngrok HTTPS Tunnel\\\texttt{VITE\_N8N\_BASE\_URL}};
+% -- Core Modules --
+\draw[black!60, rounded corners=2pt, dash pattern=on 4pt off 4pt] (0.15,-0.5) rectangle (3.5,-3.1);
+\node[hd, text width=3.1cm] at (1.825,-0.85) {Core Modules};
+\node[md, text width=1.4cm] at (1.0,-1.45) {Dashboard};
+\node[md, text width=1.4cm] at (2.65,-1.45) {AI Reorder};
+\node[md, text width=2.0cm] at (1.825,-2.2) {Supplier\\Analytics};
 
-%% Layer 3 — n8n Engine
-\node[lyr, minimum height=3.6cm] (L3) at (0,-6.0) {};
-\node[hdr] at (0, -4.6) {Layer 3: n8n Workflow Automation Engine};
-% orchestrator sub-box
-\node[rectangle, rounded corners=3pt, draw=black!50, fill=gray!10, dashed,
-      minimum width=9.0cm, minimum height=1.6cm] at (-1.8, -5.6) {};
-\node[font=\sffamily\scriptsize\bfseries] at (-1.8, -4.95) {WF-08: Master Daily Orchestrator (8:00 AM IST)};
-\node[box, text width=1.1cm] at (-4.6,-5.7) {WF-02\\Stockout};
-\node[box, text width=1.1cm] at (-3.2,-5.7) {WF-03\\Alerts};
-\node[box, text width=1.1cm] at (-1.8,-5.7) {WF-04\\Risk};
-\node[box, text width=1.1cm] at (-0.4,-5.7) {WF-05\\AI Reorder};
-\node[box, text width=1.1cm] at (1.0,-5.7) {WF-06\\Scoring};
-\node[box, text width=1.1cm] at (2.4,-5.7) {WF-07\\WhatsApp};
-% standalone WFs
-\node[box, text width=2.0cm] at (5.2, -5.0) {WF-01\\Data Ingestion};
-\node[box, text width=2.0cm] at (5.2, -6.3) {WF-09 / WF-10\\AI Vision};
+% -- Inventory Ops --
+\draw[black!60, rounded corners=2pt, dash pattern=on 4pt off 4pt] (3.8,-0.5) rectangle (7.7,-3.1);
+\node[hd, text width=3.6cm] at (5.75,-0.85) {Inventory Ops};
+\node[md, text width=1.7cm] at (4.8,-1.45) {Products\\CRUD};
+\node[md, text width=1.7cm] at (6.7,-1.45) {CSV Bulk\\Import};
+\node[md, text width=1.7cm] at (4.8,-2.2) {Deliveries};
+\node[md, text width=1.7cm] at (6.7,-2.2) {Quick\\Update};
 
-%% External APIs
-\node[rectangle, rounded corners=3pt, draw=black, fill=white,
-      font=\sffamily\scriptsize, inner sep=5pt, text width=2.8cm,
-      align=center, minimum height=1.8cm] (API) at (5.2, -7.6)
-  {\textbf{External APIs}\\Groq Llama 3.1 8B\\Gemini 2.5 Flash\\Twilio WhatsApp};
+% -- Support & Auth --
+\draw[black!60, rounded corners=2pt, dash pattern=on 4pt off 4pt] (8.0,-0.5) rectangle (11.45,-3.1);
+\node[hd, text width=3.1cm] at (9.725,-0.85) {Support \& Auth};
+\node[md, text width=1.5cm] at (8.85,-1.45) {3-step\\Onboarding};
+\node[md, text width=1.5cm] at (10.6,-1.45) {Login/\\Signup};
+\node[md, text width=1.5cm] at (8.85,-2.2) {Alerts};
+\node[md, text width=1.5cm] at (10.6,-2.2) {System Logs};
 
-%% Layer 4 — Supabase
-\node[lyr, minimum height=2.0cm] (L4) at (0,-9.4) {};
-\node[hdr] at (0, -8.7) {Layer 4: Supabase Cloud (PostgreSQL + Realtime WebSockets)};
-\node[box, text width=3.2cm] at (-4.0, -9.5) {PostgreSQL\\(8-Table Schema)};
-\node[box, text width=3.2cm] at (0.0, -9.5)  {Supabase Auth\\(JWT-based)};
-\node[box, text width=3.2cm] at (4.0, -9.5)  {Realtime Subscriptions\\(Live Dashboard Updates)};
+% ====== LAYER 2: Network & Security Bridge ======
+\draw[black, rounded corners=3pt, fill=gray!20] (0,-3.7) rectangle (11.6,-4.9);
+\node[font=\sffamily\scriptsize\bfseries] at (5.8,-3.95) {Network \& Security Bridge};
+\node[md, text width=2.6cm] at (3.2,-4.45) {Local Vite Development Proxy (:5173)};
+\draw[wfarrow] (5.0,-4.45) -- (7.5,-4.45);
+\node[md, text width=3.2cm] at (9.3,-4.45) {ngrok Tunnel (HTTPS)};
 
-%% Inter-layer arrows
-\draw[arr] (L1.south) -- node[right,font=\sffamily\tiny]{REST / Webhook} (L2.north);
-\draw[arr] (L2.south) -- node[right,font=\sffamily\tiny]{HTTP Triggers} (L3.north);
-\draw[arr] (L3.south) -- node[right,font=\sffamily\tiny]{Supabase Client} (L4.north);
-\draw[arr] (API.north) -- node[right,font=\sffamily\tiny]{} (5.2,-6.3);
-\draw[arr,dashed] (L4.north east) to[bend left=20]
-  node[right,font=\sffamily\tiny]{Realtime Push} (L1.south east);
+% ====== LAYER 3: n8n AI Workflow Engine ======
+\draw[black, rounded corners=3pt, fill=gray!2] (0,-5.2) rectangle (11.6,-7.7);
+\node[font=\sffamily\scriptsize\bfseries] at (5.8,-5.45) {N8N Workflow System};
+
+% WF-08 Orchestrator sub-box
+\draw[black!60, rounded corners=2pt, dash pattern=on 4pt off 4pt] (0.15,-5.7) rectangle (9.6,-7.45);
+\node[hd, text width=9.2cm] at (4.875,-6.05) {WF-08: Master Daily Orchestrator};
+\node[md, text width=1.05cm] at (0.8,-6.7) {WF-01\\(Ingest)};
+\node[md, text width=1.15cm] at (2.05,-6.7) {WF-02\\(Calc)};
+\node[md, text width=1.15cm] at (3.35,-6.7) {WF-03\\(Alerts)};
+\node[md, text width=1.05cm] at (4.65,-6.7) {WF-04\\(Risk)};
+\node[md, text width=1.3cm] at (6.0,-6.7) {WF-05\\(AI Sugg.)};
+\node[md, text width=1.3cm] at (7.45,-6.7) {WF-06\\(Scoring)};
+\node[md, text width=1.3cm] at (8.85,-6.7) {WF-07\\(WhatsApp)};
+
+% External APIs box
+\node[rectangle, draw=black, rounded corners=2pt, fill=white,
+  font=\sffamily\tiny, text width=1.6cm, text centered, inner sep=3pt,
+  minimum height=1.0cm] (api) at (10.7,-6.55)
+  {\textbf{External APIs:}\\Groq Llama 3.1,\\Gemini 2.5 Flash,\\Twilio WhatsApp};
+\draw[wfarrow, black!60] (9.6,-6.55) -- (api.west);
+
+% ====== LAYER 4: Supabase Cloud Infrastructure ======
+\draw[black, rounded corners=3pt, fill=gray!2] (0,-8.0) rectangle (11.6,-9.45);
+\node[font=\sffamily\scriptsize\bfseries] at (5.8,-8.2) {Supabase Cloud Infrastructure};
+\node[md, text width=2.4cm] at (2.0,-8.8) {PostgreSQL\\(8 Table Schema)};
+\node[md, text width=2.8cm] at (5.8,-8.8) {Supabase Auth\\Service};
+\node[md, text width=3.3cm] at (9.7,-8.8) {Realtime WebSockets\\(Live Updates)};
 
 \end{tikzpicture}%
 }
