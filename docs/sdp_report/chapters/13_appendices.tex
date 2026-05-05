@@ -8,187 +8,151 @@
 \chapter{Source Code — Key Modules}
 \label{app:code}
 
-\section{Frontend: AuthContext.jsx}
+\section{Database: schema.sql --- Complete Table Definitions}
 
-The AuthContext provides the global authentication state throughout the React application.
-It wraps the Supabase \texttt{onAuthStateChange} listener and exposes \texttt{user},
-\texttt{session}, \texttt{storeProfile}, \texttt{loading}, and \texttt{signOut} to all
-child components via the \texttt{useAuth()} hook.
+The following SQL script defines the complete PostgreSQL schema hosted on Supabase, including
+all table structures, primary/foreign key relationships, indices, and realtime publication
+settings.
 
-\begin{lstlisting}[language=JavaScript, caption={AuthContext.jsx — Authentication Provider},
-label={lst:authcontext}]
-import { useState, useEffect, useContext, createContext } from 'react'
-import { supabase } from '../lib/supabase'
+\begin{lstlisting}[language=SQL, caption={schema.sql --- Complete Database Schema}, label={lst:schema_full}]
+-- 1. Store Profiles
+CREATE TABLE IF NOT EXISTS public."Store Profiles" (
+  id uuid not null default gen_random_uuid (),
+  created_at timestamp with time zone not null default now(),
+  user_id uuid null,
+  store_name text not null,
+  owner_name text not null,
+  whatsapp_numbers text null,
+  city text null,
+  store_type text null default 'Kirana'::text,
+  safety_factor numeric null default 1.2,
+  alert_time time without time zone null default '08:00:00'::time without time zone,
+  timezone text not null default 'Asia/Kolkata'::text,
+  onboarding_complete boolean null default false,
+  phone text null,
+  default_lead_days integer null default 3,
+  constraint store_profiles_pkey primary key (id),
+  constraint "Store Profiles_user_id_key" unique (user_id)
+);
 
-const AuthContext = createContext(null)
+-- 2. Products
+CREATE TABLE IF NOT EXISTS public."Products" (
+  id uuid not null default gen_random_uuid (),
+  created_at timestamp with time zone not null default now(),
+  product_name text not null,
+  category text null,
+  current_stock integer not null,
+  avg_daily_sales numeric not null,
+  reorder_threshold integer not null,
+  unit_price numeric not null,
+  last_restock_date date null,
+  product_id text not null,
+  days_to_stockout integer null,
+  estimated_stockout_date date null,
+  risk_level text null default 'UNKNOWN'::text,
+  store_id uuid null,
+  unit text null default 'Pieces'::text,
+  preferred_supplier_id text null,
+  safety_factor numeric null default 1.2,
+  expiry_days integer null,
+  is_seasonal boolean null default false,
+  peak_season_months text null,
+  last_manual_update timestamp with time zone null,
+  constraint "Products_pkey" primary key (id),
+  constraint unique_product_id unique (product_id),
+  constraint uq_products_store_product unique (store_id, product_id),
+  constraint fk_products_store foreign KEY (store_id) references "Store Profiles" (id) on delete CASCADE
+);
 
-export function AuthProvider({ children }) {
-  const [user,         setUser]         = useState(null)
-  const [session,      setSession]      = useState(null)
-  const [storeProfile, setStoreProfile] = useState(null)
-  const [loading,      setLoading]      = useState(true)
+-- 3. Suppliers
+CREATE TABLE IF NOT EXISTS public."Suppliers" (
+  id uuid not null default gen_random_uuid (),
+  created_at timestamp with time zone not null default now(),
+  supplier_id text not null,
+  supplier_name text not null,
+  contact_person text null,
+  phone_number text null,
+  email text null,
+  address text null,
+  delivery_time_days integer not null,
+  reliability_score numeric not null,
+  price_score numeric not null,
+  store_id uuid null,
+  composite_score numeric null,
+  supplier_grade text null,
+  score_breakdown text null,
+  supplies_categories text null,
+  constraint "Suppliers_pkey" primary key (id),
+  constraint unique_supplier_id unique (supplier_id),
+  constraint uq_suppliers_store_supplier unique (store_id, supplier_id),
+  constraint fk_suppliers_store foreign KEY (store_id) references "Store Profiles" (id) on delete CASCADE,
+  constraint "Suppliers_price_score_check" check (price_score >= 0.0 and price_score <= 1.0),
+  constraint "Suppliers_reliability_score_check" check (reliability_score >= 0.0 and reliability_score <= 1.0)
+);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) fetchStoreProfile(session.user.id)
-      else setLoading(false)
-    })
+-- 4. Reorder Suggestions
+CREATE TABLE IF NOT EXISTS public."Reorder Suggestions" (
+  id uuid not null default gen_random_uuid (),
+  created_at timestamp with time zone not null default now(),
+  product_id text not null,
+  suggested_quantity integer not null,
+  reason text not null,
+  status text not null,
+  suggestion_date timestamp with time zone not null,
+  supplier_id text not null,
+  store_id uuid null,
+  ai_generated boolean null default true,
+  approved_at timestamp with time zone null,
+  constraint "Reorder Suggestions_pkey" primary key (id),
+  constraint fk_reorder_suggestions_store foreign KEY (store_id) references "Store Profiles" (id) on delete CASCADE,
+  constraint fk_reorder_suggestions_supplier foreign KEY (store_id, supplier_id) references "Suppliers" (store_id, supplier_id) on delete CASCADE,
+  constraint fk_reorder_suggestions_product foreign KEY (product_id) references "Products" (product_id) on delete CASCADE
+);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session)
-        setUser(session?.user ?? null)
-        if (session?.user) fetchStoreProfile(session.user.id)
-        else { setStoreProfile(null); setLoading(false) }
-      }
-    )
-    return () => subscription.unsubscribe()
-  }, [])
+-- 5. Stock Alerts
+CREATE TABLE IF NOT EXISTS public."Stock Alerts" (
+  id uuid not null default gen_random_uuid (),
+  created_at timestamp with time zone not null default now(),
+  alert_name text not null,
+  alert_date timestamp with time zone not null,
+  current_stock integer null,
+  reorder_threshold integer not null,
+  alert_status text not null,
+  product_name text not null,
+  product_id text not null,
+  store_id uuid null,
+  last_alerted_at timestamp with time zone null,
+  constraint "Stock Alerts_pkey" primary key (id),
+  constraint "Stock Alerts_product_id_fkey" foreign KEY (product_id) references "Products" (product_id) on delete CASCADE,
+  constraint fk_stock_alerts_product foreign KEY (store_id, product_id) references "Products" (store_id, product_id) on delete CASCADE,
+  constraint fk_stock_alerts_store foreign KEY (store_id) references "Store Profiles" (id) on delete CASCADE
+);
 
-  async function fetchStoreProfile(userId) {
-    try {
-      const { data, error } = await supabase
-        .from('Store Profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single()
-      if (error && error.code !== 'PGRST116') throw error
-      setStoreProfile(data || null)
-    } catch { setStoreProfile(null) }
-    finally  { setLoading(false) }
-  }
-
-  async function signOut() {
-    await supabase.auth.signOut()
-    setStoreProfile(null)
-  }
-
-  return (
-    <AuthContext.Provider
-      value={{ user, session, storeProfile, loading, signOut,
-               refreshProfile: () => user && fetchStoreProfile(user.id) }}>
-      {children}
-    </AuthContext.Provider>
-  )
-}
-
-export const useAuth = () => useContext(AuthContext)
+-- 6. System Logs
+CREATE TABLE IF NOT EXISTS public."System Logs" (
+  id uuid not null default gen_random_uuid (),
+  created_at timestamp with time zone not null default now(),
+  store_id uuid null,
+  workflow_name text not null,
+  status text not null,
+  records_processed integer null,
+  error_message text null,
+  ran_at timestamp with time zone not null default now(),
+  constraint "system_logs_pkey" primary key (id),
+  constraint fk_system_logs_store foreign KEY (store_id) references "Store Profiles" (id) on delete CASCADE
+);
 \end{lstlisting}
 
-\section{Frontend: lib/config.js — Webhook Trigger Utilities}
+% --- Dashboard.jsx and other modules removed to reduce compile time ---
+\vfill % Spacing
 
-\begin{lstlisting}[language=JavaScript, caption={lib/config.js — n8n Webhook Helpers},
-label={lst:config}]
-const N8N_BASE = import.meta.env.VITE_N8N_BASE_URL || ''
-const N8N_KEY  = import.meta.env.VITE_N8N_API_KEY  || ''
+% --- Products.jsx source code removed to reduce compile time ---
+\vfill % Spacing
 
-export async function triggerWebhook(path, method = 'GET') {
-  const res = await fetch(`${N8N_BASE}/webhook/${path}`, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-  })
-  if (!res.ok) throw new Error(`Webhook error: ${res.status}`)
-  return res.json()
-}
+% --- Additional frontend modules (Suppliers, AddProductModal, Onboarding) 
+% removed to reduce compile time. Full code is available in the project repo.
 
-export async function postWebhook(path, body) {
-  const res = await fetch(`${N8N_BASE}/webhook/${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) throw new Error(`Webhook error: ${res.status}`)
-  return res.json()
-}
-
-export async function apiTriggerWorkflow(workflowId) {
-  const res = await fetch(
-    `${N8N_BASE}/api/v1/workflows/${workflowId}/activate`,
-    { method: 'POST',
-      headers: { 'X-N8N-API-KEY': N8N_KEY,
-                 'Content-Type': 'application/json' } }
-  )
-  if (!res.ok) throw new Error(`API trigger error: ${res.status}`)
-  return res.json()
-}
-\end{lstlisting}
-
-\section{Frontend: Dashboard.jsx — Health Score and KPI Computation}
-
-\begin{lstlisting}[language=JavaScript, caption={Dashboard.jsx — Core KPI and Health Score Logic},
-label={lst:dashboard}]
-function computeHealthScore(products) {
-  const N  = products.length
-  if (N === 0) return 100
-  const nL = products.filter(p => p.risk_level === 'LOW').length
-  const nM = products.filter(p => p.risk_level === 'MEDIUM').length
-  const nH = products.filter(p => p.risk_level === 'HIGH').length
-  const nO = products.filter(p => p.current_stock === 0).length
-  const weighted = nL * 100 + nM * 70 + nH * 30 + nO * 5
-  return Math.min(100, Math.max(0, Math.floor(weighted / N)))
-}
-
-// Inside Dashboard component:
-const healthScore     = useMemo(() => computeHealthScore(products), [products])
-const criticalProducts = useMemo(
-  () => products
-    .filter(p => ['HIGH','MEDIUM'].includes(p.risk_level))
-    .sort((a, b) => (a.days_to_stockout ?? 999) - (b.days_to_stockout ?? 999))
-    .slice(0, 5),
-  [products]
-)
-\end{lstlisting}
-
-\section{n8n WF-05: Groq AI Prompt Template}
-
-The following prompt is constructed dynamically by the Build AI Prompt node in WF-05. Variable
-fields (\texttt{\{\{products\_json\}\}} and \texttt{\{\{suppliers\_json\}\}}) are substituted
-by n8n expressions at runtime.
-
-\begin{lstlisting}[language={}  , caption={WF-05 Groq Llama 3.1 8B Zero-Shot Prompt Template},
-label={lst:prompt}]
-You are an inventory manager for a small Indian kirana store.
-Your task is to generate reorder suggestions for at-risk products.
-
-AT-RISK PRODUCTS:
-{{products_json}}
-
-AVAILABLE SUPPLIERS:
-{{suppliers_json}}
-
-Instructions:
-- Generate exactly one suggestion per at-risk product.
-- Select the best supplier based on grade and category match.
-- Set suggested_qty = 30 * avg_daily_sales (round to nearest integer).
-- Write a single-sentence reason in simple English.
-- Return ONLY a valid JSON array. No markdown. No preamble.
-
-Required output format:
-[
-  {
-    "product_id": "string",
-    "supplier_id": "string",
-    "suggested_qty": number,
-    "reason": "string"
-  }
-]
-\end{lstlisting}
-
-\section{n8n WF-09: Gemini Product Vision Prompt}
-
-\begin{lstlisting}[language={}, caption={WF-09 Gemini 2.5 Flash Product Extraction Prompt},
-label={lst:gemini}]
-Analyze this product image from an Indian kirana (grocery) store.
-Extract the following details from the image:
-- product_name: The full name of the product as shown on the label.
-- category: One of [Groceries, Beverages, Snacks, Dairy, Personal Care,
-                    Household, Medicines, Stationery, Electronics, Other]
-
-Return ONLY a JSON object. No explanation. No markdown fencing.
-Example: {"product_name": "Tata Salt 1kg", "category": "Groceries"}
-\end{lstlisting}
+\vfill % Spacing
 
 % ── Appendix 2: Screenshots ───────────────────────────────────────────────────
 \chapter{Application Screenshots}
@@ -200,111 +164,63 @@ the final printed submission.
 
 \begin{figure}[H]
 \centering
-\fbox{\begin{minipage}{0.9\textwidth}
-\centering\vspace{3.0cm}
-{\sffamily\small [Screenshot: Landing Page — StockSense AI marketing landing page\\
-showing the hero section with tagline, feature highlights, and Sign Up / Login CTAs.]}
-\vspace{3.0cm}
-\end{minipage}}
+\includegraphics[width=\textwidth]{images/app_landing.png}
 \caption{Landing Page.}
 \label{fig:app_landing}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\fbox{\begin{minipage}{0.9\textwidth}
-\centering\vspace{3.0cm}
-{\sffamily\small [Screenshot: 3-Step Onboarding Wizard — Step 1 (Store Details),\\
-Step 2 (WhatsApp Numbers), Step 3 (Safety Settings) with progress indicator.]}
-\vspace{3.0cm}
-\end{minipage}}
+\includegraphics[width=\textwidth]{images/app_onboarding.png}
 \caption{3-Step Onboarding Wizard.}
 \label{fig:app_onboarding}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\fbox{\begin{minipage}{0.9\textwidth}
-\centering\vspace{3.0cm}
-{\sffamily\small [Screenshot: Products Page — Full product table with all columns:\\
-Product ID, Name, Category, Current Stock, Avg Daily Sales, Reorder Threshold,\\
-Risk Level badge, Days to Stockout, and action buttons (Edit / Delete).]}
-\vspace{3.0cm}
-\end{minipage}}
+\includegraphics[width=\textwidth]{images/app_products.png}
 \caption{Products Management Page.}
 \label{fig:app_products}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\fbox{\begin{minipage}{0.9\textwidth}
-\centering\vspace{3.0cm}
-{\sffamily\small [Screenshot: Add Product Modal — Form with fields for Product ID,\\
-Name, Category, Current Stock, Average Daily Sales, Reorder Threshold, Unit Price,\\
-Preferred Supplier dropdown, and AI Smart Scan camera icon button.]}
-\vspace{3.0cm}
-\end{minipage}}
+\includegraphics[width=0.8\textwidth]{images/app_addproduct.png}
 \caption{Add Product Modal with AI Smart Scan Option.}
 \label{fig:app_addproduct}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\fbox{\begin{minipage}{0.9\textwidth}
-\centering\vspace{3.0cm}
-{\sffamily\small [Screenshot: Stock Alerts Page — Alert cards for each at-risk product\\
-showing product name, current stock vs threshold, risk badge, and Dismiss button.]}
-\vspace{3.0cm}
-\end{minipage}}
+\includegraphics[width=\textwidth]{images/app_alerts.png}
 \caption{Stock Alerts Feed.}
 \label{fig:app_alerts}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\fbox{\begin{minipage}{0.9\textwidth}
-\centering\vspace{3.0cm}
-{\sffamily\small [Screenshot: System Logs Page — Table showing workflow execution history\\
-with columns for Workflow Name, Status (SUCCESS/FAILURE), Records Processed, and Timestamp.]}
-\vspace{3.0cm}
-\end{minipage}}
+\includegraphics[width=\textwidth]{images/app_logs.png}
 \caption{System Logs Viewer.}
 \label{fig:app_logs}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\fbox{\begin{minipage}{0.9\textwidth}
-\centering\vspace{2.5cm}
-{\sffamily\small [Screenshot: Quick Update Page — Batch stock adjustment interface\\
-showing a list of all products with inline +/- quantity controls and a Save All button.]}
-\vspace{2.5cm}
-\end{minipage}}
+\includegraphics[width=\textwidth]{images/app_quickupdate.png}
 \caption{Quick Stock Update Page.}
 \label{fig:app_quickupdate}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\fbox{\begin{minipage}{0.9\textwidth}
-\centering\vspace{2.5cm}
-{\sffamily\small [Screenshot: n8n Workflow Editor — WF-08 Master Daily Orchestrator\\
-workflow canvas showing all nodes connected in the two-row sequential layout.]}
-\vspace{2.5cm}
-\end{minipage}}
+\includegraphics[width=\textwidth]{images/app_n8n.png}
 \caption{n8n WF-08 Master Orchestrator Workflow Canvas.}
 \label{fig:app_n8n}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\fbox{\begin{minipage}{0.9\textwidth}
-\centering\vspace{2.5cm}
-{\sffamily\small [Screenshot: Supabase Table Editor — Products table showing all rows\\
-with columns including product\_id, current\_stock, days\_to\_stockout, risk\_level,\\
-estimated\_stockout\_date, and store\_id UUID.]}
-\vspace{2.5cm}
-\end{minipage}}
+\includegraphics[width=\textwidth]{images/app_supabase.png}
 \caption{Supabase Products Table — Database View.}
 \label{fig:app_supabase}
 \end{figure}

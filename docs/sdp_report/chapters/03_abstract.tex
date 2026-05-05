@@ -27,19 +27,9 @@ PostgreSQL database providing persistent storage and real-time data propagation,
 services layer incorporating the Groq Llama~3.1~8B large language model, Google Gemini~2.5
 Flash multimodal model, and Twilio WhatsApp Business API.
 
-The system automates stockout date prediction through a sales-velocity formula, classifies
-products into risk tiers, generates natural-language reorder suggestions with supplier-level
-reasoning, scores suppliers using a multi-criteria Weighted Sum Model, and delivers formatted
-stock alerts directly to the store owner's WhatsApp account. An AI vision module enables
-product onboarding from a photograph, while a separate invoice scanning workflow automates
-stock-level updates from supplier delivery bills.
+The system automates stockout date prediction through a sales-velocity model, classifies products into risk tiers, and generates reorder suggestions with supplier-level reasoning. It also scores suppliers using a multi-criteria Weighted Sum Model and delivers stock alerts directly to the owner via WhatsApp. An AI vision module enables product onboarding from photos, while an invoice scanning workflow automates stock updates from supplier bills.
 
-The prototype was evaluated against a dataset of ten products and four suppliers across multiple
-inventory states. The complete intelligence pipeline executes in approximately thirteen seconds,
-WhatsApp message delivery is achieved within five seconds of pipeline completion, and the
-total infrastructure cost for production deployment remains below five hundred rupees per month.
-The system thus demonstrates that advanced inventory intelligence, previously accessible only to
-large retail enterprises, can be delivered to kirana store owners at a practically negligible cost.
+The prototype was evaluated against ten products and four suppliers across multiple states. The intelligence pipeline executes in thirteen seconds, and WhatsApp message delivery is achieved within five seconds of completion. Total infrastructure cost for production remains below five hundred rupees per month. The system demonstrates that advanced inventory intelligence can be delivered to kirana store owners at a practically negligible cost.
 
 \vspace{0.8cm}
 \noindent\textbf{Keywords:} Inventory Management, Supply Chain Intelligence, Workflow Automation,

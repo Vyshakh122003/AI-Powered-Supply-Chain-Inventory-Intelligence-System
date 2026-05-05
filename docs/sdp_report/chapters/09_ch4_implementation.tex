@@ -11,7 +11,8 @@ and capability. Each component of the stack was selected because it satisfies al
 simultaneously. Table~\ref{tab:stack} presents the complete technology stack.
 
 {\singlespacing
-\begin{longtable}{@{}p{3.2cm} p{2.2cm} p{6.6cm}@{}}
+\renewcommand{\arraystretch}{1.5}
+\begin{longtable}{@{} >{\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}p{2.5cm} >{\raggedright\arraybackslash}p{8.5cm} @{}}
 \caption{Technology Stack and Justification}
 \label{tab:stack} \\
 \toprule
@@ -386,7 +387,7 @@ returned to the frontend for the store owner to review and confirm.
 
 The following JavaScript implements the stockout prediction formula within the WF-02 Code node:
 
-\begin{lstlisting}[language=JavaScript, caption={WF-02 Stockout Calculation Code Node}, label={lst:stockout}]
+\begin{lstlisting}[language=javascript, caption={WF-02 Stockout Calculation Code Node}, label={lst:stockout}]
 const items = $input.all();
 const today = new Date().toISOString().split('T')[0];
 
@@ -419,7 +420,7 @@ guard for \texttt{avg\_daily\_sales = 0} prevents division-by-zero errors in pro
 
 \subsection{Supplier WSM Scoring Logic (n8n Code Node)}
 
-\begin{lstlisting}[language=JavaScript, caption={WF-06 Weighted Sum Model Scoring}, label={lst:wsm}]
+\begin{lstlisting}[language=javascript, caption={WF-06 Weighted Sum Model Scoring}, label={lst:wsm}]
 const suppliers = $input.all().map(i => i.json);
 
 // Min-max normalise delivery time (faster = higher score)
@@ -446,7 +447,7 @@ return suppliers.map(s => {
 
 All pages that display live data use the following pattern to subscribe to database changes:
 
-\begin{lstlisting}[language=JavaScript, caption={Supabase Realtime Subscription Pattern}, label={lst:realtime}]
+\begin{lstlisting}[language=javascript, caption={Supabase Realtime Subscription Pattern}, label={lst:realtime}]
 useEffect(() => {
   fetchProducts();          // initial data load
   const channel = supabase
@@ -464,7 +465,16 @@ properly removed when the component unmounts, preventing memory leaks.
 
 \subsection{Inventory Health Score Calculation (Frontend)}
 
-\begin{lstlisting}[language=JavaScript, caption={Inventory Health Score Formula}, label={lst:health}]
+The dashboard calculates an overall inventory health score using the following formula:
+
+\begin{equation}
+\label{eq:health_score}
+H = \min\!\left(100,\, \max\!\left(0,\, \left\lfloor \frac{\sum (n_i \cdot w_i)}{N} \right\rfloor\right)\right)
+\end{equation}
+
+where the numerator is $n_L \cdot 100 + n_M \cdot 70 + n_H \cdot 30 + n_O \cdot 5$; $n_L$, $n_M$, $n_H$, and $n_O$ are counts of LOW, MEDIUM, HIGH risk, and out-of-stock products respectively; and $N$ is the total number of products. This mathematical model is implemented in the frontend layer as shown in Listing~\ref{lst:health}.
+
+\begin{lstlisting}[language=javascript, caption={Inventory Health Score Implementation}, label={lst:health}]
 function computeHealthScore(products) {
   const N  = products.length;
   if (N === 0) return 100;

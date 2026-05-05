@@ -123,9 +123,9 @@ Services} (Groq, Gemini, Twilio), participates in sub-use cases triggered by the
 \centering
 \resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
-  actor/.style={draw, ellipse, minimum width=1.4cm, minimum height=0.7cm,
-                align=center, font=\sffamily\scriptsize},
-  uc/.style={draw, ellipse, minimum width=3.2cm, minimum height=0.6cm,
+  actor/.style={draw, ellipse, minimum width=1.6cm, minimum height=1.2cm,
+                align=center, font=\sffamily\scriptsize, fill=white},
+  uc/.style={draw, ellipse, minimum width=4.0cm, minimum height=0.7cm,
              align=center, font=\sffamily\scriptsize, fill=gray!6},
   sys/.style={rectangle, rounded corners=4pt, draw=black, fill=gray!2,
               minimum width=9.0cm, minimum height=12.5cm},
@@ -133,25 +133,25 @@ Services} (Groq, Gemini, Twilio), participates in sub-use cases triggered by the
 ]
 % System boundary
 \node[sys] at (3.5, 0) {};
-\node[font=\sffamily\small\bfseries] at (3.5, 6.6) {StockSense AI System};
+\node[font=\sffamily\small\bfseries] at (3.5, 5.7) {StockSense AI System};
 
 % Actors
-\node[actor] (owner) at (-3.0, 4.0) {Store\\Owner};
-\node[actor] (engine) at (-3.0, -3.0) {n8n Engine};
-\node[actor] (ai) at (10.0, 0) {External\\AI Services};
+\node[actor] (owner)  at (-3.0,  0.0) {Store\\Owner};
+\node[actor] (engine) at (10.0, -4.0) {n8n Engine};
+\node[actor] (ai)     at (10.0,  1.5) {External\\AI Services};
 
 % Use cases inside system
-\node[uc] (uc1)  at (3.5,  5.7) {Register / Log In};
-\node[uc] (uc2)  at (3.5,  4.6) {Complete Onboarding};
-\node[uc] (uc3)  at (3.5,  3.5) {Add / Edit Products};
-\node[uc] (uc4)  at (3.5,  2.4) {Smart Scan Product Photo};
-\node[uc] (uc5)  at (3.5,  1.3) {Scan Supplier Invoice};
-\node[uc] (uc6)  at (3.5,  0.2) {View Dashboard \& KPIs};
-\node[uc] (uc7)  at (3.5, -0.9) {View / Dismiss Alerts};
-\node[uc] (uc8)  at (3.5, -2.0) {Approve / Dismiss Reorders};
-\node[uc] (uc9)  at (3.5, -3.1) {Run Pipeline Manually};
-\node[uc] (uc10) at (3.5, -4.2) {Automated Daily Pipeline};
-\node[uc] (uc11) at (3.5, -5.3) {Receive WhatsApp Alert};
+\node[uc] (uc1)  at (3.5,  4.8) {Register / Log In};
+\node[uc] (uc2)  at (3.5,  3.8) {Complete Onboarding};
+\node[uc] (uc3)  at (3.5,  2.8) {Add / Edit Products};
+\node[uc] (uc4)  at (3.5,  1.8) {Smart Scan Product Photo};
+\node[uc] (uc5)  at (3.5,  0.8) {Scan Supplier Invoice};
+\node[uc] (uc6)  at (3.5, -0.2) {View Dashboard \& KPIs};
+\node[uc] (uc7)  at (3.5, -1.2) {View / Dismiss Alerts};
+\node[uc] (uc8)  at (3.5, -2.2) {Approve / Dismiss Reorders};
+\node[uc] (uc10) at (3.5, -3.2) {Automated Daily Pipeline};
+\node[uc] (uc9)  at (3.5, -4.2) {Run Pipeline Manually};
+\node[uc] (uc11) at (3.5, -5.2) {Receive WhatsApp Alert};
 
 % Connections — Store Owner
 \foreach \t in {uc1,uc2,uc3,uc4,uc5,uc6,uc7,uc8,uc9,uc11}
@@ -214,28 +214,30 @@ status of each workflow run.
   ent/.style={rectangle, draw=black, rounded corners=2pt, fill=white,
               font=\sffamily\scriptsize\bfseries, minimum width=2.8cm,
               minimum height=0.7cm, align=center},
-  attr/.style={font=\sffamily\scriptsize, align=left},
-  rel/.style={draw, -Stealth, font=\sffamily\tiny},
+  lbl/.style={font=\sffamily\tiny},
+  rel/.style={draw, -Stealth},
 ]
 % Entities
 \node[ent] (SP) at (0,0) {Store Profiles};
-\node[ent] (PR) at (-5,-3) {Products};
-\node[ent] (SU) at (5,-3) {Suppliers};
-\node[ent] (SA) at (-7,-7) {Stock Alerts};
-\node[ent] (RS) at (-2,-7) {Reorder Suggestions};
-\node[ent] (ST) at (3,-7) {Stock Transactions};
-\node[ent] (DS) at (7,-5) {Daily Snapshots};
-\node[ent] (SL) at (7,-2) {System Logs};
+\node[ent] (SL) at (-4.5,0) {System Logs};
+\node[ent] (DS) at (4.5,0) {Daily Snapshots};
+\node[ent] (PR) at (-4,-3) {Products};
+\node[ent] (SU) at (4,-3) {Suppliers};
+\node[ent] (SA) at (-7,-6) {Stock Alerts};
+\node[ent] (ST) at (-4,-6) {Stock Transactions};
+\node[ent] (RS) at (0,-6) {Reorder Suggestions};
 
 % Relationships
-\draw[rel] (SP) -- node[left,font=\sffamily\tiny]{1} (PR) node[below left,font=\sffamily\tiny]{M};
-\draw[rel] (SP) -- node[right,font=\sffamily\tiny]{1} (SU) node[below right,font=\sffamily\tiny]{M};
-\draw[rel] (SP) -- node[right,font=\sffamily\tiny]{1} (SL) node[right,font=\sffamily\tiny]{M};
-\draw[rel] (SP) -- node[right,font=\sffamily\tiny]{1} (DS) node[right,font=\sffamily\tiny]{M};
-\draw[rel] (PR) -- node[left,font=\sffamily\tiny]{1} (SA) node[below,font=\sffamily\tiny]{M};
-\draw[rel] (PR) -- node[right,font=\sffamily\tiny]{1} (RS) node[below,font=\sffamily\tiny]{M};
-\draw[rel] (PR) -- node[right,font=\sffamily\tiny]{1} (ST) node[below,font=\sffamily\tiny]{M};
-\draw[rel] (SU) -- node[right,font=\sffamily\tiny]{1} (RS) node[below,font=\sffamily\tiny]{M};
+\draw[rel] (SP) -- node[pos=0.15, above, lbl]{1} node[pos=0.85, above, lbl]{M} (SL);
+\draw[rel] (SP) -- node[pos=0.15, above, lbl]{1} node[pos=0.85, above, lbl]{M} (DS);
+\draw[rel] (SP) -- node[pos=0.15, above left, lbl]{1} node[pos=0.85, above left, lbl]{M} (PR);
+\draw[rel] (SP) -- node[pos=0.15, above right, lbl]{1} node[pos=0.85, above right, lbl]{M} (SU);
+
+\draw[rel] (PR) -- node[pos=0.15, above left, lbl]{1} node[pos=0.85, above left, lbl]{M} (SA);
+\draw[rel] (PR) -- node[pos=0.15, left, lbl]{1} node[pos=0.85, left, lbl]{M} (ST);
+\draw[rel] (PR) -- node[pos=0.15, above right, lbl]{1} node[pos=0.85, above right, lbl]{M} (RS);
+
+\draw[rel] (SU) -- node[pos=0.15, above left, lbl]{1} node[pos=0.85, above left, lbl]{M} (RS);
 \end{tikzpicture}%
 }
 \caption{Entity Relationship Diagram for StockSense AI Database.}
@@ -287,7 +289,7 @@ key referencing Store Profiles, enabling multi-tenant extension.
 \caption{Database Table Summary}
 \label{tab:dbsummary}
 {\singlespacing
-\begin{tabularx}{\textwidth}{@{} l X l @{}}
+\begin{tabularx}{\textwidth}{@{} >{\raggedright\arraybackslash}p{3.5cm} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}p{6.5cm} @{}}
 \toprule
 \textbf{Table} & \textbf{Purpose} & \textbf{Key Columns} \\
 \midrule

@@ -24,13 +24,11 @@
 \usepackage{parskip}        % paragraph spacing
 \usepackage{titlesec}       % heading styles
 \usepackage{titletoc}       % TOC styles
-\usepackage{tocloft}        % LOF / LOT styles
 \usepackage{fancyhdr}       % headers/footers
 \usepackage{emptypage}      % suppress headers on blank pages
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{caption}
-\usepackage{subcaption}
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{longtable}
@@ -40,9 +38,7 @@
 \usepackage{amssymb}
 \usepackage{xcolor}
 \usepackage{enumitem}
-\usepackage{microtype}
-\usepackage{ragged2e}
-\usepackage{needspace}
+% \usepackage{microtype}      % disabled — slow on Overleaf free plan
 \usepackage{etoolbox}
 \usepackage{appendix}
 \usepackage{listings}
@@ -53,6 +49,8 @@
 \usepackage{tfrupee}
 
 \usetikzlibrary{shapes.geometric,arrows.meta,positioning,calc,fit,backgrounds,decorations.pathreplacing}
+\usetikzlibrary{external}
+\tikzexternalize[prefix=tikz-cache/]
 
 % ── Caption font (min 10pt) ───────────────────────────────────────────────────
 \captionsetup{font=small, labelfont=bf, skip=6pt}
@@ -112,7 +110,17 @@
 \widowpenalty=10000
 \clubpenalty=10000
 
-% ── Listings style (for code appendix) ───────────────────────────────────────
+% ── Listings configuration ───────────────────────────────────────────────────
+\lstdefinelanguage{javascript}{
+  keywords={break, case, catch, continue, debugger, default, delete, do, else, false, finally, for, function, if, in, instanceof, new, null, return, switch, this, throw, true, try, typeof, var, void, while, with, let, const, async, await, export, import, from},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]',
+  morestring=[b]",
+  ndkeywords={class, export, boolean, throw, implements, import, this},
+  sensitive=true
+}
+
 \lstset{
   basicstyle=\footnotesize\ttfamily,
   breaklines=true,
@@ -123,9 +131,11 @@
   frame=single,
   tabsize=2,
   showstringspaces=false,
-  keywordstyle=\bfseries,
+  keywordstyle=\bfseries\color{blue},
   commentstyle=\itshape\color{gray!60},
-  stringstyle=\color{black},
+  stringstyle=\color{green!50!black},
+  extendedchars=true,
+  literate={Rs.}{{Rs.}}2 {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1,
 }
 
 % ── TikZ workflow node styles ─────────────────────────────────────────────────
@@ -155,6 +165,7 @@
 
 % =============================================================================
 \begin{document}
+\sloppy  % globally fix ALL overfull \hbox warnings
 % =============================================================================
 
 % ── Front matter (roman numerals) ────────────────────────────────────────────
