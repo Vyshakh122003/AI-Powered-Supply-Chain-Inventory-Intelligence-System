@@ -1,0 +1,195 @@
+% =============================================================================
+% StockSense AI — VIT-AP University BTech SDP Report
+% Author : Vyshakh Vijayan (22BCB7055)
+% Branch : Computer Science and Business Systems
+% Guide  : Dr. / Mr. / Ms. [GUIDE NAME] — fill before submission
+% Date   : May 2025
+% Compile: pdflatex -> bibtex -> pdflatex -> pdflatex  (or use Overleaf)
+% =============================================================================
+
+\documentclass[12pt,a4paper,oneside]{report}
+
+% ── Core packages ─────────────────────────────────────────────────────────────
+\usepackage[
+  left   = 3.81cm,
+  right  = 2.54cm,
+  top    = 2.54cm,
+  bottom = 2.54cm
+]{geometry}
+
+\usepackage{times}          % Times New Roman
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{setspace}       % line spacing
+\usepackage{parskip}        % paragraph spacing
+\usepackage{titlesec}       % heading styles
+\usepackage{titletoc}       % TOC styles
+\usepackage{tocloft}        % LOF / LOT styles
+\usepackage{fancyhdr}       % headers/footers
+\usepackage{emptypage}      % suppress headers on blank pages
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{ragged2e}
+\usepackage{needspace}
+\usepackage{etoolbox}
+\usepackage{appendix}
+\usepackage{listings}
+\usepackage{tikz}
+% pgf-umlsd removed — not used in this report
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+\usepackage{tfrupee}
+
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,calc,fit,backgrounds,decorations.pathreplacing}
+
+% ── Caption font (min 10pt) ───────────────────────────────────────────────────
+\captionsetup{font=small, labelfont=bf, skip=6pt}
+
+% ── Body: 1.5 spacing ─────────────────────────────────────────────────────────
+\onehalfspacing
+
+% ── No paragraph indent; small gap between paragraphs ─────────────────────────
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+% ── Chapter heading: 16pt Bold ────────────────────────────────────────────────
+\titleformat{\chapter}[display]
+  {\normalfont\fontsize{16}{20}\bfseries}
+  {CHAPTER \thechapter}
+  {0pt}
+  {\fontsize{16}{20}\bfseries}
+\titlespacing*{\chapter}{0pt}{0pt}{18pt}
+
+% ── Section heading: 14pt CAPS ───────────────────────────────────────────────
+\titleformat{\section}
+  {\normalfont\fontsize{14}{18}\bfseries\MakeUppercase}
+  {\thesection}
+  {1em}
+  {}
+\titlespacing*{\section}{0pt}{14pt}{6pt}
+
+% ── Subsection heading: 12pt CAPS ────────────────────────────────────────────
+\titleformat{\subsection}
+  {\normalfont\fontsize{12}{16}\bfseries\MakeUppercase}
+  {\thesubsection}
+  {1em}
+  {}
+\titlespacing*{\subsection}{0pt}{12pt}{4pt}
+
+% ── Subsubsection heading: 12pt Bold (normal case) ───────────────────────────
+\titleformat{\subsubsection}
+  {\normalfont\fontsize{12}{16}\bfseries}
+  {\thesubsubsection}
+  {1em}
+  {}
+
+% ── Page style: bottom-centre page numbers ────────────────────────────────────
+\fancypagestyle{mainpages}{%
+  \fancyhf{}
+  \renewcommand{\headrulewidth}{0pt}
+  \fancyfoot[C]{\thepage}
+}
+\fancypagestyle{plain}{%
+  \fancyhf{}
+  \renewcommand{\headrulewidth}{0pt}
+  \fancyfoot[C]{\thepage}
+}
+\pagestyle{mainpages}
+
+% ── Widow / orphan control ────────────────────────────────────────────────────
+\widowpenalty=10000
+\clubpenalty=10000
+
+% ── Listings style (for code appendix) ───────────────────────────────────────
+\lstset{
+  basicstyle=\footnotesize\ttfamily,
+  breaklines=true,
+  breakatwhitespace=true,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=5pt,
+  frame=single,
+  tabsize=2,
+  showstringspaces=false,
+  keywordstyle=\bfseries,
+  commentstyle=\itshape\color{gray!60},
+  stringstyle=\color{black},
+}
+
+% ── TikZ workflow node styles ─────────────────────────────────────────────────
+\tikzset{
+  wfnode/.style={
+    rectangle, rounded corners=3pt, draw=black!70, fill=gray!8,
+    text width=1.6cm, minimum height=0.75cm,
+    align=center, font=\sffamily\scriptsize, inner sep=3pt
+  },
+  wftrigger/.style={wfnode, fill=gray!22, font=\sffamily\scriptsize\bfseries},
+  wfdecision/.style={
+    diamond, draw=black!70, fill=gray!8,
+    text width=0.9cm, minimum height=0.7cm,
+    align=center, font=\sffamily\scriptsize, inner sep=1pt, aspect=2.2
+  },
+  wfarrow/.style={-Stealth, thick, draw=black!70},
+  wflabel/.style={font=\sffamily\tiny, fill=white, inner sep=1pt},
+}
+
+% ── Hyperref metadata ─────────────────────────────────────────────────────────
+\hypersetup{
+  pdftitle  = {StockSense AI: AI-Powered Supply Chain Inventory Intelligence System},
+  pdfauthor = {Vyshakh Vijayan},
+  colorlinks= false,
+  pdfborder = {0 0 0},
+}
+
+% =============================================================================
+\begin{document}
+% =============================================================================
+
+% ── Front matter (roman numerals) ────────────────────────────────────────────
+\pagenumbering{roman}
+
+\input{chapters/00_cover}
+\input{chapters/01_declaration}
+\input{chapters/02_certificate}
+\input{chapters/03_abstract}
+\input{chapters/04_acknowledgement}
+
+% ── TOC / LOF / LOT / Abbreviations ─────────────────────────────────────────
+{
+  \singlespacing
+  \setcounter{tocdepth}{3}
+  \tableofcontents
+  \clearpage
+  \listoffigures
+  \clearpage
+  \listoftables
+  \clearpage
+}
+\input{chapters/05_abbreviations}
+
+% ── Main matter (arabic numerals) ────────────────────────────────────────────
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\input{chapters/06_ch1_introduction}
+\input{chapters/07_ch2_literature}
+\input{chapters/08_ch3_system_design}
+\input{chapters/09_ch4_implementation}
+\input{chapters/10_ch5_results}
+\input{chapters/11_conclusion}
+\input{chapters/12_references}
+\input{chapters/13_appendices}
+
+\end{document}

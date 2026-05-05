@@ -1,0 +1,442 @@
+% =============================================================================
+% CHAPTER 4 — IMPLEMENTATION
+% =============================================================================
+\chapter{Implementation}
+\label{ch:impl}
+
+\section{Technology Stack and Justification}
+
+The technology choices for StockSense AI were governed by three criteria: cost, accessibility,
+and capability. Each component of the stack was selected because it satisfies all three criteria
+simultaneously. Table~\ref{tab:stack} presents the complete technology stack.
+
+{\singlespacing
+\begin{longtable}{@{}p{3.2cm} p{2.2cm} p{6.6cm}@{}}
+\caption{Technology Stack and Justification}
+\label{tab:stack} \\
+\toprule
+\textbf{Technology} & \textbf{Role} & \textbf{Justification} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Technology} & \textbf{Role} & \textbf{Justification} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+React 19 & Frontend framework &
+  Component-based architecture; Concurrent Mode rendering for real-time UI updates;
+  large ecosystem and strong community support. \\
+Vite 8 & Build tool &
+  Sub-second hot module replacement; built-in reverse proxy eliminates CORS issues
+  in development; fast production bundle generation. \\
+Tailwind CSS v4 & Styling &
+  Utility-first CSS with the new \texttt{@theme} directive eliminates need for a
+  separate configuration file; consistent design tokens across all components. \\
+React Router 7 & Client routing &
+  Declarative route definitions; nested layouts with \texttt{Outlet}; programmatic
+  navigation for post-auth redirection. \\
+Supabase & Database + Auth &
+  Managed PostgreSQL with built-in authentication, real-time WebSocket subscriptions,
+  and a JavaScript client; generous free tier; no server management required. \\
+n8n (self-hosted) & Workflow engine &
+  Low-code automation with visual workflow editor; native HTTP, Supabase, Groq,
+  and Twilio integrations; cron scheduler for daily orchestration. \\
+Groq Llama 3.1 8B & LLM inference &
+  Fastest available inference speed for the Llama~3.1 family; free tier with
+  generous rate limits suitable for prototype; JSON output mode for reliable parsing. \\
+Google Gemini 2.5 Flash & Multimodal AI &
+  State-of-the-art vision-language model for image understanding; supports base64
+  image input; reliable JSON structured output for product and invoice extraction. \\
+Twilio WhatsApp API & Alert delivery &
+  Industry-standard CPaaS with sandbox WhatsApp support; simple REST API; per-message
+  pricing model viable at kirana store scale. \\
+ngrok & Tunnelling &
+  HTTPS tunnel for exposing local n8n instance; used in development and
+  early production; replaced by cloud hosting for persistent deployment. \\
+\end{longtable}
+}
+
+\section{Development Environment}
+
+The development environment was configured as follows:
+
+\begin{itemize}[itemsep=3pt]
+  \item \textbf{Operating System:} Windows 11 with PowerShell 7
+  \item \textbf{Node.js:} v22 LTS (required for Vite 8 and React 19)
+  \item \textbf{Package Manager:} npm with \texttt{--legacy-peer-deps} flag due to
+        React 19 peer dependency resolution requirements
+  \item \textbf{n8n:} Self-hosted via \texttt{npx n8n} on \texttt{localhost:5678}
+  \item \textbf{Supabase:} Cloud-hosted project (free tier) accessed via the JavaScript
+        client library \texttt{@supabase/supabase-js}
+  \item \textbf{Environment Variables:} Stored in \texttt{frontend/.env} with
+        \texttt{VITE\_} prefix for Vite client-side injection:
+        \texttt{VITE\_SUPABASE\_URL}, \texttt{VITE\_SUPABASE\_ANON\_KEY},
+        \texttt{VITE\_N8N\_BASE\_URL}, \texttt{VITE\_N8N\_API\_KEY}
+  \item \textbf{Code Editor:} Visual Studio Code with ESLint extension
+  \item \textbf{ESLint:} Flat config (ESLint 9) with
+        \texttt{eslint-plugin-react-hooks} and \texttt{eslint-plugin-react-refresh}
+  \item \textbf{Version Control:} Git with GitHub remote; single \texttt{main} branch;
+        Conventional Commits message format
+\end{itemize}
+
+The Vite development server is configured to proxy all requests matching \texttt{/webhook/*}
+and \texttt{/api/v1/*} to the n8n instance URL defined in \texttt{VITE\_N8N\_BASE\_URL},
+eliminating browser-imposed CORS rejections without requiring changes to n8n's own CORS
+configuration.
+
+\section{Module-wise Implementation}
+
+\subsection{WF-01: Product and Sales Data Ingestion}
+
+WF-01 exposes a POST webhook at \texttt{/webhook/product-sales-ingest}. Upon receiving a
+request from the frontend Add Product form, the workflow cleans and normalises the incoming
+fields (removing whitespace, setting default values for optional fields), performs a lookup of
+the Products table by \texttt{product\_id}, and branches on existence. If the product already
+exists, it executes an UPDATE operation; if not, it inserts a new row. The webhook then responds
+with a success payload that the frontend uses to dismiss the modal and trigger a real-time
+refresh.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.9cm, align=center]
+  \node (n1) [wftrigger] {Webhook\\Trigger};
+  \node (n2) [wfnode, right=of n1] {Edit Fields\\(Clean)};
+  \node (n3) [wfnode, right=of n2] {Get Rows\\(Lookup)};
+  \node (n4) [wfdecision, right=of n3] {Exists?};
+  \node (n5a) [wfnode, above right=0.7cm and 1.0cm of n4] {Update\\Row};
+  \node (n5b) [wfnode, below right=0.7cm and 1.0cm of n4] {Create\\Row};
+  \node (n6) [wfnode, right=3.5cm of n4] {Respond\\Webhook};
+  \draw[wfarrow] (n1)--(n2); \draw[wfarrow] (n2)--(n3); \draw[wfarrow] (n3)--(n4);
+  \draw[wfarrow] (n4) |- node[wflabel,pos=0.25,above]{Yes} (n5a);
+  \draw[wfarrow] (n4) |- node[wflabel,pos=0.25,below]{No}  (n5b);
+  \draw[wfarrow] (n5a) -| (n6); \draw[wfarrow] (n5b) -| (n6);
+\end{tikzpicture}
+\caption{WF-01: Product and Sales Data Ingestion Workflow.}
+\label{fig:wf01}
+\end{figure}
+
+\subsection{WF-02: Stockout Date Calculator}
+
+WF-02 fetches all products from the Products table and applies the stockout prediction
+formula. For each product, the workflow computes:
+
+\begin{equation}
+d_{\text{stockout}} = \left\lfloor \frac{S_{\text{current}}}{V_{\text{daily}}} \right\rfloor, \quad
+\text{date}_{\text{stockout}} = \text{date}_{\text{today}} + d_{\text{stockout}}
+\label{eq:stockout}
+\end{equation}
+
+Edge cases are handled explicitly: if $V_{\text{daily}} = 0$, then $d_{\text{stockout}}$ is set
+to 999 (interpreted as "no foreseeable stockout"); if $S_{\text{current}} = 0$, then
+$d_{\text{stockout}} = 0$ (immediate stockout). Both \texttt{days\_to\_stockout} and
+\texttt{estimated\_stockout\_date} are written back to each product row.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.9cm, align=center]
+  \node (n1) [wftrigger] {Trigger};
+  \node (n2) [wfnode, right=of n1] {Fetch All\\Products};
+  \node (n3) [wfnode, right=of n2] {Calculate\\Stockout Dates};
+  \node (n4) [wfnode, right=of n3] {Update\\Products};
+  \draw[wfarrow] (n1)--(n2); \draw[wfarrow] (n2)--(n3); \draw[wfarrow] (n3)--(n4);
+\end{tikzpicture}
+\caption{WF-02: Stockout Date Calculator Workflow.}
+\label{fig:wf02}
+\end{figure}
+
+\subsection{WF-03: Inventory Processing and Stock Alerts}
+
+WF-03 identifies all products where \texttt{current\_stock} $\leq$ \texttt{reorder\_threshold}.
+It first deletes all existing Stock Alert rows for the store (a clean-slate refresh strategy),
+then inserts fresh alert records for each at-risk product with status \texttt{ACTIVE}. This
+approach avoids duplicate alert accumulation and ensures the alert feed always reflects the
+current inventory state.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.8cm, align=center]
+  \node (n1) [wftrigger] {Trigger};
+  \node (n2) [wfnode, right=of n1] {Fetch\\Products};
+  \node (n3) [wfnode, right=of n2] {Filter\\At-Risk};
+  \node (n4) [wfnode, right=of n3] {Delete Old\\Alerts};
+  \node (n5) [wfnode, right=of n4] {Restore\\Context};
+  \node (n6) [wfnode, right=of n5] {Create New\\Alerts};
+  \draw[wfarrow] (n1)--(n2); \draw[wfarrow] (n2)--(n3);
+  \draw[wfarrow] (n3)--(n4); \draw[wfarrow] (n4)--(n5); \draw[wfarrow] (n5)--(n6);
+\end{tikzpicture}
+\caption{WF-03: Inventory Processing and Stock Alert Generation Workflow.}
+\label{fig:wf03}
+\end{figure}
+
+\subsection{WF-04: Stock Risk Classification}
+
+WF-04 classifies each product into one of four risk tiers using the following piecewise function
+applied to \texttt{days\_to\_stockout}:
+
+\begin{equation}
+\text{risk} =
+\begin{cases}
+\text{HIGH}    & \text{if } d_{\text{stockout}} \leq 3 \\
+\text{MEDIUM}  & \text{if } 3 < d_{\text{stockout}} \leq 7 \\
+\text{LOW}     & \text{if } d_{\text{stockout}} > 7 \\
+\text{UNKNOWN} & \text{if stockout data unavailable}
+\end{cases}
+\label{eq:risk}
+\end{equation}
+
+The classified risk level is written back to the \texttt{risk\_level} column of each product row
+and is used by the frontend dashboard to colour-code product cards and by WF-05 to filter
+at-risk products for AI reorder suggestion generation.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.9cm, align=center]
+  \node (n1) [wftrigger] {Trigger};
+  \node (n2) [wfnode, right=of n1] {Fetch All\\Products};
+  \node (n3) [wfnode, right=of n2] {Classify\\Risk Tiers};
+  \node (n4) [wfnode, right=of n3] {Update\\Products};
+  \draw[wfarrow] (n1)--(n2); \draw[wfarrow] (n2)--(n3); \draw[wfarrow] (n3)--(n4);
+\end{tikzpicture}
+\caption{WF-04: Stock Risk Classification Workflow.}
+\label{fig:wf04}
+\end{figure}
+
+\subsection{WF-05: AI Reorder Intelligence}
+
+WF-05 constitutes the most sophisticated workflow in the pipeline. It fetches at-risk products
+(risk level HIGH or MEDIUM) and all suppliers in parallel, merges the two data streams, and
+constructs a structured zero-shot prompt for the Groq Llama~3.1~8B model. The prompt
+instructs the model to act as an inventory manager for an Indian kirana store and to return
+a JSON array of reorder suggestions, one per at-risk product, with fields:
+\texttt{product\_id}, \texttt{supplier\_id}, \texttt{suggested\_qty}
+($= 30 \times V_{\text{daily}}$), and \texttt{reason} (one-sentence justification).
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.6cm, align=center]
+  \node (n1) [wftrigger] {Trigger};
+  \node (n2a) [wfnode, above right=0.5cm and 0.7cm of n1] {Fetch At-Risk\\Products};
+  \node (n2b) [wfnode, below right=0.5cm and 0.7cm of n1] {Fetch All\\Suppliers};
+  \node (n3) [wfnode, right=2.4cm of n1] {Merge};
+  \node (n4) [wfnode, right=of n3] {Build AI\\Prompt};
+  \node (n5) [wfnode, right=of n4] {Groq API\\Call};
+  \node (n6) [wfnode, right=of n5] {Parse AI\\Response};
+  \node (n7) [wfnode, below=0.8cm of n6] {Delete Old\\Suggestions};
+  \node (n8) [wfnode, left=of n7] {Restore\\Context};
+  \node (n9) [wfnode, left=of n8] {Insert New\\Suggestions};
+  \draw[wfarrow] (n1) |- (n2a); \draw[wfarrow] (n1) |- (n2b);
+  \draw[wfarrow] (n2a) -| (n3); \draw[wfarrow] (n2b) -| (n3);
+  \draw[wfarrow] (n3)--(n4); \draw[wfarrow] (n4)--(n5);
+  \draw[wfarrow] (n5)--(n6); \draw[wfarrow] (n6)--(n7);
+  \draw[wfarrow] (n7)--(n8); \draw[wfarrow] (n8)--(n9);
+\end{tikzpicture}
+\caption{WF-05: AI Reorder Intelligence Workflow.}
+\label{fig:wf05}
+\end{figure}
+
+\subsection{WF-06: Supplier Scoring}
+
+WF-06 evaluates all suppliers using the Weighted Sum Model. The composite score $C_s$ is
+computed as:
+
+\begin{equation}
+C_s = (R \times 0.40 + P \times 0.35 + D \times 0.25) \times 100
+\label{eq:wsm}
+\end{equation}
+
+where $R$ is the reliability score (0--1), $P$ is the price score (0--1), and $D$ is the
+delivery speed score (min-max normalised: fastest supplier $= 1.0$, slowest $= 0.0$). Letter
+grades are assigned as: A ($C_s \geq 80$), B ($65 \leq C_s < 80$), C ($50 \leq C_s < 65$),
+D ($C_s < 50$). Both score and grade are written to the Suppliers table.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.9cm, align=center]
+  \node (n1) [wftrigger] {Trigger};
+  \node (n2) [wfnode, right=of n1] {Fetch All\\Suppliers};
+  \node (n3) [wfnode, right=of n2] {Calculate\\WSM Scores};
+  \node (n4) [wfnode, right=of n3] {Assign\\Grades};
+  \node (n5) [wfnode, right=of n4] {Update\\Suppliers};
+  \draw[wfarrow] (n1)--(n2); \draw[wfarrow] (n2)--(n3);
+  \draw[wfarrow] (n3)--(n4); \draw[wfarrow] (n4)--(n5);
+\end{tikzpicture}
+\caption{WF-06: Supplier Scoring Workflow.}
+\label{fig:wf06}
+\end{figure}
+
+\subsection{WF-07: WhatsApp Alert Sender}
+
+WF-07 queries the Stock Alerts table for all records with \texttt{alert\_status = 'ACTIVE'}.
+It applies a 24-hour anti-spam filter by checking \texttt{last\_alerted\_at}: only products
+not alerted in the last 24 hours proceed to the message builder. A formatted WhatsApp message
+is constructed listing all qualifying products with their names, current stock, and threshold
+values. The message is dispatched to the registered store WhatsApp numbers via the Twilio
+Messages API. After successful delivery, \texttt{last\_alerted\_at} is updated for each
+product.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.8cm, align=center]
+  \node (n1) [wftrigger] {Trigger};
+  \node (n2) [wfnode, right=of n1] {Fetch Active\\Alerts};
+  \node (n3) [wfnode, right=of n2] {Filter\\(24hr cooldown)};
+  \node (n4) [wfnode, right=of n3] {Build\\Message};
+  \node (n5) [wfnode, right=of n4] {Send via\\Twilio};
+  \node (n6) [wfnode, right=of n5] {Update\\Timestamps};
+  \draw[wfarrow] (n1)--(n2); \draw[wfarrow] (n2)--(n3); \draw[wfarrow] (n3)--(n4);
+  \draw[wfarrow] (n4)--(n5); \draw[wfarrow] (n5)--(n6);
+\end{tikzpicture}
+\caption{WF-07: WhatsApp Alert Sender Workflow.}
+\label{fig:wf07}
+\end{figure}
+
+\subsection{WF-08: Master Daily Orchestrator}
+
+WF-08 is triggered by an n8n Cron node set to 8:00 AM IST daily. It begins by simulating the
+day's sales by subtracting each product's \texttt{avg\_daily\_sales} from its
+\texttt{current\_stock} (with a floor of zero). It then sequentially executes WF-02 through
+WF-07 as sub-workflow calls, waiting for each to complete before proceeding. After WF-07
+completes, WF-08 computes the daily health score using the inventory health formula and inserts
+a Daily Snapshot record. Finally, it writes a completion entry to System Logs.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.45cm and 0.6cm, align=center]
+  \node (t)   [wftrigger] {Cron / Manual\\Trigger};
+  \node (sim) [wfnode, right=of t]  {Simulate\\Daily Sales};
+  \node (w2)  [wfnode, right=of sim] {WF-02\\Stockout};
+  \node (w3)  [wfnode, right=of w2]  {WF-03\\Alerts};
+  \node (w4)  [wfnode, right=of w3]  {WF-04\\Risk};
+  \node (w5)  [wfnode, below=0.7cm of w4] {WF-05\\AI Reorder};
+  \node (w6)  [wfnode, left=of w5]  {WF-06\\Scoring};
+  \node (w7)  [wfnode, left=of w6]  {WF-07\\WhatsApp};
+  \node (hs)  [wfnode, left=of w7]  {Compute\\Health Score};
+  \node (sn)  [wfnode, left=of hs]  {Save\\Snapshot};
+  \node (lg)  [wfnode, below=0.7cm of sn] {Log\\Completion};
+  \draw[wfarrow] (t)--(sim); \draw[wfarrow] (sim)--(w2); \draw[wfarrow] (w2)--(w3);
+  \draw[wfarrow] (w3)--(w4); \draw[wfarrow] (w4)--(w5); \draw[wfarrow] (w5)--(w6);
+  \draw[wfarrow] (w6)--(w7); \draw[wfarrow] (w7)--(hs); \draw[wfarrow] (hs)--(sn);
+  \draw[wfarrow] (sn)--(lg);
+\end{tikzpicture}
+\caption{WF-08: Master Daily Orchestrator Workflow.}
+\label{fig:wf08}
+\end{figure}
+
+\subsection{WF-09: AI Vision Product Onboarding}
+
+WF-09 exposes a POST webhook that accepts a base64-encoded image of a product. The image is
+passed directly to the Gemini~2.5 Flash multimodal API with a structured prompt requesting
+extraction of \texttt{product\_name} and \texttt{category} in JSON format. A recursive parser
+handles Gemini's response envelope to reliably extract the JSON payload regardless of any
+markdown fencing or preamble. The workflow then queries the Products table to determine the
+highest existing product ID suffix and returns an auto-incremented collision-free ID along
+with the extracted fields to the frontend form.
+
+\subsection{WF-10: Smart Scan for Supplier Invoices}
+
+WF-10 processes photographs of physical supplier delivery bills. The image is submitted to
+Gemini~2.5 Flash with a prompt requesting extraction of all line items as a JSON array of
+\texttt{\{product\_name, quantity\}} objects. The extracted items are then matched against
+the store's existing Products table using a fuzzy string similarity algorithm implemented in
+an n8n Code node. The algorithm computes character-level similarity scores between each
+extracted product name and all inventory product names, selecting the best match above a
+defined confidence threshold. The matched product IDs and computed new stock levels are
+returned to the frontend for the store owner to review and confirm.
+
+\section{Key Code Snippets with Explanation}
+
+\subsection{Stockout Calculation Logic (n8n Code Node)}
+
+The following JavaScript implements the stockout prediction formula within the WF-02 Code node:
+
+\begin{lstlisting}[language=JavaScript, caption={WF-02 Stockout Calculation Code Node}, label={lst:stockout}]
+const items = $input.all();
+const today = new Date().toISOString().split('T')[0];
+
+return items.map(item => {
+  const { current_stock, avg_daily_sales } = item.json;
+  const stock  = parseFloat(current_stock)  || 0;
+  const sales  = parseFloat(avg_daily_sales) || 0;
+
+  let days;
+  if (stock === 0)    { days = 0; }
+  else if (sales === 0) { days = 999; }
+  else                { days = Math.floor(stock / sales); }
+
+  const stockoutDate = new Date();
+  stockoutDate.setDate(stockoutDate.getDate() + days);
+
+  return {
+    json: {
+      ...item.json,
+      days_to_stockout: days,
+      estimated_stockout_date:
+        days === 999 ? null : stockoutDate.toISOString().split('T')[0],
+    }
+  };
+});
+\end{lstlisting}
+
+The \texttt{Math.floor} operation matches Equation~\ref{eq:stockout} precisely. The ternary
+guard for \texttt{avg\_daily\_sales = 0} prevents division-by-zero errors in production.
+
+\subsection{Supplier WSM Scoring Logic (n8n Code Node)}
+
+\begin{lstlisting}[language=JavaScript, caption={WF-06 Weighted Sum Model Scoring}, label={lst:wsm}]
+const suppliers = $input.all().map(i => i.json);
+
+// Min-max normalise delivery time (faster = higher score)
+const times = suppliers.map(s => s.delivery_time_days);
+const minT  = Math.min(...times);
+const maxT  = Math.max(...times);
+
+return suppliers.map(s => {
+  const R = parseFloat(s.reliability_score);
+  const P = parseFloat(s.price_score);
+  const D = maxT === minT ? 1 :
+    (maxT - s.delivery_time_days) / (maxT - minT);
+
+  const score = (R * 0.40 + P * 0.35 + D * 0.25) * 100;
+  const grade = score >= 80 ? 'A' : score >= 65 ? 'B' :
+                score >= 50 ? 'C' : 'D';
+
+  return { json: { ...s, composite_score: score.toFixed(2),
+                         supplier_grade: grade } };
+});
+\end{lstlisting}
+
+\subsection{Supabase Realtime Subscription Pattern (React)}
+
+All pages that display live data use the following pattern to subscribe to database changes:
+
+\begin{lstlisting}[language=JavaScript, caption={Supabase Realtime Subscription Pattern}, label={lst:realtime}]
+useEffect(() => {
+  fetchProducts();          // initial data load
+  const channel = supabase
+    .channel('products-live')
+    .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'Products' },
+        () => fetchProducts())   // refetch on any change
+    .subscribe();
+  return () => supabase.removeChannel(channel);
+}, []);
+\end{lstlisting}
+
+The cleanup function in the \texttt{useEffect} return ensures that the WebSocket channel is
+properly removed when the component unmounts, preventing memory leaks.
+
+\subsection{Inventory Health Score Calculation (Frontend)}
+
+\begin{lstlisting}[language=JavaScript, caption={Inventory Health Score Formula}, label={lst:health}]
+function computeHealthScore(products) {
+  const N  = products.length;
+  if (N === 0) return 100;
+  const nL = products.filter(p => p.risk_level === 'LOW').length;
+  const nM = products.filter(p => p.risk_level === 'MEDIUM').length;
+  const nH = products.filter(p => p.risk_level === 'HIGH').length;
+  const nO = products.filter(p => p.current_stock === 0).length;
+  const weighted = nL*100 + nM*70 + nH*30 + nO*5;
+  return Math.min(100, Math.max(0, Math.floor(weighted / N)));
+}
+\end{lstlisting}

@@ -1,0 +1,319 @@
+% =============================================================================
+% CHAPTER 3 — SYSTEM DESIGN
+% =============================================================================
+\chapter{System Design}
+\label{ch:design}
+
+\section{System Architecture}
+
+StockSense AI is structured as a four-layer architecture in which each layer has clearly
+defined responsibilities and communicates with adjacent layers exclusively through well-defined
+interfaces. This separation of concerns ensures that each component can be developed, tested,
+and updated independently.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[align=center,
+  lyr/.style={rectangle, rounded corners=4pt, draw=black, fill=gray!4,
+              minimum width=14cm, inner sep=8pt},
+  box/.style={rectangle, rounded corners=3pt, draw=black!60, fill=white,
+              font=\sffamily\scriptsize, inner sep=4pt, text width=2.6cm,
+              minimum height=0.8cm, align=center},
+  hdr/.style={font=\sffamily\small\bfseries},
+  arr/.style={-Stealth, thick},
+]
+
+%% Layer 1 — Frontend
+\node[lyr, minimum height=3.2cm] (L1) at (0,0) {};
+\node[hdr] at (0, 1.3) {Layer 1: React 19 Frontend SPA (Vite 8 + Tailwind CSS v4)};
+\node[box] at (-4.4, 0) {Dashboard\\\& KPI Cards};
+\node[box] at (-1.6, 0) {Products\\CRUD \& Smart Scan};
+\node[box] at (1.2, 0)  {AI Reorder\\\& Supplier Analytics};
+\node[box] at (4.0, 0)  {Auth, Onboarding\\\& Settings};
+
+%% Layer 2 — Network Bridge
+\node[lyr, minimum height=1.6cm] (L2) at (0,-2.8) {};
+\node[hdr] at (0, -2.2) {Layer 2: Network \& Security Bridge};
+\node[box, text width=4.5cm] at (-3.0, -2.9) {Local Vite Dev Proxy (:5173)\\\texttt{/webhook/*} → n8n};
+\node[box, text width=4.5cm] at (3.0, -2.9)  {Production: ngrok HTTPS Tunnel\\\texttt{VITE\_N8N\_BASE\_URL}};
+
+%% Layer 3 — n8n Engine
+\node[lyr, minimum height=3.6cm] (L3) at (0,-6.0) {};
+\node[hdr] at (0, -4.6) {Layer 3: n8n Workflow Automation Engine};
+% orchestrator sub-box
+\node[rectangle, rounded corners=3pt, draw=black!50, fill=gray!10, dashed,
+      minimum width=9.0cm, minimum height=1.6cm] at (-1.8, -5.6) {};
+\node[font=\sffamily\scriptsize\bfseries] at (-1.8, -4.95) {WF-08: Master Daily Orchestrator (8:00 AM IST)};
+\node[box, text width=1.1cm] at (-4.6,-5.7) {WF-02\\Stockout};
+\node[box, text width=1.1cm] at (-3.2,-5.7) {WF-03\\Alerts};
+\node[box, text width=1.1cm] at (-1.8,-5.7) {WF-04\\Risk};
+\node[box, text width=1.1cm] at (-0.4,-5.7) {WF-05\\AI Reorder};
+\node[box, text width=1.1cm] at (1.0,-5.7) {WF-06\\Scoring};
+\node[box, text width=1.1cm] at (2.4,-5.7) {WF-07\\WhatsApp};
+% standalone WFs
+\node[box, text width=2.0cm] at (5.2, -5.0) {WF-01\\Data Ingestion};
+\node[box, text width=2.0cm] at (5.2, -6.3) {WF-09 / WF-10\\AI Vision};
+
+%% External APIs
+\node[rectangle, rounded corners=3pt, draw=black, fill=white,
+      font=\sffamily\scriptsize, inner sep=5pt, text width=2.8cm,
+      align=center, minimum height=1.8cm] (API) at (5.2, -7.6)
+  {\textbf{External APIs}\\Groq Llama 3.1 8B\\Gemini 2.5 Flash\\Twilio WhatsApp};
+
+%% Layer 4 — Supabase
+\node[lyr, minimum height=2.0cm] (L4) at (0,-9.4) {};
+\node[hdr] at (0, -8.7) {Layer 4: Supabase Cloud (PostgreSQL + Realtime WebSockets)};
+\node[box, text width=3.2cm] at (-4.0, -9.5) {PostgreSQL\\(8-Table Schema)};
+\node[box, text width=3.2cm] at (0.0, -9.5)  {Supabase Auth\\(JWT-based)};
+\node[box, text width=3.2cm] at (4.0, -9.5)  {Realtime Subscriptions\\(Live Dashboard Updates)};
+
+%% Inter-layer arrows
+\draw[arr] (L1.south) -- node[right,font=\sffamily\tiny]{REST / Webhook} (L2.north);
+\draw[arr] (L2.south) -- node[right,font=\sffamily\tiny]{HTTP Triggers} (L3.north);
+\draw[arr] (L3.south) -- node[right,font=\sffamily\tiny]{Supabase Client} (L4.north);
+\draw[arr] (API.north) -- node[right,font=\sffamily\tiny]{} (5.2,-6.3);
+\draw[arr,dashed] (L4.north east) to[bend left=20]
+  node[right,font=\sffamily\tiny]{Realtime Push} (L1.south east);
+
+\end{tikzpicture}%
+}
+\caption{Four-Layer System Architecture of StockSense AI.}
+\label{fig:arch}
+\end{figure}
+
+The \textbf{Frontend Layer} is a React~19 single-page application bundled with Vite~8 and
+styled using Tailwind CSS~v4. It presents twelve application routes covering the main dashboard,
+product management, stock alert feed, AI reorder suggestions, supplier analytics, system logs,
+and user settings. The frontend communicates with the n8n backend via REST webhooks and with
+Supabase directly for authentication and real-time data subscriptions.
+
+The \textbf{Network and Security Bridge Layer} handles the routing of frontend HTTP requests to
+the appropriate backend destination. In the local development environment, a Vite reverse proxy
+at port 5173 forwards all \texttt{/webhook/*} and \texttt{/api/v1/*} requests to the locally
+hosted n8n instance, avoiding browser-imposed CORS restrictions. In production, an ngrok HTTPS
+tunnel exposes the n8n instance to the internet, and the frontend environment variable
+\texttt{VITE\_N8N\_BASE\_URL} is configured to point to the tunnel URL.
+
+The \textbf{Workflow Engine Layer} comprises the ten n8n workflows that implement the core
+business logic. WF-08, the Master Daily Orchestrator, executes at 8:00~AM IST and sequentially
+calls WF-02 through WF-07 as sub-workflows. WF-01, WF-09, and WF-10 are webhook-triggered on
+demand from the frontend.
+
+The \textbf{Database Layer} is a Supabase PostgreSQL instance with an eight-table schema. Real-time
+WebSocket subscriptions are enabled on the Products, Stock Alerts, Reorder Suggestions, Daily
+Snapshots, Suppliers, and System Logs tables, ensuring that any change written by a workflow is
+immediately reflected on the frontend without requiring a manual page refresh.
+
+\section{Use Case Diagram Description}
+
+The system recognises two principal actors: the \textbf{Store Owner} (primary user) and the
+\textbf{n8n Automation Engine} (system actor). A third indirect actor, the \textbf{External AI
+Services} (Groq, Gemini, Twilio), participates in sub-use cases triggered by the engine.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  actor/.style={draw, ellipse, minimum width=1.4cm, minimum height=0.7cm,
+                align=center, font=\sffamily\scriptsize},
+  uc/.style={draw, ellipse, minimum width=3.2cm, minimum height=0.6cm,
+             align=center, font=\sffamily\scriptsize, fill=gray!6},
+  sys/.style={rectangle, rounded corners=4pt, draw=black, fill=gray!2,
+              minimum width=9.0cm, minimum height=12.5cm},
+  line/.style={draw, -}
+]
+% System boundary
+\node[sys] at (3.5, 0) {};
+\node[font=\sffamily\small\bfseries] at (3.5, 6.6) {StockSense AI System};
+
+% Actors
+\node[actor] (owner) at (-1.5, 4.0) {Store\\Owner};
+\node[actor] (engine) at (-1.5, -3.0) {n8n Engine};
+\node[actor] (ai) at (8.5, 0) {External\\AI Services};
+
+% Use cases inside system
+\node[uc] (uc1)  at (3.5,  5.7) {Register / Log In};
+\node[uc] (uc2)  at (3.5,  4.6) {Complete Onboarding};
+\node[uc] (uc3)  at (3.5,  3.5) {Add / Edit Products};
+\node[uc] (uc4)  at (3.5,  2.4) {Smart Scan Product Photo};
+\node[uc] (uc5)  at (3.5,  1.3) {Scan Supplier Invoice};
+\node[uc] (uc6)  at (3.5,  0.2) {View Dashboard \& KPIs};
+\node[uc] (uc7)  at (3.5, -0.9) {View / Dismiss Alerts};
+\node[uc] (uc8)  at (3.5, -2.0) {Approve / Dismiss Reorders};
+\node[uc] (uc9)  at (3.5, -3.1) {Run Pipeline Manually};
+\node[uc] (uc10) at (3.5, -4.2) {Automated Daily Pipeline};
+\node[uc] (uc11) at (3.5, -5.3) {Receive WhatsApp Alert};
+
+% Connections — Store Owner
+\foreach \t in {uc1,uc2,uc3,uc4,uc5,uc6,uc7,uc8,uc9,uc11}
+  \draw[line] (owner) -- (\t);
+
+% Connections — n8n Engine
+\foreach \t in {uc10,uc9}
+  \draw[line] (engine) -- (\t);
+
+% Connections — AI Services
+\foreach \t in {uc4,uc5,uc8,uc10}
+  \draw[line] (ai) -- (\t);
+
+\end{tikzpicture}
+\caption{Use Case Diagram for StockSense AI.}
+\label{fig:usecase}
+\end{figure}
+
+The Store Owner interacts with the system to manage products (add, edit, bulk import, smart scan),
+review intelligence outputs (dashboard, alerts, reorder suggestions, supplier scores), and
+configure the store profile and workflow settings. The n8n Engine initiates the daily orchestrated
+pipeline and can be manually triggered by the Store Owner through the Settings page. External AI
+Services are consumed by the engine during AI reorder generation (Groq), product and invoice
+scanning (Gemini), and WhatsApp delivery (Twilio).
+
+\section{Data Flow Diagram / ER Diagram}
+
+\subsection{Data Flow Description}
+
+The data flow through the StockSense AI pipeline proceeds as follows. When the Store Owner adds
+or updates a product through the frontend, the form data is sent as a POST request to WF-01,
+which validates the payload and performs an upsert operation on the Products table. When the
+daily orchestrator (WF-08) fires at 8:00 AM IST, it first simulates the day's sales by
+decrementing stock levels based on the \texttt{avg\_daily\_sales} value of each product. It
+then sequentially invokes WF-02 to compute stockout dates, WF-03 to generate stock alerts for
+products below threshold, WF-04 to classify risk levels, WF-05 to call Groq and write reorder
+suggestions, WF-06 to recalculate supplier WSM scores, and WF-07 to dispatch WhatsApp messages
+via Twilio. Upon completion, WF-08 calculates and saves the daily health snapshot and writes an
+entry to System Logs. The Supabase Realtime WebSocket pushes all database changes to the
+frontend instantly.
+
+\subsection{Entity Relationship Description}
+
+The central entity is the \textbf{Store Profile}, which acts as the multi-tenancy root and owns
+all other entities through a \texttt{store\_id} foreign key. Each \textbf{Product} belongs to
+one Store Profile, maintains its current stock level, average daily sales, risk classification,
+and stockout projection. Each \textbf{Supplier} belongs to one Store Profile and carries
+composite scoring information. \textbf{Stock Alerts} are generated per Product when
+\texttt{current\_stock} $\leq$ \texttt{reorder\_threshold}. \textbf{Reorder Suggestions} link
+a Product to a recommended Supplier and carry AI-generated reasoning. \textbf{Stock
+Transactions} provide an immutable audit trail of all stock changes. \textbf{Daily Snapshots}
+record aggregated health metrics per store per day. \textbf{System Logs} track the execution
+status of each workflow run.
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  ent/.style={rectangle, draw=black, rounded corners=2pt, fill=white,
+              font=\sffamily\scriptsize\bfseries, minimum width=2.8cm,
+              minimum height=0.7cm, align=center},
+  attr/.style={font=\sffamily\scriptsize, align=left},
+  rel/.style={draw, -Stealth, font=\sffamily\tiny},
+]
+% Entities
+\node[ent] (SP) at (0,0) {Store Profiles};
+\node[ent] (PR) at (-5,-3) {Products};
+\node[ent] (SU) at (5,-3) {Suppliers};
+\node[ent] (SA) at (-7,-7) {Stock Alerts};
+\node[ent] (RS) at (-2,-7) {Reorder Suggestions};
+\node[ent] (ST) at (3,-7) {Stock Transactions};
+\node[ent] (DS) at (7,-5) {Daily Snapshots};
+\node[ent] (SL) at (7,-2) {System Logs};
+
+% Relationships
+\draw[rel] (SP) -- node[left,font=\sffamily\tiny]{1} (PR) node[below left,font=\sffamily\tiny]{M};
+\draw[rel] (SP) -- node[right,font=\sffamily\tiny]{1} (SU) node[below right,font=\sffamily\tiny]{M};
+\draw[rel] (SP) -- node[right,font=\sffamily\tiny]{1} (SL) node[right,font=\sffamily\tiny]{M};
+\draw[rel] (SP) -- node[right,font=\sffamily\tiny]{1} (DS) node[right,font=\sffamily\tiny]{M};
+\draw[rel] (PR) -- node[left,font=\sffamily\tiny]{1} (SA) node[below,font=\sffamily\tiny]{M};
+\draw[rel] (PR) -- node[right,font=\sffamily\tiny]{1} (RS) node[below,font=\sffamily\tiny]{M};
+\draw[rel] (PR) -- node[right,font=\sffamily\tiny]{1} (ST) node[below,font=\sffamily\tiny]{M};
+\draw[rel] (SU) -- node[right,font=\sffamily\tiny]{1} (RS) node[below,font=\sffamily\tiny]{M};
+\end{tikzpicture}%
+}
+\caption{Entity Relationship Diagram for StockSense AI Database.}
+\label{fig:erd}
+\end{figure}
+
+\section{Module Description}
+
+StockSense AI is decomposed into six functional modules, each encapsulating a coherent set of
+responsibilities:
+
+\textbf{Module 1 — Data Ingestion and Product Management:} Handles all CRUD operations on the
+Products table. Includes the frontend Add/Edit Product modal, CSV bulk import functionality,
+AI Smart Scan (WF-09), and the Quick Update batch stock adjustment page. The underlying WF-01
+webhook processes all inbound product data.
+
+\textbf{Module 2 — Inventory Intelligence Pipeline:} The core analytical engine comprising
+WF-02 (Stockout Prediction), WF-03 (Alert Generation), WF-04 (Risk Classification), and
+WF-08 (Daily Orchestrator). This module runs autonomously on a schedule and updates the database
+with fresh intelligence data for every product.
+
+\textbf{Module 3 — AI Reorder Recommendations:} WF-05 implements the Groq API integration.
+It constructs a structured zero-shot prompt from current inventory and supplier data and parses
+the JSON array response into Reorder Suggestion records. The frontend Reorder page displays these
+suggestions and allows the Store Owner to approve or dismiss them.
+
+\textbf{Module 4 — Supplier Scoring and Analytics:} WF-06 computes the Weighted Sum Model score
+for each supplier and assigns letter grades. The Suppliers page visualises composite scores,
+individual metric breakdowns, and grade badges.
+
+\textbf{Module 5 — WhatsApp Alert Delivery:} WF-07 queries active Stock Alerts, applies a
+24-hour anti-spam filter based on \texttt{last\_alerted\_at} timestamps, formats a message
+containing the critical product list, and delivers it via Twilio's WhatsApp Business API.
+
+\textbf{Module 6 — AI Vision Data Entry:} WF-09 accepts base64-encoded product photographs,
+uses Gemini~2.5 Flash to extract product name and category, and returns auto-populated form
+data to the frontend. WF-10 processes supplier invoice photographs, extracting product names
+and quantities, and uses fuzzy string matching to map them to existing inventory records.
+
+\section{Database Design}
+
+The complete database schema consists of eight tables hosted on Supabase PostgreSQL. All primary
+keys use UUID values generated by \texttt{gen\_random\_uuid()}. All tables include a
+\texttt{created\_at} timestamp. All data-bearing tables include a \texttt{store\_id} foreign
+key referencing Store Profiles, enabling multi-tenant extension.
+
+\begin{table}[H]
+\centering
+\caption{Database Table Summary}
+\label{tab:dbsummary}
+{\singlespacing
+\begin{tabularx}{\textwidth}{@{} l X l @{}}
+\toprule
+\textbf{Table} & \textbf{Purpose} & \textbf{Key Columns} \\
+\midrule
+Store Profiles  & Multi-tenancy root; one record per registered store &
+  \texttt{user\_id}, \texttt{store\_name}, \texttt{whatsapp\_numbers}, \texttt{safety\_factor} \\
+\addlinespace
+Products        & Inventory item master with live intelligence fields &
+  \texttt{product\_id}, \texttt{current\_stock}, \texttt{avg\_daily\_sales},
+  \texttt{days\_to\_stockout}, \texttt{risk\_level} \\
+\addlinespace
+Suppliers       & Vendor directory with scoring outputs &
+  \texttt{supplier\_id}, \texttt{reliability\_score}, \texttt{price\_score},
+  \texttt{composite\_score}, \texttt{supplier\_grade} \\
+\addlinespace
+Stock Alerts    & Active low-stock alerts (stock $\leq$ threshold) &
+  \texttt{product\_id}, \texttt{alert\_status}, \texttt{last\_alerted\_at} \\
+\addlinespace
+Reorder Suggestions & AI-generated reorder recommendations &
+  \texttt{product\_id}, \texttt{supplier\_id}, \texttt{suggested\_quantity}, \texttt{reason},
+  \texttt{status} \\
+\addlinespace
+Stock Transactions & Immutable audit log of all stock changes &
+  \texttt{transaction\_type}, \texttt{quantity\_change}, \texttt{new\_stock\_level} \\
+\addlinespace
+Daily Snapshots & Historical daily health metrics per store &
+  \texttt{snapshot\_date}, \texttt{health\_score}, \texttt{high\_count}, \texttt{oos\_count} \\
+\addlinespace
+System Logs     & Workflow execution records &
+  \texttt{workflow\_name}, \texttt{status}, \texttt{records\_processed}, \texttt{error\_message} \\
+\bottomrule
+\end{tabularx}
+}
+\end{table}
+
+Real-time Supabase subscriptions are enabled on Products, Stock Alerts, Reorder Suggestions,
+Daily Snapshots, Suppliers, and System Logs. Indexed columns include \texttt{product\_id},
+\texttt{risk\_level}, \texttt{alert\_status}, and \texttt{snapshot\_date} for query performance.
+Row-level security policies are not enforced in the prototype but the schema is designed to
+support them for production multi-tenancy deployment.

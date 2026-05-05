@@ -1,0 +1,113 @@
+% =============================================================================
+% CONCLUSION AND FUTURE WORK
+% =============================================================================
+\chapter{Conclusion and Future Work}
+\label{ch:conclusion}
+
+\section{Conclusion}
+
+StockSense AI was conceived with a specific and grounded objective: to make inventory
+intelligence genuinely accessible to small Indian kirana store owners who currently operate
+without any digital support for stock management. The project was not an attempt to build
+a complex, heavyweight enterprise system. It was, instead, a deliberate exercise in designing
+the simplest possible system that could deliver meaningful, automated, AI-augmented inventory
+management within the real financial and operational constraints of the target user segment.
+
+The system successfully achieves all six objectives defined at the outset of the project.
+The automated intelligence pipeline — comprising ten modular n8n workflows — calculates
+stockout dates for every product using daily sales velocity, classifies products into HIGH,
+MEDIUM, and LOW risk tiers, generates fresh stock alerts for at-risk products, invokes the
+Groq Llama~3.1~8B large language model to produce natural-language reorder suggestions with
+supplier selection reasoning, scores all suppliers using the Weighted Sum Model, and delivers
+formatted WhatsApp alerts to the store owner through the Twilio API. The entire pipeline
+executes from end to end in approximately thirteen seconds and runs autonomously on a daily
+cron schedule without any manual intervention.
+
+The AI vision capabilities — product onboarding from a photograph using Google Gemini~2.5
+Flash and supplier invoice scanning with fuzzy inventory matching — represent a significant
+reduction in data entry burden for the store owner. Features that would previously have
+required manual typing of product names and quantities from physical bills are now automated
+through a simple photograph upload.
+
+The React~19 frontend provides a responsive, real-time dashboard with Supabase WebSocket
+subscriptions ensuring that pipeline outputs are immediately reflected on screen without any
+page reload. The twelve-page application covers every functional area from onboarding to
+supplier analytics, presenting complex inventory intelligence in a form that a non-technical
+store owner can understand and act upon.
+
+The prototype operates at zero infrastructure cost using free-tier services, and the estimated
+production deployment cost of below \rupee{}500 per month validates the economic viability
+argument at the core of the project's motivation. Comparative analysis against existing tools
+such as Vyapar, Zoho Inventory, and Khatabook confirms that no commercially available solution
+at this price point offers the combination of automated stockout prediction, LLM-driven reorder
+recommendations, supplier scoring, and WhatsApp alerting that StockSense AI delivers.
+
+\textbf{Limitations.} The system has several acknowledged limitations that should be stated
+honestly. First, the stockout prediction formula relies on the \texttt{avg\_daily\_sales} field,
+which is currently a manually entered historical average. The system does not compute this
+value dynamically from transaction history, meaning it is only as accurate as the value the
+store owner provides. Second, the Weighted Sum Model for supplier scoring is deterministic
+and static; it does not learn from historical supplier performance feedback or adapt its
+weights over time. Third, the demand forecast does not account for seasonal spikes or
+festival-driven demand surges, which are significant in the Indian retail context. Fourth,
+the current implementation enforces single-store tenancy; the schema is designed for
+multi-tenancy but the row-level security policies and tenant-aware API routing required for
+production multi-store operation have not been implemented. Fifth, the system has been tested
+only against a synthesised dataset of ten products; performance and accuracy at production
+scale with hundreds of products and multiple supplier categories remains to be validated.
+
+Despite these limitations, StockSense AI constitutes a functional and deployable proof of
+concept that demonstrates the viability of the proposed approach. It shows that the combination
+of n8n workflow automation, Supabase real-time databases, Groq LLM inference, and Google
+Gemini multimodal AI can be integrated into a cohesive inventory intelligence system at a
+cost and complexity level appropriate for small Indian retailers.
+
+\section{Future Work}
+
+The following enhancements are identified as the most impactful directions for future
+development of StockSense AI, ordered by estimated implementation effort and user impact:
+
+\textbf{Dynamic Sales Velocity Computation.} The most significant immediate improvement
+would be to compute \texttt{avg\_daily\_sales} automatically from the Stock Transactions
+audit log rather than relying on a manually entered value. This would make the stockout
+prediction formula self-updating and progressively more accurate as transaction history
+accumulates. A rolling 30-day average window would be a natural starting point.
+
+\textbf{Seasonal Demand Multiplier.} The Products table already includes \texttt{is\_seasonal}
+and \texttt{peak\_season\_months} columns. A future enhancement to WF-02 would apply a
+configurable seasonal multiplier to \texttt{avg\_daily\_sales} during identified peak months,
+improving stockout prediction accuracy around Diwali, Holi, harvest season, and other
+demand spikes that are predictable in the Indian retail calendar.
+
+\textbf{Multi-Store Tenancy with Row-Level Security.} The database schema is already
+designed for multi-tenancy through the \texttt{store\_id} foreign key on all data tables.
+Enabling Supabase Row Level Security (RLS) policies that filter all queries by the
+authenticated user's \texttt{store\_id} would allow the system to serve multiple independent
+store owners on a single infrastructure instance, dramatically improving the unit economics
+of the platform.
+
+\textbf{Native Mobile Application.} Since most kirana store owners in India interact
+with digital services primarily through smartphones, a React Native mobile application
+built on the same Supabase backend and n8n API would significantly broaden the system's
+accessibility and daily usage frequency.
+
+\textbf{Two-Way WhatsApp Interaction.} The current WhatsApp integration is one-directional:
+the system sends alerts to the store owner. A future enhancement using Twilio's inbound
+message handling capability would allow the store owner to reply to an alert with a command
+(e.g., ``reorder 50 units'') and have the system automatically approve the corresponding
+reorder suggestion and log the action, without requiring the owner to open the web application.
+
+\textbf{Automated Purchase Order Dispatch.} The logical extension of an approved reorder
+suggestion is the actual placement of an order with the supplier. This could be implemented
+by integrating with supplier communication channels (WhatsApp Business API or email) to
+send formatted purchase order messages, and potentially with UPI payment APIs to facilitate
+automated payment initiation for known supplier accounts.
+
+\textbf{Adaptive Supplier Scoring.} Replacing the static Weighted Sum Model weights with
+a learning system that adjusts the importance of reliability, price, and delivery speed
+based on the store owner's historical approval patterns for reorder suggestions would make
+the supplier scoring more personalised and contextually relevant over time.
+
+These future directions collectively outline a path from the current prototype to a
+production-grade, multi-tenant SaaS platform — StockSense AI as it could eventually serve
+not just individual kirana stores but the broader ecosystem of small Indian retailers.

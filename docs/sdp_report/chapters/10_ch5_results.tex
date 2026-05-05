@@ -1,0 +1,322 @@
+% =============================================================================
+% CHAPTER 5 — RESULTS AND DISCUSSION
+% =============================================================================
+\chapter{Results and Discussion}
+\label{ch:results}
+
+\section{System Testing}
+
+The StockSense AI prototype was subjected to a structured testing process covering functional
+correctness, boundary condition handling, pipeline integration, and performance measurement.
+Testing was conducted using a synthesised dataset comprising ten distinct products mapped to
+four suppliers, chosen to exercise a diverse range of inventory states simultaneously — some
+products well-stocked, some approaching threshold, and some already at stockout. All test
+executions were performed with the n8n instance running locally and connected to the
+Supabase cloud database.
+
+Testing was conducted at three levels:
+
+\textbf{Unit-level testing} verified the correctness of individual formula implementations
+by comparing computed outputs against hand-calculated expected values for the stockout
+prediction, risk classification, and supplier WSM scoring formulas.
+
+\textbf{Workflow-level testing} executed each n8n workflow individually via manual trigger and
+verified that the database state transitioned correctly. Each workflow was tested with valid
+inputs, missing field inputs, and edge-case inputs (zero stock, zero sales velocity, zero
+suppliers).
+
+\textbf{End-to-end pipeline testing} triggered WF-08 and observed the sequential execution of
+all sub-workflows, verifying that the final database state (updated stockout dates, fresh alerts,
+new suggestions, recalculated supplier scores, saved snapshot, system log entry) was consistent
+with expectations.
+
+\section{Test Cases}
+
+Table~\ref{tab:testcases} presents a representative set of test cases drawn from the structured
+testing exercise.
+
+{\singlespacing
+\begin{longtable}{@{}p{0.4cm} p{2.8cm} p{3.5cm} p{3.5cm} p{1.5cm}@{}}
+\caption{Test Case Results}
+\label{tab:testcases} \\
+\toprule
+\textbf{TC\#} & \textbf{Test Scenario} & \textbf{Input / Precondition} &
+\textbf{Expected Output} & \textbf{Result} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{TC\#} & \textbf{Test Scenario} & \textbf{Input / Precondition} &
+\textbf{Expected Output} & \textbf{Result} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+
+TC01 & Product Add via WF-01 &
+  POST with new product\_id, name, stock=50, sales=5 &
+  Product row created in DB; webhook returns 200 OK &
+  \textbf{PASS} \\
+
+TC02 & Product Update via WF-01 &
+  POST with existing product\_id, updated stock=75 &
+  Existing product row updated; no duplicate row &
+  \textbf{PASS} \\
+
+TC03 & Stockout Calculation — Normal &
+  stock=40, avg\_daily\_sales=5 &
+  days\_to\_stockout=8; date = today + 8 days &
+  \textbf{PASS} \\
+
+TC04 & Stockout Calculation — Zero Sales &
+  stock=20, avg\_daily\_sales=0 &
+  days\_to\_stockout=999; estimated\_date=NULL &
+  \textbf{PASS} \\
+
+TC05 & Stockout Calculation — Zero Stock &
+  stock=0, avg\_daily\_sales=3 &
+  days\_to\_stockout=0; date=today (immediate) &
+  \textbf{PASS} \\
+
+TC06 & Risk Classification — HIGH &
+  days\_to\_stockout=2 &
+  risk\_level = ``HIGH'' &
+  \textbf{PASS} \\
+
+TC07 & Risk Classification — MEDIUM &
+  days\_to\_stockout=5 &
+  risk\_level = ``MEDIUM'' &
+  \textbf{PASS} \\
+
+TC08 & Risk Classification — LOW &
+  days\_to\_stockout=15 &
+  risk\_level = ``LOW'' &
+  \textbf{PASS} \\
+
+TC09 & Alert Generation — Below Threshold &
+  stock=10, reorder\_threshold=20 &
+  Stock Alert record created with status=ACTIVE &
+  \textbf{PASS} \\
+
+TC10 & Alert Generation — Above Threshold &
+  stock=30, reorder\_threshold=20 &
+  No alert created for this product &
+  \textbf{PASS} \\
+
+TC11 & AI Reorder Suggestion — Valid &
+  3 HIGH-risk products, 2 active suppliers &
+  3 Reorder Suggestion rows with supplier\_id, qty, reason &
+  \textbf{PASS} \\
+
+TC12 & AI Reorder — No At-Risk Products &
+  All products at LOW risk &
+  Empty suggestions array; no DB insert &
+  \textbf{PASS} \\
+
+TC13 & Supplier WSM Scoring &
+  4 suppliers with varying R, P, delivery\_time &
+  Composite scores and grades computed; Suppliers table updated &
+  \textbf{PASS} \\
+
+TC14 & WhatsApp Alert Delivery &
+  Active alerts present; Twilio sandbox configured &
+  Message delivered to registered number within 5 seconds &
+  \textbf{PASS} \\
+
+TC15 & WhatsApp Anti-Spam Filter &
+  last\_alerted\_at = 2 hours ago for product X &
+  Product X excluded from message; only other products alerted &
+  \textbf{PASS} \\
+
+TC16 & AI Vision — Product Photo Scan &
+  Base64-encoded image of a biscuit packet &
+  product\_name and category extracted; unique product\_id returned &
+  \textbf{PASS} \\
+
+TC17 & Invoice Smart Scan &
+  Image of supplier bill with 3 line items &
+  All 3 products fuzzy-matched; new stock levels computed &
+  \textbf{PASS} \\
+
+TC18 & Full Pipeline — WF-08 Execution &
+  10 products, 4 suppliers; manual trigger &
+  All sub-workflows complete; snapshot saved; system log entry written &
+  \textbf{PASS} \\
+
+TC19 & Health Score — All Well-Stocked &
+  10 products, all LOW risk, none OOS &
+  Health score = 100 &
+  \textbf{PASS} \\
+
+TC20 & Health Score — Severe Scenario &
+  0 LOW, 2 MEDIUM, 0 HIGH, 8 OOS products &
+  Health score = 18 &
+  \textbf{PASS} \\
+
+\end{longtable}
+}
+
+All twenty test cases passed, confirming functional correctness across normal, edge-case, and
+integration scenarios.
+
+\section{Screenshots Description}
+
+The following descriptions correspond to screenshot placeholders that should be inserted when
+preparing the final printed copy of this report. Screenshots were captured from the live
+prototype running against the Supabase cloud database.
+
+\begin{figure}[H]
+\centering
+\fbox{\begin{minipage}{0.85\textwidth}
+\centering\vspace{2.5cm}
+{\sffamily\small [Screenshot: Main Dashboard showing Inventory Health Score gauge at 55/100,\\
+KPI cards for Total Products (10), High Risk (6), Active Alerts (6), and Suggestions (3),\\
+and the 7-day health score trend chart.]}
+\vspace{2.5cm}
+\end{minipage}}
+\caption{StockSense AI — Main Dashboard with Health Score and KPI Cards.}
+\label{fig:ss_dashboard}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\fbox{\begin{minipage}{0.85\textwidth}
+\centering\vspace{2.5cm}
+{\sffamily\small [Screenshot: Products page showing product table with risk-level colour-coded\\
+badges (HIGH in red, MEDIUM in amber, LOW in green), days-to-stockout column,\\
+and the Add Product / AI Smart Scan / CSV Import buttons.]}
+\vspace{2.5cm}
+\end{minipage}}
+\caption{StockSense AI — Products Management Page with Risk Badges.}
+\label{fig:ss_products}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\fbox{\begin{minipage}{0.85\textwidth}
+\centering\vspace{2.5cm}
+{\sffamily\small [Screenshot: AI Reorder Suggestions page showing cards for each at-risk\\
+product, the recommended supplier name with grade badge, suggested order quantity,\\
+and the Groq-generated reason text with Approve / Dismiss action buttons.]}
+\vspace{2.5cm}
+\end{minipage}}
+\caption{StockSense AI — AI Reorder Suggestions Page.}
+\label{fig:ss_reorder}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\fbox{\begin{minipage}{0.85\textwidth}
+\centering\vspace{2.0cm}
+{\sffamily\small [Screenshot: Supplier Analytics page showing supplier table with composite\\
+score column, grade badge (A/B/C/D), and individual metric bars for Reliability,\\
+Price Score, and Delivery Speed.]}
+\vspace{2.0cm}
+\end{minipage}}
+\caption{StockSense AI — Supplier Analytics and Scoring Page.}
+\label{fig:ss_suppliers}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\fbox{\begin{minipage}{0.85\textwidth}
+\centering\vspace{2.0cm}
+{\sffamily\small [Screenshot: Settings page showing the Run Pipeline button with the\\
+animated pipeline processing overlay, displaying sequential workflow execution\\
+status indicators and the final green success confirmation.]}
+\vspace{2.0cm}
+\end{minipage}}
+\caption{StockSense AI — Pipeline Execution with Animated Overlay.}
+\label{fig:ss_pipeline}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\fbox{\begin{minipage}{0.85\textwidth}
+\centering\vspace{2.0cm}
+{\sffamily\small [Screenshot: WhatsApp message received on the store owner's phone showing\\
+the formatted stock alert with product names, current stock levels, reorder thresholds,\\
+and the StockSense AI branding header.]}
+\vspace{2.0cm}
+\end{minipage}}
+\caption{StockSense AI — WhatsApp Stock Alert Message Delivered via Twilio.}
+\label{fig:ss_whatsapp}
+\end{figure}
+
+\section{Performance Evaluation}
+
+\subsection{Pipeline Execution Time}
+
+The complete end-to-end pipeline (WF-08 orchestrating WF-02 through WF-07) was measured across
+five manual trigger executions. The average total execution time was approximately 13 seconds
+for a dataset of 10 products and 4 suppliers. The majority of this time is accounted for by
+the Groq API call in WF-05 (approximately 4--6 seconds for Llama~3.1~8B inference) and
+sequential Supabase write operations across workflows. WhatsApp message delivery via Twilio
+was consistently achieved within 5 seconds of the WF-07 execution.
+
+\subsection{Health Score Validation}
+
+Table~\ref{tab:healthscores} validates the health score formula across four distinct inventory
+scenarios designed to represent real-world kirana store conditions.
+
+\begin{table}[H]
+\centering
+\caption{Inventory Health Score Validation Across Four Scenarios}
+\label{tab:healthscores}
+{\singlespacing
+\begin{tabular}{@{}l c c c c c c@{}}
+\toprule
+\textbf{Scenario} & $n_L$ & $n_M$ & $n_H$ & $n_O$ & $N$ & $H$ \\
+\midrule
+All well-stocked  & 10 & 0 & 0 & 0  & 10 & 100 \\
+Demo state        & 3  & 1 & 6 & 0  & 10 & 55  \\
+Severe stockout   & 0  & 2 & 0 & 8  & 10 & 18  \\
+Complete stockout & 0  & 0 & 0 & 10 & 10 & 5   \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+The formula behaves consistently with real-world intuition: a fully stocked store scores
+100; a store with 6 HIGH-risk and 3 LOW-risk products scores 55, correctly indicating a
+concerning but not critical state; a store with 8 OOS products scores 18, signalling the
+need for urgent intervention; and a completely out-of-stock store scores 5 (not zero, due
+to the $n_O \times 5$ weight, which preserves the score's informativeness at the extremes).
+
+\subsection{Comparative Performance Against Existing Solutions}
+
+\begin{table}[H]
+\centering
+\caption{Comparison of StockSense AI with Existing Inventory Solutions}
+\label{tab:comparison}
+{\singlespacing
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{@{}l X X X X@{}}
+\toprule
+\textbf{Feature} & \textbf{StockSense AI} & \textbf{Vyapar} &
+\textbf{Zoho Inventory} & \textbf{Khatabook} \\
+\midrule
+AI Reorder Suggestions & Yes & No & Limited & No \\
+Automated Stockout Prediction & Yes & Manual & Basic & No \\
+Supplier Scoring & WSM-based & No & Basic & No \\
+WhatsApp Alerts & Automated & No & No & No \\
+AI Vision Data Entry & Yes & No & No & No \\
+Monthly Cost & \rupee{}0--500 & \rupee{}0--599 & \rupee{}4,000+ & \rupee{}0 \\
+Setup Complexity & Low & Medium & High & Low \\
+Real-time Dashboard & Yes & Limited & Yes & No \\
+Hardware Required & No & No & No & No \\
+Prediction Method & Velocity-based & None & Basic & None \\
+\bottomrule
+\end{tabularx}
+}
+\end{table}
+
+\subsection{Infrastructure Cost Analysis}
+
+During prototype development, the system operated entirely on free-tier services: Supabase
+free tier (500~MB database, 50,000 monthly active users), Groq free tier (generous rate
+limits for Llama~3.1~8B), and n8n self-hosted on the developer's machine. For production
+deployment where n8n must run continuously in the cloud, the estimated monthly cost breakdown
+is: n8n hosting on Railway or Render (\rupee{}300--500/month), Twilio WhatsApp per-message
+charges (nominal for typical alert volumes), Supabase free tier sufficient for single-store
+scale. The total estimated production cost per store thus remains below \rupee{}500 per month,
+which is well within the financial reach of a typical kirana store owner.

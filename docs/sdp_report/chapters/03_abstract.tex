@@ -1,0 +1,49 @@
+% =============================================================================
+% ABSTRACT  (roman page i)
+% =============================================================================
+\chapter*{ABSTRACT}
+\addcontentsline{toc}{chapter}{Abstract}
+{\centering\fontsize{14}{18}\bfseries\underline{ABSTRACT}\par}
+\vspace{0.8cm}
+
+Inventory mismanagement is one of the most persistent operational challenges confronting small-scale
+retail outlets in India, commonly referred to as kirana stores. These establishments, numbering
+approximately twelve million across the country, continue to rely on manual record-keeping methods
+such as physical ledgers or basic spreadsheet tools, which are ill-suited for real-time stock
+monitoring, demand forecasting, or supplier evaluation. Enterprise-grade solutions designed for
+large retail chains are financially prohibitive and operationally complex for single-owner
+businesses that typically lack dedicated information technology personnel.
+
+In response to this gap, a system named StockSense AI was designed and developed as an
+intelligent, low-cost inventory management solution tailored specifically to the operational
+context of small Indian retailers. The proposed system integrates automated workflow orchestration,
+artificial intelligence-driven decision support, and real-time communication into a cohesive
+platform that requires minimal technical expertise to operate.
+
+The architecture of StockSense AI consists of four principal layers: a React~19 single-page
+application serving as the user-facing frontend, an n8n-based workflow automation engine
+comprising ten modular workflows constituting the backend intelligence pipeline, a Supabase
+PostgreSQL database providing persistent storage and real-time data propagation, and an external
+services layer incorporating the Groq Llama~3.1~8B large language model, Google Gemini~2.5
+Flash multimodal model, and Twilio WhatsApp Business API.
+
+The system automates stockout date prediction through a sales-velocity formula, classifies
+products into risk tiers, generates natural-language reorder suggestions with supplier-level
+reasoning, scores suppliers using a multi-criteria Weighted Sum Model, and delivers formatted
+stock alerts directly to the store owner's WhatsApp account. An AI vision module enables
+product onboarding from a photograph, while a separate invoice scanning workflow automates
+stock-level updates from supplier delivery bills.
+
+The prototype was evaluated against a dataset of ten products and four suppliers across multiple
+inventory states. The complete intelligence pipeline executes in approximately thirteen seconds,
+WhatsApp message delivery is achieved within five seconds of pipeline completion, and the
+total infrastructure cost for production deployment remains below five hundred rupees per month.
+The system thus demonstrates that advanced inventory intelligence, previously accessible only to
+large retail enterprises, can be delivered to kirana store owners at a practically negligible cost.
+
+\vspace{0.8cm}
+\noindent\textbf{Keywords:} Inventory Management, Supply Chain Intelligence, Workflow Automation,
+n8n, Large Language Model, Supplier Scoring, Kirana Stores, SME Technology, Stockout Prediction,
+WhatsApp Alerts.
+
+\clearpage

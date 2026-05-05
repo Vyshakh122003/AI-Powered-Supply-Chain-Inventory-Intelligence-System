@@ -1,0 +1,158 @@
+% =============================================================================
+% CHAPTER 2 — LITERATURE SURVEY
+% =============================================================================
+\chapter{Literature Survey}
+\label{ch:lit}
+
+\section{Introduction}
+
+A structured review of published literature has been conducted to situate the StockSense AI
+system within the broader research landscape of inventory management, demand forecasting,
+artificial intelligence applications in retail, and workflow automation. The review spans
+journal articles, conference papers, and technical reports drawn from IEEE Xplore, arXiv, and
+other indexed databases. The goal of the survey is to identify what has been achieved in related
+domains, what gaps remain unaddressed, and how the proposed system is positioned to fill those
+gaps.
+
+\section{Review of Existing Systems}
+
+\subsection{Intelligent Inventory Systems for Small and Micro Enterprises}
+
+Wang et al.\ (2024) \cite{wang2024} present an intelligent inventory system for small and micro
+enterprise warehousing that combines RFID-based tracking with a rule-based alerting engine
+deployed on a cloud platform. The system demonstrates measurable reductions in manual counting
+errors. However, the reliance on RFID hardware infrastructure creates a significant financial
+barrier, as the cost of tagging individual stock-keeping units across an entire kirana store is
+impractical. The system also does not address supplier evaluation or AI-based reorder
+recommendations.
+
+\subsection{Demand Forecasting with Machine Learning for Multi-Channel Retail}
+
+Kheawpeam and Sinthupinyo (2023) \cite{kheawpeam2023} propose a demand forecasting model using
+machine learning techniques including LSTM and gradient boosting applied to a multi-channel
+retail dataset. The study shows that LSTM models outperform traditional ARIMA baselines in
+handling non-linear seasonal demand patterns. While technically rigorous, the model requires
+substantial historical data (at minimum twelve months) and dedicated model retraining
+infrastructure. These prerequisites are unrealistic for kirana stores that may lack even basic
+transaction records.
+
+\subsection{Retail Demand Forecasting with External Influences}
+
+Soni and Vaghela (2024) \cite{soni2024} conduct a comparative study of machine learning models
+for retail demand forecasting that explicitly incorporates external variables such as weather,
+festivals, and promotional events. The study demonstrates improvements in forecast accuracy
+when contextual features are included. The work is relevant to StockSense AI's future scope
+of seasonal demand multipliers; however, the current implementation of this paper is limited
+to academic model comparison without a deployable system for resource-constrained environments.
+
+\subsection{LLM Applications in Business Decision-Making}
+
+Al Khaldy and Gheraibia (2024) \cite{alkhaldy2024} evaluate the capabilities and limitations of
+large language models in business decision support contexts, including procurement and inventory.
+The study finds that LLMs can reduce cognitive bias in reorder decisions by providing consistent,
+data-driven reasoning. However, the paper does not address the integration of LLMs into
+operational real-time workflows or the cost implications of using LLM APIs at the scale of
+small businesses.
+
+\subsection{Mediating Cognitive Biases Using LLMs}
+
+Friedman, Krug, and Mountford (2025) \cite{friedman2025} extend this line of inquiry by
+investigating how LLMs can be used to explicitly counteract documented cognitive biases in
+business purchasing decisions, such as anchoring bias with preferred suppliers. The work
+validates the suitability of LLM-generated reasoning as a decision-support layer, which directly
+supports the design choice in WF-05 of StockSense AI to use Groq Llama~3.1~8B for reorder
+suggestion generation.
+
+\subsection{Workflow Automation Efficiency Using n8n}
+
+Amir and Atif (2025) \cite{amir2025} present the first academic evaluation of n8n as a workflow
+automation platform in a small-scale business context. The study finds that n8n enables
+non-programmers to construct business automation pipelines with significantly lower development
+effort compared to custom-coded solutions, while maintaining comparable execution performance.
+This finding directly validates the architectural decision in StockSense AI to use n8n as the
+backend orchestration engine.
+
+\subsection{IoT-Based Smart Inventory Management}
+
+Manoharan et al.\ (2024) \cite{manoharan2024} propose an IoT-based smart inventory system that
+uses weight sensors and RFID to trigger automated reorder alerts. The system demonstrates
+high accuracy in detecting low-stock conditions but requires continuous power supply and
+hardware maintenance, making it operationally impractical for small unassisted retail stores.
+The work underscores the hardware dependency problem that software-only solutions like
+StockSense AI are designed to circumvent.
+
+\subsection{Smart Retail Using ML for Demand Forecasting and Inventory Optimisation}
+
+Poongothai et al.\ (2024) \cite{poongothai2024} describe a smart retail framework combining
+convolutional neural networks for product recognition with LSTM-based demand forecasting. The
+framework achieves high prediction accuracy but presupposes camera infrastructure, high-bandwidth
+connectivity, and trained operations staff. The work illustrates the performance ceiling
+achievable with complex ML pipelines while confirming the need for simpler, deployable
+alternatives for the unorganised retail segment.
+
+\section{Comparative Analysis}
+
+Table~\ref{tab:litcomp} presents a structured comparison of the reviewed works against StockSense
+AI across key evaluation dimensions relevant to small Indian retail deployment.
+
+{\singlespacing
+\begin{longtable}{@{}p{2.6cm} p{1.4cm} p{1.4cm} p{1.4cm} p{1.4cm} p{1.4cm} p{1.6cm}@{}}
+\caption{Comparative Analysis of Related Works vs.\ StockSense AI}
+\label{tab:litcomp} \\
+\toprule
+\textbf{Feature} &
+\textbf{Wang et al.\ 2024} &
+\textbf{Kheawpeam 2023} &
+\textbf{Manoharan 2024} &
+\textbf{Poongothai 2024} &
+\textbf{Amir \& Atif 2025} &
+\textbf{StockSense AI} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Feature} &
+\textbf{Wang et al.\ 2024} &
+\textbf{Kheawpeam 2023} &
+\textbf{Manoharan 2024} &
+\textbf{Poongothai 2024} &
+\textbf{Amir \& Atif 2025} &
+\textbf{StockSense AI} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Hardware-free & No & Yes & No & No & Yes & Yes \\
+LLM Integration & No & No & No & No & No & Yes \\
+WhatsApp Alerts & No & No & No & No & No & Yes \\
+Supplier Scoring & No & No & No & No & No & Yes \\
+Stockout Prediction & Basic & ML-based & Sensor-based & ML-based & No & Rule-based \\
+AI Vision & No & No & No & CNN-based & No & Gemini Flash \\
+Cost (\rupee/mo) & High & High & High & High & Low & $<$500 \\
+Deployable Prototype & No & No & No & No & No & Yes \\
+\end{longtable}
+}
+
+\section{Research Gap and Motivation}
+
+The literature review reveals a clear and consistent pattern: existing inventory management
+research falls into two distinct clusters. The first cluster comprises academically rigorous
+machine learning and IoT-based systems that achieve high predictive performance but require
+substantial hardware investment, skilled personnel, and complex infrastructure that is entirely
+inaccessible to small Indian retailers. The second cluster comprises commercial low-cost tools
+such as Khatabook or basic POS applications that are financially accessible but provide only
+passive transaction recording without any predictive, prescriptive, or AI-driven intelligence.
+
+The specific combination of capabilities present in StockSense AI — automated stockout prediction,
+LLM-generated reorder reasoning, multi-criteria supplier scoring, AI vision for data entry,
+real-time WhatsApp alerts, and full pipeline orchestration — does not appear as a unified system
+in any reviewed work. The research gap is therefore not in any single capability but in their
+synthesis into a coherent, low-cost, deployable package for the kirana store context.
+
+Furthermore, the reviewed literature contains no published work on using n8n as a production
+backend for an AI-augmented inventory system, and no work on combining Groq LLM APIs with
+Supabase real-time subscriptions for live inventory dashboards. StockSense AI addresses both
+of these novel integration challenges and demonstrates their practical viability.
+
+The motivation for this project is therefore grounded in both a social need — making inventory
+intelligence accessible to India's twelve million kirana store owners — and a technical gap in
+the published literature that the proposed system is uniquely positioned to address.

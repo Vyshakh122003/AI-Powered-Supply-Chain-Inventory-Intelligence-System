@@ -1,0 +1,137 @@
+% =============================================================================
+% CHAPTER 1 — INTRODUCTION
+% =============================================================================
+\chapter{Introduction}
+\label{ch:intro}
+
+\section{Introduction}
+
+India's retail sector is anchored by approximately twelve million kirana stores — neighbourhood
+grocery and general merchandise outlets that serve as the primary point of purchase for a large
+proportion of the country's population. These stores collectively account for over ninety percent
+of the food and grocery retail market by volume and represent a cornerstone of India's informal
+economy. Despite their economic significance, the vast majority of these establishments continue
+to operate without the benefit of any digital inventory management system. Inventory decisions are
+typically made on the basis of the owner's intuition, physical counting, or entries in paper
+ledgers, practices that are inherently error-prone and incapable of adapting to the dynamic
+consumer demand patterns of today's retail environment.
+
+The consequences of this operational gap are commercially significant. A stockout event — where
+a product runs out before the next replenishment order arrives — results in a direct loss of
+revenue and a deterioration of customer trust. Conversely, overstocking ties up working capital
+in slow-moving goods and increases the risk of spoilage for perishable items. Without a
+systematic approach to tracking sales velocity, predicting replenishment needs, and evaluating
+supplier performance, kirana store owners are left managing these risks entirely through manual
+estimation.
+
+Enterprise Resource Planning (ERP) solutions that address these challenges for large retailers
+are commercially available but are wholly unsuitable for the kirana store context. Monthly
+subscription costs ranging from several thousand to tens of thousands of rupees, complex
+onboarding processes, and hardware requirements such as barcode scanners and RFID readers place
+these systems well beyond the reach of a typical small store owner. Simpler Point-of-Sale (POS)
+applications record transactions but lack the predictive analytics and automated alerting
+capabilities necessary to prevent stockout situations proactively.
+
+The emergence of low-code automation platforms, cloud-hosted databases, and large language model
+APIs accessible at low or zero cost has created a new opportunity: it is now technically feasible
+to build a fully functional, automated inventory intelligence system for a fraction of the cost
+of traditional enterprise software. StockSense AI is designed to exploit precisely this
+opportunity.
+
+\section{Problem Statement}
+
+Small Indian retail stores lack access to an affordable, automated, and intelligent inventory
+management system that can predict stockout dates, generate supplier-aware reorder
+recommendations, score supplier performance, and deliver real-time alerts through a channel
+that store owners already use daily. Existing enterprise solutions are financially and
+operationally inaccessible to this segment, while simpler tools provide only passive
+transaction recording without any proactive intelligence or automation.
+
+The core problem to be solved is therefore: \textit{How can an automated, AI-augmented inventory
+intelligence pipeline be built and deployed for kirana stores at an infrastructure cost below
+\rupee{}500 per month, requiring no technical expertise to operate on a day-to-day basis?}
+
+\section{Objectives}
+
+The following specific objectives have been established to guide the design and development of
+StockSense AI:
+
+\begin{enumerate}[label=\textbf{\arabic*.}, leftmargin=*, itemsep=4pt]
+  \item To design and implement an automated pipeline that calculates stockout dates for all
+        inventory items using daily sales velocity and updates product risk classifications
+        (HIGH, MEDIUM, LOW) without manual intervention.
+
+  \item To develop an AI-powered reorder recommendation engine using the Groq Llama~3.1~8B
+        large language model that generates natural-language reorder suggestions with supplier
+        selection reasoning based on current stock levels, demand patterns, and supplier grades.
+
+  \item To build a supplier evaluation module using the Weighted Sum Model (WSM) that assigns
+        composite performance scores and letter grades to suppliers based on reliability,
+        pricing, and delivery speed criteria.
+
+  \item To implement a real-time WhatsApp alert delivery system using the Twilio API that
+        notifies store owners of critical stock conditions immediately upon pipeline execution,
+        incorporating a 24-hour anti-spam cooldown mechanism.
+
+  \item To create AI vision-powered features — product onboarding via photograph and supplier
+        invoice scanning using Google Gemini~2.5 Flash — that automate data entry and eliminate
+        manual stock update procedures.
+
+  \item To deploy the complete system at a total infrastructure cost below \rupee{}500 per
+        month using free-tier and low-cost cloud services, thereby ensuring financial
+        accessibility for small retail businesses.
+\end{enumerate}
+
+\section{Scope of the Project}
+
+StockSense AI is scoped as a complete, production-ready prototype targeting single-store kirana
+operations in India. The scope encompasses the following dimensions:
+
+\textbf{Functional Scope:} The system covers the full inventory intelligence cycle — from data
+ingestion and stockout prediction to risk classification, AI-driven reorder suggestion, supplier
+scoring, and WhatsApp alert delivery. It includes a browser-based React frontend providing
+dashboards, product management, supplier analytics, and system logs. Automated daily orchestration
+of the entire pipeline is included.
+
+\textbf{AI and Automation Scope:} The project incorporates two distinct AI modalities: a text
+generation model (Groq Llama~3.1~8B) for reorder reasoning and a multimodal vision model
+(Google Gemini~2.5 Flash) for image-based data extraction. Workflow automation covers ten
+modular n8n workflows, each responsible for a distinct stage of the intelligence pipeline.
+
+\textbf{Data Scope:} The system manages eight database tables covering store profiles, products,
+suppliers, stock alerts, reorder suggestions, stock transactions, daily snapshots, and system
+logs. All tables are structured for multi-tenancy extension via \texttt{store\_id} foreign keys.
+
+\textbf{Out of Scope:} The current implementation does not include a native mobile application,
+multi-store tenancy with row-level security enforcement, demand forecasting using historical time
+series models, or automated purchase order dispatch to suppliers. These are identified as
+directions for future work.
+
+\section{Organization of the Report}
+
+The remainder of this report is organized as follows:
+
+\textbf{Chapter 2 — Literature Survey} reviews published work on inventory management systems,
+demand forecasting, large language model applications in procurement, IoT-based retail systems,
+and low-code automation platforms. A comparative analysis table and identification of the research
+gap are also presented.
+
+\textbf{Chapter 3 — System Design} describes the four-layer architecture of StockSense AI,
+presents a use case diagram description, data flow description, entity-relationship model, module
+breakdown, and the complete database schema with all eight tables.
+
+\textbf{Chapter 4 — Implementation} covers the technology stack with justification, development
+environment configuration, module-wise implementation details for each of the ten workflows and
+the frontend application, and key code snippets with explanations.
+
+\textbf{Chapter 5 — Results and Discussion} presents system testing methodology, a structured
+test case table with inputs and expected versus actual outcomes, descriptions of key application
+screens, and a performance evaluation covering execution time, cost, and health score validation.
+
+\textbf{Conclusion and Future Work} summarises the achievements of the project, evaluates them
+against the stated objectives, acknowledges limitations honestly, and proposes specific, realistic
+directions for future enhancement.
+
+\textbf{References} lists all cited sources in APA format, including journal papers, conference
+proceedings, and technical resources. \textbf{Appendices} provide key source code listings and
+screenshot placeholders for all major application screens.
